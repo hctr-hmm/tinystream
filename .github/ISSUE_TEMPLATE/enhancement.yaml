@@ -1,0 +1,81 @@
+name: Enhancement
+description: Make something that already works better, without adding a new feature
+title: "[Enhancement]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping polish tinystream!
+        Something broken? Use the bug report. Something that doesn't exist yet? Use the feature request.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Streaming / playback
+        - Torrents
+        - Sources (Torznab / RSS)
+        - Clips
+        - Web UI
+        - Config
+        - CLI
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      multiple: true
+      options:
+        - Performance
+        - Resource usage (CPU, memory, disk, network)
+        - Usability / UX
+        - Accessibility
+        - Error messages / logging
+        - Defaults
+        - Documentation
+        - Code quality / refactor
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: How it works today, and what's wrong with it.
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested improvement
+      description: What should change?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Why it matters
+      description: Who benefits and how. Measurements (timings, memory, file sizes) or screenshots help a lot.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Paste the output of `tinystream --version`.
+      placeholder: e.g. tinystream 0.28.3 (a1b2c3d)
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and discussions
+          required: true
+        - label: This isn't a bug or a new feature
+          required: true
+        - label: This isn't specific to one site or indexer (sources stay generic Torznab / RSS)
+          required: true
+        - label: I have not included links to piracy sites, torrents, or copyrighted media.
+          required: true
