@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTUP_TOOLCHAIN: stable
+
+jobs:
+  fmt:
+    name: Format
+    runs-on: ubuntu-24.04
+    env:
+      RUSTUP_TOOLCHAIN: nightly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - run: cargo fmt --check
+
+  web:
+    name: Web UI
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 1
+
+  rust:
+    name: Build and test
+    needs: web
+    runs-on: ubuntu-24.04
+    env:
+      TINYSTREAM_SKIP_WEB_BUILD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-deps
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+      - run: cargo build --locked
+      - run: cargo test --locked
+
+  features:
+    name: Features (${{ matrix.features.name }})
+    needs: web
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - { name: none, flags: --no-default-features }
+          - { name: web-ui, flags: --no-default-features --features web-ui }
+          - { name: metadata, flags: --no-default-features --features metadata }
+          - { name: web-ui + metadata, flags: --no-default-features --features web-ui,metadata }
+    env:
+      TINYSTREAM_SKIP_WEB_BUILD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-deps
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.features.name }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+      - run: cargo check --locked ${{ matrix.features.flags }}
+
+  msrv:
+    name: MSRV
+    needs: web
+    runs-on: ubuntu-24.04
+    env:
+      TINYSTREAM_SKIP_WEB_BUILD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-deps
+      - name: Read rust-version from Cargo.toml
+        id: msrv
+        run: |
+          version="$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "RUSTUP_TOOLCHAIN=$version" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+      - run: cargo check --locked

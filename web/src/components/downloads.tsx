@@ -1,0 +1,240 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowDownToLine, Check, CircleAlert, ExternalLink, Layers, RefreshCw, Search, Sprout, Users } from 'lucide-react'
+import { useState } from 'react'
+import { graphql } from '../gql'
+import { type EpisodeState, type Monitor, type ReleaseCandidate, request } from '../lib/api'
+import { bytes, episodeCode, monitorLabels, relative, stateLabels } from '../lib/downloads'
+import { Squircle } from './Squircle'
+import { Badge, Button, Dialog, IconButton, Input, Segmented, Spinner, Tip } from './ui'
+
+const stateTones: Record<EpisodeState, 'quiet' | 'ok' | 'live' | 'warn' | 'danger'> = {
+  IDLE: 'quiet',
+  WANTED: 'warn',
+  GRABBED: 'live',
+  MISSING: 'danger',
+  DONE: 'ok',
+}
+
+const ReleasesQuery = graphql(`
+  query Releases($seriesId: Int!, $season: Int!, $episodes: [Int!]!, $query: String) {
+    series(id: $seriesId) {
+      releases(season: $season, episodes: $episodes, query: $query) {
+        ...ReleaseCandidateFields
+      }
+    }
+  }
+`)
+
+const GrabRelease = graphql(`
+  mutation GrabRelease($release: ReleaseInput!, $seriesId: Int, $episodes: [EpisodeNumberInput!]!) {
+    grabRelease(release: $release, seriesId: $seriesId, episodes: $episodes) {
+      id
+    }
+  }
+`)
+
+export function StateBadge({ state }: { state: EpisodeState }) {
+  return (
+    <Badge tone={stateTones[state]}>
+      {state === 'WANTED' && <span className="size-1.5 animate-[pulse-dot_1.6s_ease-in-out_infinite] rounded-full bg-current" />}
+      {state === 'DONE' && <Check className="size-3" />}
+      {stateLabels[state]}
+    </Badge>
+  )
+}
+
+export function MonitorPicker({ value, onChange, size }: { value: Monitor; onChange: (m: Monitor) => void; size?: 'sm' | 'md' }) {
+  return (
+    <Segmented
+      size={size}
+      value={value}
+      onChange={onChange}
+      options={(['NONE', 'FUTURE', 'MISSING'] as const).map((m) => ({
+        value: m,
+        label: monitorLabels[m].label,
+      }))}
+    />
+  )
+}
+
+/** Searches a show's sources and lets an admin pick the release to download. */
+export function ReleaseDialog({
+  seriesId,
+  season,
+  episodes,
+  title,
+  onClose,
+}: {
+  seriesId: number
+  season: number
+  episodes: number[]
+  title: string
+  onClose: () => void
+}) {
+  const qc = useQueryClient()
+  const [showRejected, setShowRejected] = useState(false)
+  // Empty means let the server pick the words.
+  const [draft, setDraft] = useState('')
+  const [query, setQuery] = useState('')
+  const queryKey = ['releases', seriesId, season, episodes, query]
+  const { data, isFetching, error } = useQuery({
+    queryKey,
+    queryFn: async () => (await request(ReleasesQuery, { seriesId, season, episodes, query: query || null })).series?.releases ?? [],
+    staleTime: 0,
+    gcTime: 0,
+  })
+  const [grabbed, setGrabbed] = useState<Set<string>>(new Set())
+  const grab = useMutation({
+    mutationFn: (c: ReleaseCandidate) =>
+      request(GrabRelease, { release: c.release, seriesId, episodes: c.episodes }),
+    onSuccess: (_, c) => {
+      setGrabbed((g) => new Set(g).add(c.release.link))
+      void qc.invalidateQueries({ queryKey: ['downloads'] })
+      void qc.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+  const matched = data?.filter((c) => c.episodes.length > 0) ?? []
+  const accepted = matched.filter((c) => c.verdict.accepted)
+  const rejected = data?.filter((c) => !c.verdict.accepted) ?? []
+  const what = episodes.length === 1 ? episodeCode(season, episodes[0]) : `season ${season}`
+  // Drop what's shown so a fresh search looks like one.
+  const refresh = () => void qc.resetQueries({ queryKey, exact: true })
+  const submit = () => {
+    const q = draft.trim()
+    if (q === query) refresh()
+    else setQuery(q)
+  }
+
+  return (
+    <Dialog onClose={onClose} width="max-w-3xl">
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-medium">
+            {title} <span className="text-ink-3">{what}</span>
+          </p>
+          <p className="mt-0.5 text-sm text-ink-3">
+            {isFetching
+              ? 'Asking every source…'
+              : data
+                ? `${accepted.length} good match${accepted.length === 1 ? '' : 'es'} out of ${data.length} results`
+                : ''}
+          </p>
+        </div>
+        <IconButton label="Search again" onClick={refresh} disabled={isFetching}>
+          <RefreshCw className={`size-4 ${isFetching ? 'animate-spin' : ''}`} />
+        </IconButton>
+      </div>
+
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          submit()
+        }}
+      >
+        <div className="flex-1">
+          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`${title}, or your own words`} />
+        </div>
+        <Button type="submit" className="h-9" disabled={isFetching}>
+          <Search className="size-3.5" /> Search
+        </Button>
+      </form>
+
+      <div className="mt-4 max-h-[62vh] space-y-1 overflow-y-auto">
+        {isFetching && !data && (
+          <div className="grid place-items-center py-16 text-ink-3">
+            <Spinner />
+          </div>
+        )}
+        {error && (
+          <p className="flex items-center gap-2 py-8 text-sm text-danger">
+            <CircleAlert className="size-4" /> {(error as Error).message}
+          </p>
+        )}
+        {data && data.length === 0 && <p className="py-10 text-center text-sm text-ink-3">No results</p>}
+        {accepted.map((c, i) => (
+          <ReleaseRow key={c.release.link} c={c} best={i === 0} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
+        ))}
+        {rejected.length > 0 && (
+          <button className="mt-3 w-full py-2 text-left text-xs text-ink-3 hover:text-ink-2" onClick={() => setShowRejected((s) => !s)}>
+            {showRejected ? 'Hide' : 'Show'} {rejected.length} that don't fit
+          </button>
+        )}
+        {showRejected &&
+          rejected.map((c) => (
+            <ReleaseRow key={c.release.link} c={c} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
+          ))}
+        {grab.error && <p className="pt-2 text-sm text-danger">{(grab.error as Error).message}</p>}
+      </div>
+    </Dialog>
+  )
+}
+
+function ReleaseRow({ c, best, done, busy, onGrab }: { c: ReleaseCandidate; best?: boolean; done: boolean; busy: boolean; onGrab: () => void }) {
+  const a = c.attributes
+  const r = c.release
+  const ok = c.verdict.accepted
+  return (
+    <Squircle radius={12} className={`flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-hover ${ok ? '' : 'opacity-60'}`}>
+      <div className="min-w-0 flex-1">
+        <Tip label={r.title} className="block truncate text-[13px] font-medium">
+          {r.title}
+        </Tip>
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {best && <Badge tone="strong">Best match</Badge>}
+          {a.resolution && <Badge>{a.resolution}p</Badge>}
+          {a.group && <Badge>{a.group}</Badge>}
+          {a.codec && <Badge>{a.codec.toUpperCase()}</Badge>}
+          {a.source && <Badge>{a.source === 'bluray' ? 'Blu-ray' : a.source.toUpperCase()}</Badge>}
+          {a.dualAudio && <Badge>Dual audio</Badge>}
+          {a.version > 1 && <Badge>v{a.version}</Badge>}
+          {c.batch && (
+            <Badge tone="live">
+              <Layers className="size-3" /> {c.episodes.length} episodes
+            </Badge>
+          )}
+          {c.episodes.length === 1 && <Badge>{episodeCode(c.episodes[0].season, c.episodes[0].episode)}</Badge>}
+          {c.verdict.rejections.map((why) => (
+            <Badge key={why} tone="danger">
+              {why}
+            </Badge>
+          ))}
+        </div>
+      </div>
+      <div className="hidden shrink-0 flex-col items-end gap-0.5 text-xs text-ink-3 tabular sm:flex">
+        <span>{bytes(r.size)}</span>
+        <span className="flex items-center gap-2">
+          {r.seeders != null && (
+            <Tip label="Seeding" className="flex items-center gap-0.5">
+              <Sprout className="size-3" />
+              {r.seeders}
+            </Tip>
+          )}
+          {r.leechers != null && (
+            <Tip label="Downloading" className="flex items-center gap-0.5">
+              <Users className="size-3" />
+              {r.leechers}
+            </Tip>
+          )}
+        </span>
+      </div>
+      <div className="hidden w-24 shrink-0 text-right text-xs text-ink-3 md:block">
+        <p className="truncate">{r.source}</p>
+        {r.published && <p>{relative(r.published)}</p>}
+      </div>
+      {r.page && (
+        <Tip label="Open on the source">
+          <a href={r.page} target="_blank" rel="noreferrer" aria-label="Open on the source" className="block text-ink-3 hover:text-ink">
+            <ExternalLink className="size-4" />
+          </a>
+        </Tip>
+      )}
+      <Button variant={best ? 'primary' : 'quiet'} size="sm" disabled={done || busy || c.episodes.length === 0} onClick={onGrab}>
+        {done ? <Check className="size-3.5" /> : <ArrowDownToLine className="size-3.5" />}
+        {done ? 'Added' : 'Download'}
+      </Button>
+    </Squircle>
+  )
+}

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions
+    url: https://github.com/tinystream-dev/tinystream/discussions
+    about: Ask usage questions here instead
+  - name: Security vulnerability
+    url: https://github.com/tinystream-dev/tinystream/security/advisories/new
+    about: Report vulnerabilities privately, never in a public issue

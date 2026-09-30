@@ -1,0 +1,18 @@
+[package]
+name = "x264-src"
+# X264_BUILD of the x264 it builds; the commit is in build.rs.
+version = "0.165.0"
+edition.workspace = true
+description = "A static x264, the software H.264 encoder used when VA-API is unavailable"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+links = "x264"
+
+[dependencies]
+nasm-src = { path = "../nasm" }
+
+[build-dependencies]
+native-support = { path = "../support" }

@@ -1,0 +1,18 @@
+[package]
+name = "dav1d-src"
+# The version of dav1d it builds.
+version = "1.5.1"
+edition.workspace = true
+description = "A static dav1d, for fast AV1 decoding"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+links = "dav1d"
+
+[dependencies]
+nasm-src = { path = "../nasm" }
+
+[build-dependencies]
+native-support = { path = "../support" }

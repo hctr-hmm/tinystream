@@ -1,0 +1,493 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+@import 'tailwindcss';
+@import '@fontsource-variable/geist';
+
+@theme {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* Layers, back to front. Each step up is a little lighter. */
+  --color-canvas: #191919;
+  --color-raised: #202020;
+  --color-panel: #262626;
+  --color-float: #2e2e2e;
+  --color-hover: rgb(255 255 255 / 0.055);
+  --color-press: rgb(255 255 255 / 0.09);
+  --color-line: rgb(255 255 255 / 0.075);
+  --color-line-strong: rgb(255 255 255 / 0.13);
+
+  --color-ink: #ebebea;
+  --color-ink-2: #9b9b98;
+  --color-ink-3: #6e6e6b;
+  --color-danger: #eb8a7a;
+  --color-ok: #8fc79a;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: rgb(255 255 255 / 0.18);
+  }
+  :focus-visible {
+    outline: 2px solid rgb(255 255 255 / 0.55);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: default;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A soft, deep shadow for things that float above the page. */
+@utility lift {
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35)) drop-shadow(0 12px 32px rgb(0 0 0 / 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.985);
+  }
+}
+
+/* Hover cards slide out from the side of what they describe. */
+@keyframes nudge-right {
+  from {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.985);
+  }
+}
+
+@keyframes nudge-left {
+  from {
+    opacity: 0;
+    transform: translateX(6px) scale(0.985);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide {
+  from {
+    left: -33%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* A placeholder shaped like the content that's about to arrive. */
+@utility bone {
+  background: linear-gradient(90deg, var(--color-raised) 30%, var(--color-panel) 50%, var(--color-raised) 70%) 0 0 / 250% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* A row that just changed state glows once, then settles. */
+@keyframes arrive {
+  0% {
+    background-color: rgb(143 199 154 / 0.16);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes sink {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes shutter {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/*
+ * Details about to be replaced blur out while they're fetched, then sharpen
+ * in a cascade (ordered by --i) once the new ones are in. Blurring is quick
+ * and all at once; sharpening is slow and staggered.
+ */
+.refreshable {
+  transition:
+    filter 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(min(var(--i, 0), 14) * 65ms);
+}
+
+[data-fetching] .refreshable {
+  filter: blur(var(--blur, 9px)) saturate(0.55) brightness(1.15);
+  opacity: 0.5;
+  transform: scale(var(--scale, 0.985));
+  transition-duration: 450ms;
+  transition-timing-function: ease-out;
+  transition-delay: calc(min(var(--i, 0), 14) * 20ms);
+}
+
+/* A band of light that drifts across artwork while it's fetched. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%) 0 0 / 250% 100%;
+  transition: opacity 600ms ease-out;
+}
+
+[data-fetching] .sheen {
+  opacity: 1;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Poster → title page: the artwork you clicked grows into place. */
+::view-transition-group(poster) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/*
+ * Every other navigation: the old page blurs away as the new one sharpens in,
+ * the same move as a refresh. The chrome is captured on its own so it holds
+ * still while the page changes under it (and fades as usual when a page
+ * without it, the player, comes or goes).
+ */
+::view-transition-old(root) {
+  animation: page-out 220ms ease-in both;
+}
+::view-transition-new(root) {
+  animation: page-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+::view-transition-old(chrome):not(:only-child),
+::view-transition-old(chrome-top):not(:only-child),
+::view-transition-old(chrome-bottom):not(:only-child) {
+  /*
+   * With the cross-fade off, old and new would sit on top of each other,
+   * added together (the default blend is plus-lighter): a paler bar that
+   * still shows the previous tab as selected. Only the new one is shown.
+   */
+  display: none;
+}
+::view-transition-new(chrome):not(:only-child),
+::view-transition-new(chrome-top):not(:only-child),
+::view-transition-new(chrome-bottom):not(:only-child) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.992);
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(1.008);
+  }
+}
+
+/* Episode still → player: the still grows into the frame the video takes. */
+::view-transition-group(still) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/*
+ * Artwork develops as it arrives: blurry, washed out and
+ * slightly too big, then sharp. Artwork already in the cache is just there.
+ */
+.develop {
+  /*
+   * This replaces the element's own transition, so hover zooms (Tailwind's
+   * `scale-*`, which is its own property) keep their duration and easing.
+   */
+  transition:
+    filter 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 500ms ease-out,
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    scale var(--tw-duration, 500ms) var(--tw-ease, ease-out);
+}
+.develop:not([data-ready]) {
+  filter: blur(14px) saturate(0.3) brightness(1.2);
+  opacity: 0;
+  transform: scale(1.06);
+}
+
+/* Content replacing a skeleton sharpens in, top to bottom. */
+@keyframes develop-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(6px);
+  }
+}
+[data-arrive] > * {
+  animation: develop-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+[data-arrive] > :nth-child(2) { animation-delay: 70ms; }
+[data-arrive] > :nth-child(3) { animation-delay: 140ms; }
+[data-arrive] > :nth-child(4) { animation-delay: 210ms; }
+[data-arrive] > :nth-child(5) { animation-delay: 280ms; }
+[data-arrive] > :nth-child(n + 6) { animation-delay: 350ms; }
+
+/* A new title resolves a letter at a time. */
+@keyframes resolve {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(0.12em);
+  }
+}
+
+/*
+ * Posters lean toward the pointer, with a glint that follows it. --rx/--ry
+ * and --gx/--gy are set from the pointer's position.
+ */
+.tilt {
+  transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition:
+    transform 500ms cubic-bezier(0.16, 1, 0.3, 1),
+    translate 200ms ease-out;
+  will-change: transform;
+}
+.tilt[data-tilting] {
+  transition-duration: 120ms, 200ms;
+}
+.glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: soft-light;
+  transition: opacity 400ms ease-out;
+  /* Sized off the card's short side so wide cards get the same round spot. */
+  container-type: size;
+}
+.glare::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle 65cqmin at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.55), transparent 70%);
+}
+[data-tilting] .glare {
+  opacity: 1;
+}
+
+/* Colours that fade into each other rather than snapping between titles. */
+@property --ambient {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+.ambient {
+  transition: --ambient 1200ms ease-out;
+}
+
+/*
+ * The title page's backdrop drifts slower than the page and goes soft as
+ * you scroll past it; a slim bar with the title takes over once the hero is
+ * gone. The bar only exists where the page's scroll can drive it.
+ */
+.scrolled-in {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .parallax {
+      animation: parallax linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 34rem;
+    }
+    .scrolled-in {
+      display: block;
+      animation: scrolled-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 18rem 22rem;
+    }
+  }
+}
+@keyframes parallax {
+  to {
+    transform: translateY(35%) scale(1.08);
+    filter: blur(18px) saturate(1.3);
+  }
+}
+@keyframes scrolled-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+    visibility: hidden;
+  }
+  1% {
+    visibility: visible;
+  }
+}
+
+/*
+ * Watched: the still drains of colour in a wipe, and the check draws itself.
+ */
+.drain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backdrop-filter: grayscale(1) brightness(0.62);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 700ms cubic-bezier(0.65, 0, 0.35, 1);
+  /* Marking a run of episodes wipes down the list, one after another. */
+  transition-delay: calc(clamp(0, var(--i, 5) - 5, 16) * 45ms);
+}
+.drain[data-on] {
+  clip-path: inset(0 0 0 0);
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 70;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.draw :is(path, circle) {
+  stroke-dasharray: 70;
+  animation: draw 700ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.draw :is(path, circle):nth-child(2) {
+  animation-delay: 250ms;
+}
+
+/* A band of light crosses something once, to say it just finished. */
+@keyframes glint {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.glint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgb(143 199 154 / 0.2) 50%, transparent 70%);
+  animation: glint 1400ms cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+/* A ring that closed gives off one soft pulse. */
+@keyframes ring-done {
+  0% {
+    box-shadow: 0 0 0 0 rgb(125 211 252 / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgb(125 211 252 / 0);
+  }
+}
+
+/* Paused: the frame recedes and what you're watching steps forward. */
+.recede {
+  transition:
+    filter 1400ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.recede[data-receded] {
+  filter: blur(6px) brightness(0.55) saturate(0.85);
+  transform: scale(1.015);
+}

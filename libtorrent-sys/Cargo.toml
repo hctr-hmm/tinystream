@@ -1,0 +1,17 @@
+[package]
+name = "libtorrent-sys"
+version.workspace = true
+edition.workspace = true
+description = "A static libtorrent-rasterbar (native/libtorrent) behind a small C++ shim"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+cxx = "1"
+libtorrent-src = { path = "../native/libtorrent" }
+
+[build-dependencies]
+cxx-build = "1"

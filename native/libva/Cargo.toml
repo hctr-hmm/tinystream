@@ -1,0 +1,15 @@
+[package]
+name = "libva-src"
+# The version of libva it builds.
+version = "2.22.0"
+edition.workspace = true
+description = "libva's headers and shared library, for VA-API"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+links = "va"
+
+[build-dependencies]
+native-support = { path = "../support" }

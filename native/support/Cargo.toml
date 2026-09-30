@@ -1,0 +1,10 @@
+[package]
+name = "native-support"
+version.workspace = true
+edition.workspace = true
+description = "What the build scripts of the native library crates share"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false

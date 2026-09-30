@@ -1,0 +1,114 @@
+name: Bug report
+description: Report something that's broken
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this!
+        Usage questions go in [Discussions](https://github.com/tinystream-dev/tinystream/discussions) instead.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Paste the output of `tinystream --version`. Builds from a git checkout include the commit.
+      placeholder: e.g. tinystream 0.28.3 (a1b2c3d)
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - Release binary
+        - Built from source
+        - Other (mention below)
+    validations:
+      required: true
+  - type: input
+    id: build-flags
+    attributes:
+      label: Build flags
+      description: Only if you built from source, e.g. `--no-default-features` (a build without the web UI).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Streaming / playback
+        - Torrents
+        - Sources (Torznab / RSS)
+        - Clips
+        - Web UI
+        - Config
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Screenshots are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      description: Operating systems not listed are not officially supported.
+      multiple: true
+      options:
+        - Linux
+        - macOS
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser engine
+      description: Chrome, Edge, Brave, etc. are Blink; Firefox is Gecko; Safari is WebKit. Leave empty if it's not browser-related.
+      multiple: true
+      options:
+        - Blink (Chromium-based)
+        - Gecko (Firefox)
+        - WebKit (Safari)
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Run `tinystream paths` to find `current.log` / `previous.log`. Paste the relevant part.
+      render: text
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config
+      description: The relevant parts of `config.toml`. **Remove API keys and passwords.**
+      render: toml
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues
+          required: true
+        - label: I'm on the latest release, or I checked that it still happens there
+        - label: "`tinystream check` passes on my config"
+        - label: I removed secrets from logs and config
+          required: true
+        - label: I have not included links to piracy sites, torrents, or copyrighted media.
+          required: true

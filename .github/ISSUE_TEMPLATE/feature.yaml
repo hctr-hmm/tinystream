@@ -1,0 +1,54 @@
+name: Feature request
+description: Suggest something new or a change to something existing
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion!
+        Not sure yet if it's a good idea? Start a thread in [Discussions](https://github.com/tinystream-dev/tinystream/discussions) instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Streaming / playback
+        - Torrents
+        - Sources (Torznab / RSS)
+        - Clips
+        - Web UI
+        - Config
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what's stopping you?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like it to work?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use today, or other ways this could be solved.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and discussions
+          required: true
+        - label: This isn't specific to one site or indexer (sources stay generic Torznab / RSS)
+          required: true
+        - label: I have not included links to piracy sites, torrents, or copyrighted media.
+          required: true

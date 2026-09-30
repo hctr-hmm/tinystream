@@ -1,0 +1,9 @@
+/target
+/.native
+/web/node_modules
+/web/dist
+/web/.output
+/web/.tanstack
+/.ffmpeg
+/.libtorrent
+/dev

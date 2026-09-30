@@ -1,0 +1,26 @@
+[package]
+name = "ffmpeg-src"
+# The version of FFmpeg it builds (8.0 upstream).
+version = "8.0.0"
+edition.workspace = true
+description = "A static FFmpeg's libraries, built with everything else in native/"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+links = "ffmpeg"
+
+[dependencies]
+nasm-src = { path = "../nasm" }
+libva-src = { path = "../libva" }
+dav1d-src = { path = "../dav1d" }
+x264-src = { path = "../x264" }
+zimg-src = { path = "../zimg" }
+freetype-src = { path = "../freetype" }
+fribidi-src = { path = "../fribidi" }
+harfbuzz-src = { path = "../harfbuzz" }
+libass-src = { path = "../libass" }
+
+[build-dependencies]
+native-support = { path = "../support" }

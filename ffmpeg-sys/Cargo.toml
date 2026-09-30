@@ -1,0 +1,17 @@
+[package]
+name = "ffmpeg-sys"
+version.workspace = true
+edition.workspace = true
+description = "Bindings to the static FFmpeg that native/ffmpeg builds"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+ffmpeg-src = { path = "../native/ffmpeg" }
+
+[build-dependencies]
+bindgen = "0.71"
+pkg-config = "0.3"

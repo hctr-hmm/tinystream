@@ -1,0 +1,22 @@
+name: Native build dependencies
+description: Installs what native/ needs to build FFmpeg and libtorrent, and restores the .native cache.
+
+runs:
+  using: composite
+  steps:
+    - name: Install system packages
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential pkg-config curl git tar \
+          meson ninja-build autoconf automake libtool \
+          libclang-dev libssl-dev libdrm-dev \
+          zlib1g-dev libbz2-dev liblzma-dev
+
+    - name: Cache native libraries
+      uses: actions/cache@v4
+      with:
+        path: .native
+        key: native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('native/**/Cargo.toml', 'native/**/build.rs', 'native/support/src/**') }}
+        restore-keys: native-${{ runner.os }}-${{ runner.arch }}-

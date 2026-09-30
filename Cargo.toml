@@ -1,0 +1,123 @@
+[package]
+name = "tinystream"
+description = "A small self-hosted media server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords = ["media-server", "streaming", "ffmpeg", "self-hosted", "anime"]
+categories = [
+    "multimedia::video",
+    "web-programming::http-server",
+    "command-line-utilities",
+]
+default-run = "tinystream"
+publish = false
+exclude = [
+    "/.native",
+    "/.ffmpeg",
+    "/.libtorrent",
+    "/.github",
+    "/web/node_modules",
+    "/web/dist",
+]
+
+[workspace]
+members = ["ffmpeg-sys", "libtorrent-sys", "native/*"]
+
+[workspace.package]
+version = "0.28.3"
+edition = "2024"
+rust-version = "1.94"
+license = "AGPL-3.0-or-later"
+authors = ["Phrolova <me@phrolova.moe>"]
+repository = "https://github.com/phrolova/tinystream"
+
+[features]
+default = ["web-ui", "metadata", "torrent"]
+web-ui = ["dep:axum-frontend", "dep:rust-embed"]
+metadata = []
+torrent = ["metadata", "dep:libtorrent-sys", "dep:quick-xml"]
+
+[dependencies]
+anyhow = "1"
+argon2 = "0.5"
+async-stream = "0.3"
+axum = { version = "0.8", features = ["macros", "ws"] }
+axum-frontend = { version = "0.1", optional = true }
+base64 = "0.22"
+bytes = "1"
+clap = { version = "4", features = ["derive", "env", "wrap_help"] }
+dirs = "6"
+ffmpeg-sys = { path = "ffmpeg-sys" }
+libtorrent-sys = { path = "libtorrent-sys", optional = true }
+futures = "0.3"
+humantime = "2"
+humantime-serde = "1"
+mime_guess = "2"
+notify = "8"
+nucleo-matcher = "0.3"
+quick-xml = { version = "0.41", optional = true }
+rand = "0.9"
+rust-embed = { version = "8", optional = true }
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "gzip",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.9", default-features = false, features = [
+    "runtime-tokio",
+    "sqlite",
+    "migrate",
+    "macros",
+    "json",
+] }
+thiserror = "2"
+time = { version = "0.3", features = [
+    "serde",
+    "formatting",
+    "parsing",
+    "macros",
+    "local-offset",
+] }
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io"] }
+toml = { version = "0.9", features = ["preserve_order"] }
+toml_edit = "0.25"
+tower = "0.5"
+tower-http = { version = "0.6", features = [
+    "cors",
+    "trace",
+    "compression-gzip",
+    "fs",
+    "set-header",
+] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "fmt",
+    "ansi",
+    "registry",
+] }
+url = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+webauthn-rs = { version = "0.5", features = [
+    "danger-user-presence-only-security-keys",
+] }
+hex = "0.4"
+async-graphql = { version = "7.2.1", default-features = false, features = [
+    "playground",
+    "graphiql",
+] }
+async-graphql-axum = "7.2.1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

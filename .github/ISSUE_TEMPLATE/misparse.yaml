@@ -1,0 +1,71 @@
+name: Wrong release parsing
+description: A release title was parsed, matched, or scored wrong
+title: "[Parsing]: "
+labels: ["bug", "parsing"]
+body:
+  - type: markdown
+    attributes:
+      value: Each report here becomes a test case, so exact titles matter more than anything else.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Paste the output of `tinystream --version`.
+      placeholder: e.g. tinystream 0.28.3 (a1b2c3d)
+    validations:
+      required: true
+  - type: textarea
+    id: titles
+    attributes:
+      label: Release titles
+      description: The exact titles, copied from the feed, one per line. Don't retype or clean them up.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: show
+    attributes:
+      label: Show
+      description: The show these releases should (or shouldn't) have matched, as it's named in tinystream.
+  - type: checkboxes
+    id: fields
+    attributes:
+      label: What was wrong?
+      options:
+        - label: Matched the wrong show, or didn't match the right one
+        - label: Group
+        - label: Resolution
+        - label: Codec
+        - label: Source (WEB, Blu-ray, DVD, HDTV)
+        - label: Dual audio
+        - label: Version (v2, v3, ...)
+        - label: Proper / repack
+        - label: 10-bit
+        - label: Season / part
+        - label: Episodes
+        - label: Batch
+        - label: Recap detection
+        - label: Size
+        - label: Accepted or rejected wrongly
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual values
+      description: What tinystream parsed, as shown in the release list.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected values
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues
+          required: true
+        - label: I have not included links to piracy sites, torrents, or copyrighted media.
+          required: true
