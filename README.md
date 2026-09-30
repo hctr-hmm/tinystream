@@ -16,7 +16,7 @@ A small self-hosted media server for your shows and movies.
 
 ### Prebuilt binaries
 
-Download the archive for your architecture from the [latest release](https://github.com/phrolova/tinystream/releases/latest), unpack it and run it:
+Download the archive for your architecture from the [latest release](https://github.com/tinystream-dev/tinystream/releases/latest), unpack it and run it:
 
 ```sh
 tar xzf tinystream-*-x86_64.tar.gz
