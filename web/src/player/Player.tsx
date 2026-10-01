@@ -52,7 +52,7 @@ function skipLabel(title: string) {
   return 'Skip preview'
 }
 
-const pref = {
+export const pref = {
   get: (k: string) => (typeof localStorage === 'undefined' ? null : localStorage.getItem(`tinystream.${k}`)),
   set: (k: string, v: string) => localStorage.setItem(`tinystream.${k}`, v),
 }
@@ -1100,10 +1100,10 @@ function TrackHeading({ label, own, onFollow }: { label: string; own: boolean; o
   )
 }
 
-type Hud = { kind: 'seek' | 'volume' | 'play' | 'pause' | 'speed'; amount?: number; text?: string; key: number }
+export type Hud = { kind: 'seek' | 'volume' | 'play' | 'pause' | 'speed'; amount?: number; text?: string; key: number }
 
 /** A quiet confirmation of what just happened, fading as it appears. */
-function HudView({ hud }: { hud: Hud }) {
+export function HudView({ hud }: { hud: Hud }) {
   if (hud.kind === 'seek') {
     const back = (hud.amount ?? 0) < 0
     return (
@@ -1253,7 +1253,7 @@ function Finale({ pb, series, onBack }: { pb: Playback; series: SeriesGlimpse | 
   )
 }
 
-function ChromeButton({
+export function ChromeButton({
   label,
   onClick,
   children,
@@ -1344,7 +1344,7 @@ function UpNext({
   )
 }
 
-function VolumeControl({
+export function VolumeControl({
   volume,
   muted,
   setVolume,
@@ -1378,7 +1378,7 @@ function VolumeControl({
   )
 }
 
-function Timeline({
+export function Timeline({
   base,
   time,
   duration,
@@ -1386,8 +1386,8 @@ function Timeline({
   chapters,
   onSeek,
 }: {
-  /** Where this video's endpoints live. */
-  base: string
+  /** Where this video's endpoints live; without them, no frames on hover. */
+  base?: string
   time: number
   duration: number
   buffered: [number, number][]
@@ -1464,7 +1464,7 @@ function Timeline({
           className="pointer-events-none absolute bottom-6 -translate-x-1/2 text-center text-xs whitespace-nowrap text-white tabular"
           style={{ left: `clamp(5.5rem, ${pct(hover)}, calc(100% - 5.5rem))` }}
         >
-          <Preview base={base} at={hover} />
+          {base && <Preview base={base} at={hover} />}
           <span className="mt-1.5 inline-block rounded-lg bg-[#262626]/90 px-2 py-1 backdrop-blur-md">
             {clock(hover)}
             {hoverChapter?.title && <span className="ml-1.5 text-white/55">{hoverChapter.title}</span>}

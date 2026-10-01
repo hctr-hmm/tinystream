@@ -58,6 +58,7 @@ import { type Preset, burnable, copyLink, fetchClip, length, presets, space, sta
 import { bytes } from '../lib/downloads'
 import { language } from '../lib/format'
 import { onArrival, useMarkRead } from '../lib/notifications'
+import { ClipPlayer } from './ClipPlayer'
 import { StreamEngine, plan } from './engine'
 import { SubtitleRenderer } from './subtitles'
 
@@ -723,7 +724,7 @@ function Rendering({ id, onClose }: { id: number; onClose: () => void }) {
       <div className="w-full max-w-md text-center">
         <Squircle radius={18} className="relative mx-auto mb-6 aspect-video w-full overflow-hidden bg-raised">
           {done && clip.poster ? (
-            <video src={clip.file} poster={clip.poster} controls autoPlay muted playsInline className="size-full object-contain" />
+            <ClipPlayer src={clip.file} poster={clip.poster} muted />
           ) : (
             <div className="grid size-full place-items-center text-pink-300">
               {clip.state === 'FAILED' ? <TriangleAlert className="size-8 text-danger" /> : <Scissors className="size-8 animate-pulse" />}

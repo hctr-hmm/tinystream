@@ -15,6 +15,7 @@ import type { ClipScope } from '../gql/graphql'
 import { type Clip, type Person, request } from '../lib/api'
 import type { ClipList } from '../lib/clips'
 import { allowanceQuery } from '../player/ClipEditor'
+import { ClipPlayer } from '../player/ClipPlayer'
 
 const ClipsQuery = graphql(`
   query Clips($scope: ClipScope!) {
@@ -281,7 +282,7 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
               <img key={c.renderedAt} src={c.file} alt={clipName(c)} className="size-full object-contain" />
             </a>
           ) : ready ? (
-            <video key={c.renderedAt} src={c.file} poster={c.poster ?? undefined} controls autoPlay playsInline className="size-full object-contain" />
+            <ClipPlayer key={c.renderedAt} src={c.file} poster={c.poster ?? undefined} />
           ) : (
             <div className="grid size-full place-items-center p-6 text-center">
               {c.state === 'FAILED' ? (
