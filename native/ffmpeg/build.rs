@@ -20,6 +20,7 @@ fn main() {
         "--enable-libx264".into(),
         "--enable-libdav1d".into(),
         "--enable-vaapi".into(),
+        "--disable-libdrm".into(),
         "--enable-libzimg".into(),
         "--enable-libass".into(),
         "--enable-libfreetype".into(),

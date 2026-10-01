@@ -1879,6 +1879,7 @@ dependencies = [
 name = "libva-src"
 version = "2.22.0"
 dependencies = [
+ "cc",
  "native-support",
 ]
 

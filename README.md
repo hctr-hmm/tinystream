@@ -24,7 +24,7 @@ cd tinystream-*/
 ./tinystream
 ```
 
-FFmpeg and libtorrent are linked in statically. At runtime tinystream needs a few common system libraries: libva and libdrm (for the GPU), OpenSSL, libstdc++, zlib, bzip2 and xz.
+FFmpeg and libtorrent are linked in statically. At runtime tinystream needs a few common system libraries: OpenSSL, libstdc++, zlib, bzip2 and xz. GPU transcoding also needs libva and a VA-API driver; without them, tinystream transcodes on the CPU.
 
 On first run tinystream writes a commented config to `~/.config/tinystream/config.toml` and serves the UI on <http://localhost:3000>. The first account you create is the admin.
 

@@ -3,7 +3,7 @@ name = "libva-src"
 # The version of libva it builds.
 version = "2.22.0"
 edition.workspace = true
-description = "libva's headers and shared library, for VA-API"
+description = "libva's headers and a shim that loads the system's libva at runtime, for VA-API"
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
@@ -12,4 +12,5 @@ publish = false
 links = "va"
 
 [build-dependencies]
+cc = "1"
 native-support = { path = "../support" }

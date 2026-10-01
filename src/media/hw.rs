@@ -12,6 +12,7 @@ use crate::config::{Hardware, Transcode};
 
 unsafe extern "C" {
     fn vaQueryVendorString(dpy: *mut c_void) -> *const c_char;
+    fn va_shim_error() -> *const c_char;
 }
 
 #[repr(C)]
@@ -94,6 +95,9 @@ fn encoder_exists(name: &str) -> bool {
 fn open_vaapi(device: &Path) -> anyhow::Result<(BufferRef, String)> {
     if !encoder_exists("h264_vaapi") {
         anyhow::bail!("this build has no h264_vaapi encoder");
+    }
+    if let Some(e) = unsafe { ff::opt_str(va_shim_error()) } {
+        anyhow::bail!("can't load libva: {e}");
     }
     let mut buf = ptr::null_mut();
     let dev = ff::cstr(&device.to_string_lossy());
