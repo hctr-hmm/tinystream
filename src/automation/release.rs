@@ -59,6 +59,7 @@ re!(LEADING_GROUP, r"^\s*[\[【]([^\]】]+)[\]】]");
 re!(SCENE_GROUP, r"-([A-Za-z0-9][A-Za-z0-9]*)\s*$");
 re!(TRAILING_TAGS, r"(?:\s*\[[^\]]*\]|\s*\([^)]*\))+\s*$");
 re!(RECAP, r"(?:^|[\s\-_])\d{1,4}\.5(?:[\s\[\(_]|$)");
+re!(MOVIE, r"(?i)\b(?:movie|film|gekijouban)\b");
 
 fn strip_extension(title: &str) -> &str {
     if let Some((stem, ext)) = title.rsplit_once('.')
@@ -165,6 +166,10 @@ pub fn after_title<'a>(name: &'a str, alias: &str) -> Option<&'a str> {
 
 pub fn is_recap(title: &str) -> bool {
     RECAP.is_match(strip_extension(title))
+}
+
+pub fn is_movie(title: &str) -> bool {
+    MOVIE.is_match(strip_extension(title))
 }
 
 re!(SXXEYY, r"^s(\d{1,3})e(\d{1,4})(?:v\d)?(?:e(\d{1,4}))?$");

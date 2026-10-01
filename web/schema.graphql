@@ -1364,6 +1364,7 @@ type Verdict {
 	accepted: Boolean!
 	score: Int!
 	rejections: [String!]!
+	warnings: [String!]!
 }
 
 type Video {

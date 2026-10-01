@@ -120,7 +120,12 @@ impl ShowSearch {
                 attributes,
                 episodes: Vec::new(),
                 batch: false,
-                verdict: Verdict { accepted: false, score: 0, rejections: vec!["doesn't look like this show".into()] },
+                verdict: Verdict {
+                    accepted: false,
+                    score: 0,
+                    rejections: vec!["doesn't look like this show".into()],
+                    warnings: Vec::new(),
+                },
             },
         }
     }
@@ -209,7 +214,10 @@ pub fn sort(c: &mut [Candidate]) {
 pub fn choose(candidates: &[Candidate], wanted: &HashSet<(u32, u32)>) -> Vec<(Candidate, Vec<(u32, u32)>)> {
     let covers =
         |c: &Candidate| -> Vec<(u32, u32)> { c.episodes.iter().filter(|e| wanted.contains(e)).copied().collect() };
-    let ok: Vec<&Candidate> = candidates.iter().filter(|c| c.verdict.accepted && !covers(c).is_empty()).collect();
+    let ok: Vec<&Candidate> = candidates
+        .iter()
+        .filter(|c| c.verdict.accepted && c.verdict.warnings.is_empty() && !covers(c).is_empty())
+        .collect();
     let mut picks: Vec<(Candidate, Vec<(u32, u32)>)> = Vec::new();
     let mut left = wanted.clone();
     if wanted.len() >= 2

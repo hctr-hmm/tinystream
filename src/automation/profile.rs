@@ -3,7 +3,7 @@
 use regex::{Regex, RegexBuilder};
 use serde::Serialize;
 
-use super::release::Attributes;
+use super::release::{Attributes, is_movie};
 use super::sources::Release;
 use crate::config::Profile;
 
@@ -28,7 +28,12 @@ pub struct Verdict {
     pub score: i64,
 
     pub rejections: Vec<String>,
+
+    pub warnings: Vec<String>,
 }
+
+const EPISODE_WARNING: u64 = 3 << 30;
+const MOVIE_WARNING: u64 = 15 << 30;
 
 fn compile(patterns: &[String]) -> Vec<(String, Regex)> {
     patterns
@@ -67,6 +72,7 @@ impl Rules {
 
     pub fn judge(&self, release: &Release, a: &Attributes, episodes: u32, batch: bool) -> Verdict {
         let mut rejections = Vec::new();
+        let mut warnings = Vec::new();
         let mut score: i64 = 0;
 
         match a.resolution {
@@ -109,6 +115,17 @@ impl Rules {
             {
                 rejections.push(format!("{per_episode} MB per episode is over the {max} MB maximum"));
             }
+            let movie = is_movie(&release.title);
+            let limit = if movie { MOVIE_WARNING } else { EPISODE_WARNING };
+            let bytes = (size / episodes.max(1) as i64) as u64;
+            if self.max_size.is_none() && bytes > limit {
+                let gib = bytes as f64 / (1u64 << 30) as f64;
+                warnings.push(if movie {
+                    format!("{gib:.1} GiB for one movie")
+                } else {
+                    format!("{gib:.1} GiB per episode")
+                });
+            }
         }
 
         if let Some(codec) = a.codec
@@ -135,7 +152,7 @@ impl Rules {
             None => {},
         }
 
-        Verdict { accepted: rejections.is_empty(), score, rejections }
+        Verdict { accepted: rejections.is_empty(), score, rejections, warnings }
     }
 }
 
@@ -177,5 +194,20 @@ mod tests {
         let rules = Rules::new(&profile, &[]);
         let v = rules.judge(&release("[G] Show - 05 (1080p) Dub", 1), &attributes("x"), 1, false);
         assert_eq!(v.rejections, vec!["contains “dub”".to_string(), "only 1 seeding".to_string()]);
+    }
+
+    #[test]
+    fn warns_about_huge_releases() {
+        let rules = Rules::new(&Profile::default(), &[]);
+        let sized = |t: &str, size: i64| Release { size: Some(size), ..release(t, 50) };
+        let judge = |t: &str, size: i64, episodes: u32| rules.judge(&sized(t, size), &attributes(t), episodes, false);
+        assert!(judge("[G] Show - 05 (1080p)", 2 << 30, 1).warnings.is_empty());
+        assert_eq!(judge("[G] Show - 05 (1080p)", 60 << 30, 1).warnings, vec!["60.0 GiB per episode".to_string()]);
+        assert!(judge("[G] Show (01-12) (1080p)", 24 << 30, 12).warnings.is_empty());
+        assert!(judge("[G] Show Movie (1080p)", 10 << 30, 1).warnings.is_empty());
+        assert!(!judge("[G] Show Movie (1080p)", 20 << 30, 1).warnings.is_empty());
+
+        let capped = Rules::new(&Profile { max_size: Some(100_000), ..Profile::default() }, &[]);
+        assert!(capped.judge(&sized("[G] Show - 05", 60 << 30), &attributes("x"), 1, false).warnings.is_empty());
     }
 }

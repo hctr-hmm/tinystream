@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { graphql } from '../gql'
 import { type EpisodeState, type Monitor, type ReleaseCandidate, request } from '../lib/api'
 import { bytes, episodeCode, monitorLabels, relative, stateLabels } from '../lib/downloads'
+import { ask } from './feedback'
 import { Squircle } from './Squircle'
 import { Badge, Button, Dialog, IconButton, Input, Segmented, Spinner, Tip } from './ui'
 
@@ -95,6 +96,16 @@ export function ReleaseDialog({
       void qc.invalidateQueries({ queryKey: ['series'] })
     },
   })
+  const download = async (c: ReleaseCandidate) => {
+    const ok =
+      c.verdict.warnings.length === 0 ||
+      (await ask({
+        title: `Download ${bytes(c.release.size)}?`,
+        body: `${c.verdict.warnings.join(', ')}, which is a lot more than usual.`,
+        confirm: 'Download anyway',
+      }))
+    if (ok) grab.mutate(c)
+  }
   const matched = data?.filter((c) => c.episodes.length > 0) ?? []
   const accepted = matched.filter((c) => c.verdict.accepted)
   const rejected = data?.filter((c) => !c.verdict.accepted) ?? []
@@ -155,7 +166,7 @@ export function ReleaseDialog({
         )}
         {data && data.length === 0 && <p className="py-10 text-center text-sm text-ink-3">No results</p>}
         {accepted.map((c, i) => (
-          <ReleaseRow key={c.release.link} c={c} best={i === 0} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
+          <ReleaseRow key={c.release.link} c={c} best={i === 0} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => void download(c)} />
         ))}
         {rejected.length > 0 && (
           <button className="mt-3 w-full py-2 text-left text-xs text-ink-3 hover:text-ink-2" onClick={() => setShowRejected((s) => !s)}>
@@ -164,7 +175,7 @@ export function ReleaseDialog({
         )}
         {showRejected &&
           rejected.map((c) => (
-            <ReleaseRow key={c.release.link} c={c} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
+            <ReleaseRow key={c.release.link} c={c} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => void download(c)} />
           ))}
         {grab.error && <p className="pt-2 text-sm text-danger">{(grab.error as Error).message}</p>}
       </div>
@@ -196,6 +207,11 @@ function ReleaseRow({ c, best, done, busy, onGrab }: { c: ReleaseCandidate; best
             </Badge>
           )}
           {c.episodes.length === 1 && <Badge>{episodeCode(c.episodes[0].season, c.episodes[0].episode)}</Badge>}
+          {c.verdict.warnings.map((why) => (
+            <Badge key={why} tone="warn">
+              {why}
+            </Badge>
+          ))}
           {c.verdict.rejections.map((why) => (
             <Badge key={why} tone="danger">
               {why}
