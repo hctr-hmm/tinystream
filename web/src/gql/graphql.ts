@@ -447,6 +447,14 @@ export type AddSeriesMutationVariables = Exact<{
 
 export type AddSeriesMutation = { addSeries: { id: number } };
 
+export type AiredEpisodesQueryVariables = Exact<{
+  provider: Provider;
+  id: string;
+}>;
+
+
+export type AiredEpisodesQuery = { airedEpisodes: number };
+
 export type CreateRequestMutationVariables = Exact<{
   input: NewRequest;
 }>;
@@ -2083,6 +2091,11 @@ export const AddSeriesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AddSeriesMutation, AddSeriesMutationVariables>;
+export const AiredEpisodesDocument = new TypedDocumentString(`
+    query AiredEpisodes($provider: Provider!, $id: String!) {
+  airedEpisodes(provider: $provider, id: $id)
+}
+    `) as unknown as TypedDocumentString<AiredEpisodesQuery, AiredEpisodesQueryVariables>;
 export const CreateRequestDocument = new TypedDocumentString(`
     mutation CreateRequest($input: NewRequest!) {
   createRequest(input: $input) {

@@ -879,6 +879,7 @@ type Query {
 	home: Home!
 	search(query: String!): SearchResults!
 	discover(library: String, query: String): Discovery!
+	airedEpisodes(provider: Provider!, id: String!): Int!
 	forYou(library: String): ForYou!
 	room(code: String!): Room!
 	clips(scope: ClipScope! = MINE): [Clip!]!

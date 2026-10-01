@@ -23,6 +23,7 @@ type Documents = {
     "\n  mutation UnpublishClip($id: Int!) {\n    updateClip(id: $id, input: { public: false }) {\n      id\n    }\n  }\n": typeof types.UnpublishClipDocument,
     "\n  mutation AdminDeleteClip($id: Int!) {\n    deleteClip(id: $id)\n  }\n": typeof types.AdminDeleteClipDocument,
     "\n  mutation AddSeries($input: NewSeries!) {\n    addSeries(input: $input) {\n      id\n    }\n  }\n": typeof types.AddSeriesDocument,
+    "\n  query AiredEpisodes($provider: Provider!, $id: String!) {\n    airedEpisodes(provider: $provider, id: $id)\n  }\n": typeof types.AiredEpisodesDocument,
     "\n  mutation CreateRequest($input: NewRequest!) {\n    createRequest(input: $input) {\n      id\n    }\n  }\n": typeof types.CreateRequestDocument,
     "\n  mutation SaveSection($patch: ConfigPatch!) {\n    updateSettings(patch: $patch) {\n      raw\n    }\n  }\n": typeof types.SaveSectionDocument,
     "\n  query SettingsEngine {\n    downloadEngine {\n      downloadPath\n      killSwitch\n    }\n  }\n": typeof types.SettingsEngineDocument,
@@ -162,6 +163,7 @@ const documents: Documents = {
     "\n  mutation UnpublishClip($id: Int!) {\n    updateClip(id: $id, input: { public: false }) {\n      id\n    }\n  }\n": types.UnpublishClipDocument,
     "\n  mutation AdminDeleteClip($id: Int!) {\n    deleteClip(id: $id)\n  }\n": types.AdminDeleteClipDocument,
     "\n  mutation AddSeries($input: NewSeries!) {\n    addSeries(input: $input) {\n      id\n    }\n  }\n": types.AddSeriesDocument,
+    "\n  query AiredEpisodes($provider: Provider!, $id: String!) {\n    airedEpisodes(provider: $provider, id: $id)\n  }\n": types.AiredEpisodesDocument,
     "\n  mutation CreateRequest($input: NewRequest!) {\n    createRequest(input: $input) {\n      id\n    }\n  }\n": types.CreateRequestDocument,
     "\n  mutation SaveSection($patch: ConfigPatch!) {\n    updateSettings(patch: $patch) {\n      raw\n    }\n  }\n": types.SaveSectionDocument,
     "\n  query SettingsEngine {\n    downloadEngine {\n      downloadPath\n      killSwitch\n    }\n  }\n": types.SettingsEngineDocument,
@@ -325,6 +327,10 @@ export function graphql(source: "\n  mutation AdminDeleteClip($id: Int!) {\n    
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AddSeries($input: NewSeries!) {\n    addSeries(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AddSeriesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AiredEpisodes($provider: Provider!, $id: String!) {\n    airedEpisodes(provider: $provider, id: $id)\n  }\n"): typeof import('./graphql').AiredEpisodesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

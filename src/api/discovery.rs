@@ -427,6 +427,20 @@ impl DiscoveryQuery {
         Ok(Discovery { library, results })
     }
 
+    async fn aired_episodes(&self, ctx: &Context<'_>, provider: Provider, id: String) -> ApiResult<i64> {
+        let state = ctx.state();
+        if !ctx.user()?.permissions.manage_shows {
+            return Err(ApiError::forbidden());
+        }
+        let schedule = state
+            .metadata
+            .schedule(state, provider, &id, &Default::default())
+            .await
+            .map_err(|e| ApiError::bad_request(format!("{e:#}")))?;
+        let aired = schedule.seasons.iter().filter(|s| s.number > 0).flat_map(|s| &s.airing).filter(|e| e.aired);
+        Ok(aired.count() as i64)
+    }
+
     async fn for_you(&self, ctx: &Context<'_>, library: Option<String>) -> ApiResult<ForYou> {
         for_you(ctx.state(), ctx.user()?, library).await
     }
