@@ -538,14 +538,14 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                 {live && (
                   <MenuItem onClick={() => (close(), act.mutate('recheck'))}>
                     <span className="flex items-center gap-2">
-                      <RefreshCw className="size-3.5" /> Check files again
+                      <RefreshCw className="size-3.5 shrink-0" /> Check files again
                     </span>
                   </MenuItem>
                 )}
                 {d.finishedAt && d.importState !== 'DONE' && d.state !== 'REMOVED' && (
                   <MenuItem onClick={() => (close(), act.mutate('import'))}>
                     <span className="flex items-center gap-2">
-                      <FolderInput className="size-3.5" /> Import into the library
+                      <FolderInput className="size-3.5 shrink-0" /> Import into the library
                     </span>
                   </MenuItem>
                 )}
@@ -553,7 +553,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                   <>
                     <MenuItem onClick={() => (close(), remove.mutate(false))}>
                       <span className="flex items-center gap-2">
-                        <Trash2 className="size-3.5" /> Remove, keep its files
+                        <Trash2 className="size-3.5 shrink-0" /> Remove, keep its files
                       </span>
                     </MenuItem>
                     <MenuItem
@@ -569,7 +569,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                       }}
                     >
                       <span className="flex items-center gap-2 text-danger">
-                        <Trash2 className="size-3.5" /> Remove and delete download
+                        <Trash2 className="size-3.5 shrink-0" /> Remove and delete download
                       </span>
                     </MenuItem>
                   </>
