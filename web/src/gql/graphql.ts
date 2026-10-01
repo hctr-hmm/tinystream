@@ -5,76 +5,44 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type AutomationConfigInput = {
-  /** How shows you add are monitored, unless you pick something else. */
   defaultMonitor: Monitor;
-  /** Suggest fixes for badly named files in every library. */
   renameSuggestions: boolean;
-  /**
-   * Searches after an episode airs. After the last step it's "missing"
-   * (feeds are still watched for it).
-   */
   retry: Array<RetryStepInput>;
-  /** How often every source's feed is checked for new releases. */
   rssInterval: string;
 };
 
 export type ChangedList =
-  /** A download was added, finished, imported or removed. */
   | 'DOWNLOADS'
-  /** Your notifications were read, cleared or withdrawn. */
   | 'NOTIFICATIONS'
   | 'RENAME_SUGGESTIONS'
   | 'REQUESTS'
-  /** Someone's account, picture or permissions changed (or the defaults did). */
   | 'USERS';
 
-/** Changes to a clip; what's left out stays as it is. */
 export type ClipPatch = {
   name?: string | null | undefined;
   public?: boolean | null | undefined;
-  /** A new range, tracks or quality: renders again. */
   recipe?: RecipeInput | null | undefined;
 };
 
 export type ClipScope =
-  /** Yours. */
   | 'MINE'
-  /** Sent to you. */
   | 'RECEIVED'
-  /** Yours that you've sent to people. */
   | 'SENT';
 
 export type ClipState =
-  /** Its render was dropped to make room; it renders again when opened. */
   | 'EVICTED'
   | 'FAILED'
   | 'QUEUED'
   | 'READY'
   | 'RENDERING';
 
-/**
- * Clipping. How long clips can be and how much room each person gets are
- * permissions (Settings → People); these are the server-wide parts.
- */
 export type ClipsConfigInput = {
-  /** Clips rendered at the same time; the rest wait their turn. */
   concurrency: number;
-  /**
-   * The font for subtitles whose font isn't available. Defaults to a
-   * built-in Noto Sans, which has no CJK.
-   */
   defaultFont?: string | null | undefined;
   enabled: boolean;
-  /** Extra fonts for burned-in subtitles (CJK, Arabic, ...), found by name. */
   fontsDir?: string | null | undefined;
-  /**
-   * Space all rendered clips together may take, in MB; 0 is no limit.
-   * Least recently watched renders go first.
-   */
   maxStorage: number;
-  /** Where rendered clips are kept. Defaults to `clips` in the data directory. */
   path?: string | null | undefined;
-  /** Whether clips can have links anyone can open, without an account. */
   publicLinks: boolean;
 };
 
@@ -82,7 +50,6 @@ export type Confidence =
   | 'HIGH'
   | 'LOW';
 
-/** Sections of config.toml to replace; the rest stay as they are. */
 export type ConfigPatch = {
   automation?: AutomationConfigInput | null | undefined;
   clips?: ClipsConfigInput | null | undefined;
@@ -104,25 +71,15 @@ export type DownloadState =
   | 'SEEDING';
 
 export type DownloadsConfigInput = {
-  /**
-   * A network interface (a VPN like "wg0") all torrent traffic must use.
-   * When it goes down, every torrent pauses until it's back.
-   */
   bindInterface?: string | null | undefined;
   dht: boolean;
-  /** KiB/s; 0 is unlimited. */
   downloadLimit: number;
   import: ImportMode;
-  /** Torrents downloading at once; the rest wait their turn. */
   maxActive: number;
-  /** Where torrents download to. Defaults to `downloads` in the data folder. */
   path?: string | null | undefined;
-  /** The port other peers connect to; 0 picks one at random. */
   port: number;
-  /** socks5://user:pass@host:1080 or http://host:8080 */
   proxy?: string | null | undefined;
   seeding: SeedingInput;
-  /** Slower limits for part of the day, e.g. "08:00" to "23:00". */
   slowDownloadLimit: number;
   slowFrom?: string | null | undefined;
   slowTo?: string | null | undefined;
@@ -131,35 +88,24 @@ export type DownloadsConfigInput = {
   upnp: boolean;
 };
 
-/** A season and episode number. */
 export type EpisodeNumberInput = {
   episode: number;
   season: number;
 };
 
 export type EpisodeState =
-  /** In the library. */
   | 'DONE'
   | 'GRABBED'
-  /** Not monitored. */
   | 'IDLE'
-  /** Searched for until the retry schedule ran out. */
   | 'MISSING'
-  /** Being searched for. */
   | 'WANTED';
 
 export type Hardware =
-  /** Use VA-API when it works, software otherwise. */
   | 'AUTO'
   | 'SOFTWARE'
   | 'VAAPI';
 
-/** How finished downloads get into a library. */
 export type ImportMode =
-  /**
-   * Hardlink when possible (no extra space, seeding keeps working), else
-   * copy while seeding, else move once nothing needs the download anymore.
-   */
   | 'AUTO'
   | 'COPY'
   | 'HARDLINK'
@@ -184,54 +130,38 @@ export type LogConfigInput = {
   level: string;
 };
 
-/** How a title's details were found. */
 export type MatchState =
-  /** Someone picked the match by hand. */
   | 'MANUAL'
   | 'MATCHED'
-  /** Waiting its turn to be looked up. */
   | 'PENDING'
-  /** Nothing fit; it keeps its folder name. */
   | 'UNMATCHED';
 
 export type MetadataConfigInput = {
-  /** Preferred language for titles and descriptions (TMDB only). */
   language: string;
   tmdbApiKey?: string | null | undefined;
 };
 
 export type MetadataStatus =
   | 'FAILED'
-  /** Its details are being fetched; `UPDATED` or `FAILED` follows. */
   | 'FETCHING'
   | 'UPDATED';
 
 export type Monitor =
-  /** New episodes, as they air. */
   | 'FUTURE'
-  /** New episodes, and any aired episode the library doesn't have. */
   | 'MISSING'
-  /** Nothing is downloaded automatically. */
   | 'NONE';
 
 export type NetworkConfigInput = {
-  /** Origins allowed to call the API from another site. `["*"]` allows any. */
   cors: Array<string>;
   host: string;
   port: number;
 };
 
-/** A clip: what to cut, and how. */
 export type NewClip = {
   name?: string;
   public?: boolean;
   recipe: RecipeInput;
-  /** People to send it to right away. */
   recipients?: Array<number>;
-  /**
-   * Clipping from a watch-together room: what's on there, even from a
-   * library you can't browse.
-   */
   room?: string | null | undefined;
   videoId: number;
 };
@@ -248,26 +178,21 @@ export type NewRequest = {
 
 export type NewRoom = {
   paused?: boolean;
-  /** Where to start, in seconds. */
   position?: number;
-  /** Whether anyone with the link can join, without an account. */
   public?: boolean;
   tracks?: TracksInput;
   videoId: number;
 };
 
 export type NewScreenshot = {
-  /** Seconds into the video. */
   at: number;
   room?: string | null | undefined;
-  /** A subtitle track to burn in. */
   subtitles?: string | null | undefined;
   videoId: number;
 };
 
 export type NewSeries = {
   library: string;
-  /** The server's default when left out. */
   monitor?: Monitor | null | undefined;
   name: string;
   overview?: string | null | undefined;
@@ -286,29 +211,21 @@ export type NewUser = {
 };
 
 export type NotificationKind =
-  /** An episode of a show you watch aired. */
   | 'AIRED'
-  /** Someone sent you a clip or a screenshot. */
   | 'CLIP'
-  /** A clip of yours finished rendering. */
   | 'CLIP_READY'
-  /** Someone wants to watch with you. */
   | 'INVITE'
   | 'OTHER'
-  /** New episodes landed in the library. */
   | 'READY'
-  /** Someone asked for a show. */
   | 'REQUEST'
   | 'REQUEST_APPROVED'
   | 'REQUEST_DECLINED';
 
-/** How a show's episodes are numbered in releases. */
 export type Numbering =
   | 'ABSOLUTE'
   | 'AUTO'
   | 'SEASONAL';
 
-/** One person's departures from the defaults. `None` follows the default. */
 export type PermissionOverridesInput = {
   allLibraries?: boolean | null | undefined;
   autoApprove?: boolean | null | undefined;
@@ -329,65 +246,35 @@ export type PermissionOverridesInput = {
 };
 
 export type PermissionsInput = {
-  /** Every library, including ones added later. */
   allLibraries: boolean;
-  /** Their requests are approved right away. */
   autoApprove: boolean;
-  /** Make clips. */
   clip: boolean;
-  /**
-   * Rendered clips they can keep; 0 is no limit. Past it, the least
-   * recently watched render goes (the clip stays, and renders again).
-   */
   clipLimit: number;
-  /** Give clips links anyone can open, without an account. */
   clipLinks: boolean;
-  /** The longest clip they can make, in seconds; 0 is no limit. */
   clipMaxLength: number;
-  /** Space their rendered clips can take, in MB; 0 is no limit. */
   clipStorage: number;
-  /** See and control downloads. */
   downloads: boolean;
-  /** Fix what a title was matched to, and refresh its details. */
   editMetadata: boolean;
-  /** The libraries they can see, when not `all_libraries`. */
   libraries: Array<string>;
-  /** See everyone's requests, and approve or decline them. */
   manageRequests: boolean;
-  /** Add shows directly, choose what's monitored, search for episodes. */
   manageShows: boolean;
-  /** Ask for shows to be added. */
   request: boolean;
-  /** Requests they can have waiting at once; 0 is no limit. */
   requestLimit: number;
-  /** Make links anyone can watch from, without an account. */
   shareLinks: boolean;
-  /** Start watching with others, and invite people on this server. */
   watchTogether: boolean;
 };
 
-/** What a good release looks like. */
 export type ProfileInput = {
-  /** Allow season packs (used to fill in missing episodes). */
   batches: boolean;
-  /** Codecs, most preferred first ("hevc", "av1", "h264"). */
   codecs: Array<string>;
-  /** Release groups, most preferred first. */
   groups: Array<string>;
   maxSize?: number | null | undefined;
   minSeeders: number;
-  /** Size limits per episode, in MB. */
   minSize?: number | null | undefined;
   name: string;
   preferDualAudio: boolean;
-  /** ...and must not. */
   reject: Array<string>;
-  /** Words (or regular expressions) a release must contain... */
   require: Array<string>;
-  /**
-   * Allowed resolutions, best first ("2160p", "1080p", "720p", "480p").
-   * Empty allows any.
-   */
   resolutions: Array<string>;
 };
 
@@ -395,29 +282,20 @@ export type Provider =
   | 'ANILIST'
   | 'TMDB';
 
-/** What a clip is: a range of a video, its tracks, and its quality. */
 export type RecipeInput = {
-  /** The audio track's index. */
   audio?: number | null | undefined;
   end: number;
   halfRate?: boolean;
-  /** 1080, 720 or 480. */
   height: number;
-  /** Seconds into the video. */
   start: number;
-  /** A subtitle track to burn in. */
   subtitles?: string | null | undefined;
 };
 
-/** One result from a source. */
 export type ReleaseInput = {
   infoHash?: string | null | undefined;
   leechers?: number | null | undefined;
-  /** A .torrent URL or a magnet link. */
   link: string;
-  /** The release's page on the source, for people. */
   page?: string | null | undefined;
-  /** Unix time. */
   published?: number | null | undefined;
   seeders?: number | null | undefined;
   size?: number | null | undefined;
@@ -431,48 +309,30 @@ export type RequestState =
   | 'PENDING';
 
 export type RequestsConfigInput = {
-  /** How approved requests are monitored. */
   monitor: Monitor;
 };
 
-/**
- * One step of the search schedule after an episode airs: search every
- * `every` until `until` has passed since it aired.
- */
 export type RetryStepInput = {
   every: string;
   until: string;
 };
 
 export type ScanConfigInput = {
-  /**
-   * Also do a full rescan this often (useful for network mounts where
-   * change notifications don't work), e.g. "6h".
-   */
   interval?: string | null | undefined;
-  /** Rescan when files change on disk. */
   watch: boolean;
 };
 
 export type SeedAction =
-  /** Stop the torrent but keep it (and its files) around. */
   | 'PAUSE'
-  /** Remove the torrent and its copy in the download folder. The library copy stays. */
   | 'REMOVE';
 
-/**
- * When to stop seeding. Whichever limit is reached first wins; with none
- * set, a torrent seeds forever.
- */
 export type SeedingInput = {
-  /** Stop when nobody has downloaded from us for this long. */
   idle?: string | null | undefined;
   ratio?: number | null | undefined;
   then: SeedAction;
   time?: string | null | undefined;
 };
 
-/** Changes to a managed show. Left out stays as it is; null clears it. */
 export type SeriesPatch = {
   aliases?: Array<string> | null | undefined;
   groups?: Array<string> | null | undefined;
@@ -484,36 +344,22 @@ export type SeriesPatch = {
   sources?: Array<string> | null | undefined;
 };
 
-/** Somewhere releases come from. tinystream ships with none. */
 export type SourceInput = {
   apiKey?: string | null | undefined;
-  /** Torznab categories to search, e.g. [5070] for anime. */
   categories: Array<number>;
   downloadPath?: string | null | undefined;
   enabled?: boolean;
-  /**
-   * RSS: the feed of new releases, checked regularly. Defaults to the
-   * search URL with an empty query.
-   */
   feed?: string | null | undefined;
   kind: SourceKind;
   name: string;
-  /**
-   * Overrides [downloads.seeding] for torrents from here (private
-   * trackers usually have their own rules).
-   */
   seeding?: SeedingInput | null | undefined;
-  /** Torznab: the API endpoint. RSS: the search URL, with `{query}`. */
   url: string;
 };
 
 export type SourceKind =
-  /** An RSS feed with a search URL, `{query}` marking where the search goes. */
   | 'RSS'
-  /** A Torznab API (many trackers speak it natively). */
   | 'TORZNAB';
 
-/** Whether the video a clip was cut from is still there, and still the same. */
 export type SourceStatus =
   | 'CHANGED'
   | 'GONE'
@@ -526,15 +372,12 @@ export type TitleKind =
 export type TorrentStage =
   | 'CHECKING'
   | 'DOWNLOADING'
-  /** Fetching the torrent's metadata from peers. */
   | 'METADATA'
   | 'SEEDING';
 
-/** Tracks everyone gets unless they pick their own. */
 export type TracksInput = {
   audio?: number | null | undefined;
   audioLanguage?: string | null | undefined;
-  /** Null is off. */
   subtitle?: string | null | undefined;
   subtitleLanguage?: string | null | undefined;
 };
@@ -544,12 +387,9 @@ export type TranscodeConfigInput = {
   vaapiDevice: string;
 };
 
-/** Changes to an account; what's left out stays as it is. */
 export type UserPatch = {
   isAdmin?: boolean | null | undefined;
-  /** Signs them out everywhere (unless it's you). */
   password?: string | null | undefined;
-  /** Replaces all of their overrides. */
   permissions?: PermissionOverridesInput | null | undefined;
   username?: string | null | undefined;
 };
