@@ -28,6 +28,7 @@ pub struct Verdict {
     pub score: i64,
 
     pub rejections: Vec<String>,
+    pub warnings: Vec<String>,
 }
 
 fn compile(patterns: &[String]) -> Vec<(String, Regex)> {
@@ -135,7 +136,7 @@ impl Rules {
             None => {},
         }
 
-        Verdict { accepted: rejections.is_empty(), score, rejections }
+        Verdict { accepted: rejections.is_empty(), score, rejections, warnings: Vec::new() }
     }
 }
 

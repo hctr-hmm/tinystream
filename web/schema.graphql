@@ -2720,6 +2720,7 @@ type Verdict {
 	Why it was turned down.
 	"""
 	rejections: [String!]!
+	warnings: [String!]!
 }
 
 type Video {

@@ -70,7 +70,7 @@ impl Show {
             return None;
         }
         let numbers = release::numbers(&rest)?;
-        let Match { episodes, batch } = self.matcher.map(folder_season.map(Scope::season), numbers)?;
+        let Match { episodes, batch, .. } = self.matcher.map(folder_season.map(Scope::season), numbers)?;
         if batch || episodes.len() != 1 {
             return None;
         }

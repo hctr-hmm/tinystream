@@ -222,10 +222,7 @@ pub async fn plan(
     let mut plan = Vec::new();
     for f in &videos {
         let file_name = Path::new(&f.path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        let hit = matcher
-            .matches_file(&file_name)
-            .map(|m| m.episodes)
-            .or_else(|| (videos.len() == 1 && grabbed_for.len() == 1).then(|| grabbed_for.to_vec()));
+        let hit = file_episodes(&matcher, &file_name, videos.len(), grabbed_for);
         let Some(&(season, episode)) = hit.as_ref().and_then(|h| h.first()) else {
             tracing::info!("{file_name}: can't tell which episode this is; leaving it in the download folder");
             continue;
@@ -283,6 +280,13 @@ pub async fn plan(
     Ok(plan)
 }
 
+fn file_episodes(matcher: &Matcher, name: &str, videos: usize, grabbed_for: &[(u32, u32)]) -> Option<Vec<(u32, u32)>> {
+    if videos == 1 && grabbed_for.len() == 1 {
+        return Some(grabbed_for.to_vec());
+    }
+    matcher.matches_file(name).map(|m| m.episodes)
+}
+
 fn file_stem(path: &str) -> String {
     Path::new(path).file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default()
 }
@@ -299,4 +303,20 @@ async fn already_have(state: &AppState, show_path: &str, season: u32, episode: u
     .await
     .context("checking the library")?;
     Ok(n > 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::matching::Numbering;
+    use super::*;
+
+    #[test]
+    fn selected_episode_takes_precedence_for_a_single_video() {
+        let matcher = Matcher::new(&[], &[], Default::default(), Numbering::Auto);
+        assert_eq!(file_episodes(&matcher, "S01E18.mkv", 1, &[(4, 18)]), Some(vec![(4, 18)]));
+        assert_eq!(file_episodes(&matcher, "unknown.mkv", 1, &[(4, 18)]), Some(vec![(4, 18)]));
+        assert_eq!(file_episodes(&matcher, "S01E18.mkv", 2, &[(4, 18)]), Some(vec![(1, 18)]));
+        assert_eq!(file_episodes(&matcher, "S01E18.mkv", 1, &[]), Some(vec![(1, 18)]));
+        assert_eq!(file_episodes(&matcher, "unknown.mkv", 2, &[(4, 18)]), None);
+    }
 }

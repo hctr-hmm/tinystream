@@ -105,8 +105,11 @@ impl ShowSearch {
     pub fn judge(&self, release: Release) -> Candidate {
         let attributes = release::attributes(&release.title);
         match self.matcher.matches(&release.title) {
-            Some(Match { episodes, batch }) => {
+            Some(Match { episodes, batch, nonstandard }) => {
                 let mut verdict = self.rules.judge(&release, &attributes, episodes.len() as u32, batch);
+                if nonstandard {
+                    verdict.warnings.push("Best to avoid: nonstandard episode numbering".into());
+                }
 
                 if self.pinned
                     && let Some(i) = self.sources.iter().position(|s| s.name == release.source)
@@ -120,7 +123,14 @@ impl ShowSearch {
                 attributes,
                 episodes: Vec::new(),
                 batch: false,
-                verdict: Verdict { accepted: false, score: 0, rejections: vec!["doesn't look like this show".into()] },
+                verdict: Verdict {
+                    accepted: false,
+                    score: 0,
+                    rejections: vec![
+                        "Couldn't resolve this show's season and episode; choose them manually or search again".into(),
+                    ],
+                    warnings: Vec::new(),
+                },
             },
         }
     }
@@ -201,6 +211,7 @@ pub fn sort(c: &mut [Candidate]) {
         b.verdict
             .accepted
             .cmp(&a.verdict.accepted)
+            .then(a.verdict.warnings.len().cmp(&b.verdict.warnings.len()))
             .then(b.verdict.score.cmp(&a.verdict.score))
             .then(b.release.seeders.cmp(&a.release.seeders))
     });
@@ -215,7 +226,7 @@ pub fn choose(candidates: &[Candidate], wanted: &HashSet<(u32, u32)>) -> Vec<(Ca
     if wanted.len() >= 2
         && let Some(pack) = ok
             .iter()
-            .filter(|c| c.batch && covers(c).len() * 2 >= wanted.len().max(2))
+            .filter(|c| c.batch && c.verdict.warnings.is_empty() && covers(c).len() * 2 >= wanted.len().max(2))
             .max_by_key(|c| (covers(c).len(), c.verdict.score))
     {
         let got = covers(pack);
@@ -230,7 +241,10 @@ pub fn choose(candidates: &[Candidate], wanted: &HashSet<(u32, u32)>) -> Vec<(Ca
         if picks.iter().any(|(_, got)| got.contains(&e)) {
             continue;
         }
-        let best = ok.iter().filter(|c| c.episodes.contains(&e)).max_by_key(|c| (!c.batch, c.verdict.score));
+        let best = ok
+            .iter()
+            .filter(|c| c.episodes.contains(&e))
+            .max_by_key(|c| (c.verdict.warnings.is_empty(), !c.batch, c.verdict.score));
         if let Some(c) = best {
             picks.push(((*c).clone(), covers(c)));
         }
@@ -346,4 +360,79 @@ pub async fn grab(state: &Arc<AppState>, g: Grab) -> anyhow::Result<i64> {
     tracing::info!("downloading {} from {}", g.release.title, g.release.source);
     state.events.send(Event::DownloadsChanged);
     Ok(id)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+
+    fn search() -> ShowSearch {
+        ShowSearch {
+            matcher: Matcher::new(
+                &["Show".into()],
+                &[],
+                BTreeMap::from([(1, Some(24)), (4, Some(24))]),
+                matching::Numbering::Auto,
+            ),
+            rules: Rules::new(&crate::config::Profile::default(), &[]),
+            sources: Vec::new(),
+            pinned: false,
+        }
+    }
+
+    fn release(title: &str) -> Release {
+        Release {
+            title: title.into(),
+            source: "test".into(),
+            link: title.into(),
+            info_hash: None,
+            size: None,
+            seeders: Some(10),
+            leechers: None,
+            published: None,
+            page: None,
+        }
+    }
+
+    #[test]
+    fn nonstandard_numbering_ranks_below_clear_numbering() {
+        let search = search();
+        let mut odd = search.judge(release("Show 4th_18 1080p"));
+        assert_eq!(odd.episodes, vec![(4, 18)]);
+        assert!(odd.verdict.accepted);
+        assert!(!odd.verdict.warnings.is_empty());
+        odd.verdict.score = i64::MAX;
+        let clear = search.judge(release("Show S04E18 720p"));
+        let mut candidates = vec![odd, clear];
+        sort(&mut candidates);
+        assert_eq!(candidates[0].release.title, "Show S04E18 720p");
+        let picked = choose(&candidates, &HashSet::from([(4, 18)]));
+        assert_eq!(picked[0].0.release.title, "Show S04E18 720p");
+    }
+
+    #[test]
+    fn nonstandard_pack_is_only_a_fallback() {
+        let search = search();
+        let pack = search.judge(release("Show 4th_18-19 1080p"));
+        let wanted = HashSet::from([(4, 18), (4, 19)]);
+        let candidates =
+            vec![pack.clone(), search.judge(release("Show S04E18 720p")), search.judge(release("Show S04E19 720p"))];
+        let picked = choose(&candidates, &wanted);
+        assert_eq!(picked.len(), 2);
+        assert!(picked.iter().all(|(c, _)| c.verdict.warnings.is_empty()));
+        let picked = choose(&[pack], &wanted);
+        assert_eq!(picked.len(), 1);
+        assert_eq!(picked[0].1, vec![(4, 18), (4, 19)]);
+    }
+
+    #[test]
+    fn unresolved_numbering_requires_manual_selection() {
+        let candidate = search().judge(release("Show 4th_unknown_18"));
+        assert!(candidate.episodes.is_empty());
+        assert!(!candidate.verdict.accepted);
+        assert!(candidate.verdict.rejections[0].contains("manually"));
+        assert!(choose(&[candidate], &HashSet::from([(1, 18)])).is_empty());
+    }
 }

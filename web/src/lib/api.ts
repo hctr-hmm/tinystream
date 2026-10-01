@@ -500,6 +500,7 @@ graphql(`
       accepted
       score
       rejections
+      warnings
     }
   }
 `)

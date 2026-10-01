@@ -86,11 +86,15 @@ export function ReleaseDialog({
     gcTime: 0,
   })
   const [grabbed, setGrabbed] = useState<Set<string>>(new Set())
+  const [manual, setManual] = useState<ReleaseCandidate | null>(null)
+  const [manualSeason, setManualSeason] = useState(String(season))
+  const [manualEpisode, setManualEpisode] = useState(episodes.length === 1 ? String(episodes[0]) : '')
   const grab = useMutation({
     mutationFn: (c: ReleaseCandidate) =>
       request(GrabRelease, { release: c.release, seriesId, episodes: c.episodes }),
     onSuccess: (_, c) => {
       setGrabbed((g) => new Set(g).add(c.release.link))
+      setManual(null)
       void qc.invalidateQueries({ queryKey: ['downloads'] })
       void qc.invalidateQueries({ queryKey: ['series'] })
     },
@@ -100,8 +104,12 @@ export function ReleaseDialog({
   const rejected = data?.filter((c) => !c.verdict.accepted) ?? []
   const what = episodes.length === 1 ? episodeCode(season, episodes[0]) : `season ${season}`
   // Drop what's shown so a fresh search looks like one.
-  const refresh = () => void qc.resetQueries({ queryKey, exact: true })
+  const refresh = () => {
+    setManual(null)
+    void qc.resetQueries({ queryKey, exact: true })
+  }
   const submit = () => {
+    setManual(null)
     const q = draft.trim()
     if (q === query) refresh()
     else setQuery(q)
@@ -142,6 +150,34 @@ export function ReleaseDialog({
         </Button>
       </form>
 
+      {manual && (
+        <form
+          className="mt-3 space-y-3 rounded-xl bg-panel p-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const s = Number(manualSeason)
+            const ep = Number(manualEpisode)
+            if (!manualSeason.trim() || !manualEpisode.trim() || !Number.isInteger(s) || !Number.isInteger(ep) || s < 0 || s > 999 || ep < 1 || ep > 9999) return
+            grab.mutate({ ...manual, episodes: [{ season: s, episode: ep }] })
+          }}
+        >
+          <p className="text-sm text-ink-2">Couldn't resolve the episode for {manual.release.title}. Choose it below, or search for another release.</p>
+          <p className="text-xs text-ink-3">For a single-episode release only.</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="w-24 text-xs text-ink-3">
+              Season
+              <Input type="number" min={0} max={999} required value={manualSeason} onChange={(e) => setManualSeason(e.target.value)} />
+            </label>
+            <label className="w-24 text-xs text-ink-3">
+              Episode
+              <Input type="number" min={1} max={9999} required value={manualEpisode} onChange={(e) => setManualEpisode(e.target.value)} />
+            </label>
+            <Button type="submit" disabled={grab.isPending}>Download this episode</Button>
+            <Button type="button" variant="plain" disabled={grab.isPending} onClick={() => setManual(null)}>Cancel</Button>
+          </div>
+        </form>
+      )}
+
       <div className="mt-4 max-h-[62vh] space-y-1 overflow-y-auto">
         {isFetching && !data && (
           <div className="grid place-items-center py-16 text-ink-3">
@@ -155,7 +191,7 @@ export function ReleaseDialog({
         )}
         {data && data.length === 0 && <p className="py-10 text-center text-sm text-ink-3">No results</p>}
         {accepted.map((c, i) => (
-          <ReleaseRow key={c.release.link} c={c} best={i === 0} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
+          <ReleaseRow key={c.release.link} c={c} best={i === 0 && c.verdict.warnings.length === 0} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
         ))}
         {rejected.length > 0 && (
           <button className="mt-3 w-full py-2 text-left text-xs text-ink-3 hover:text-ink-2" onClick={() => setShowRejected((s) => !s)}>
@@ -164,7 +200,14 @@ export function ReleaseDialog({
         )}
         {showRejected &&
           rejected.map((c) => (
-            <ReleaseRow key={c.release.link} c={c} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => grab.mutate(c)} />
+            <ReleaseRow key={c.release.link} c={c} done={grabbed.has(c.release.link)} busy={grab.isPending} onGrab={() => {
+              if (c.episodes.length > 0) grab.mutate(c)
+              else {
+                setManual(c)
+                setManualSeason(String(season))
+                setManualEpisode(episodes.length === 1 ? String(episodes[0]) : '')
+              }
+            }} />
           ))}
         {grab.error && <p className="pt-2 text-sm text-danger">{(grab.error as Error).message}</p>}
       </div>
@@ -196,9 +239,14 @@ function ReleaseRow({ c, best, done, busy, onGrab }: { c: ReleaseCandidate; best
             </Badge>
           )}
           {c.episodes.length === 1 && <Badge>{episodeCode(c.episodes[0].season, c.episodes[0].episode)}</Badge>}
+          {c.verdict.warnings.map((why) => (
+            <Badge key={why} tone="warn" title={why}>
+              <span className="max-w-36 truncate sm:max-w-none">{why}</span>
+            </Badge>
+          ))}
           {c.verdict.rejections.map((why) => (
-            <Badge key={why} tone="danger">
-              {why}
+            <Badge key={why} tone="danger" title={why}>
+              <span className="max-w-36 truncate sm:max-w-none">{why}</span>
             </Badge>
           ))}
         </div>
@@ -231,9 +279,9 @@ function ReleaseRow({ c, best, done, busy, onGrab }: { c: ReleaseCandidate; best
           </a>
         </Tip>
       )}
-      <Button variant={best ? 'primary' : 'quiet'} size="sm" disabled={done || busy || c.episodes.length === 0} onClick={onGrab}>
+      <Button variant={best ? 'primary' : 'quiet'} size="sm" disabled={done || busy} onClick={onGrab}>
         {done ? <Check className="size-3.5" /> : <ArrowDownToLine className="size-3.5" />}
-        {done ? 'Added' : 'Download'}
+        {done ? 'Added' : c.episodes.length === 0 ? 'Choose episode' : 'Download'}
       </Button>
     </Squircle>
   )
