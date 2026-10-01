@@ -109,7 +109,7 @@ function DownloadsPage() {
   useTitle('Downloads')
   const qc = useQueryClient()
   const { data, dataUpdatedAt } = useQuery({ queryKey: ['downloads'], queryFn: async () => (await request(DownloadsQuery)).downloads, refetchInterval: POLL })
-  const { data: engine, dataUpdatedAt: engineAt } = useQuery({
+  const { data: engine, dataUpdatedAt: engineAt, isPending: enginePending } = useQuery({
     queryKey: ['engine'],
     queryFn: async () => (await request(EngineQuery)).downloadEngine,
     refetchInterval: POLL,
@@ -131,9 +131,9 @@ function DownloadsPage() {
     onError: toastError,
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
-  const arrived = useArrived(!!data)
+  const arrived = useArrived(!!data && !enginePending)
 
-  if (!data) return <ListSkeleton rows={3} />
+  if (!data || enginePending) return <ListSkeleton rows={3} />
 
   return (
     <Page arrive={arrived}>
@@ -213,8 +213,8 @@ function Traffic({ engine, stamp, downloads }: { engine: EngineOverview; stamp: 
   const shared = downloads.reduce((n, d) => n + (d.live?.uploaded ?? 0), 0)
   return (
     <Squircle radius={18} edge className="relative mb-11 overflow-hidden bg-raised">
-      <Sparkline values={down} max={max} className="absolute inset-x-0 bottom-0 h-20 w-full" />
-      <Sparkline values={up} max={max} color="var(--color-ok)" className="absolute inset-x-0 bottom-0 h-20 w-full opacity-80" />
+      <Sparkline values={down} interval={POLL} max={max} className="absolute inset-x-0 bottom-0 h-20 w-full" />
+      <Sparkline values={up} interval={POLL} max={max} color="var(--color-ok)" className="absolute inset-x-0 bottom-0 h-20 w-full opacity-80" />
       <div className="relative flex flex-wrap items-end gap-x-10 gap-y-4 p-5 pb-8">
         <Stat label="Download" tone="text-sky-300" icon={<ArrowDown className="size-5" />} value={speed(engine.downloadRate)} />
         <Stat label="Upload" tone="text-ok" icon={<ArrowUp className="size-5" />} value={speed(engine.uploadRate)} />
@@ -617,7 +617,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                   </span>
                 )}
               </div>
-              {rates.length > 1 && <Sparkline values={rates} className="hidden h-7 w-32 shrink-0 sm:block" />}
+              {rates.length > 0 && <Sparkline values={rates} interval={POLL} fade className="hidden h-7 w-32 shrink-0 sm:block" />}
             </div>
           </div>
         )}
