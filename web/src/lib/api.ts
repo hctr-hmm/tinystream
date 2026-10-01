@@ -461,6 +461,7 @@ graphql(`
       grabbed
       total
       upcoming
+      skipped
     }
     episodes {
       ...SeriesEpisodeFields

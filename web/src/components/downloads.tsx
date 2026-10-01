@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownToLine, Check, CircleAlert, ExternalLink, Layers, RefreshCw, Search, Sprout, Users } from 'lucide-react'
+import { ArrowDownToLine, Check, CircleAlert, ExternalLink, Layers, RefreshCw, Search, Sprout, Trash2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { graphql } from '../gql'
 import { type EpisodeState, type Monitor, type ReleaseCandidate, request } from '../lib/api'
 import { bytes, episodeCode, monitorLabels, relative, stateLabels } from '../lib/downloads'
-import { ask } from './feedback'
+import { ask, toast, toastError } from './feedback'
 import { Squircle } from './Squircle'
-import { Badge, Button, Dialog, IconButton, Input, Segmented, Spinner, Tip } from './ui'
+import { Badge, Button, Dialog, IconButton, Input, MenuItem, Segmented, Spinner, Tip } from './ui'
 
 const stateTones: Record<EpisodeState, 'quiet' | 'ok' | 'live' | 'warn' | 'danger'> = {
   IDLE: 'quiet',
@@ -16,6 +16,7 @@ const stateTones: Record<EpisodeState, 'quiet' | 'ok' | 'live' | 'warn' | 'dange
   GRABBED: 'live',
   MISSING: 'danger',
   DONE: 'ok',
+  SKIPPED: 'quiet',
 }
 
 const ReleasesQuery = graphql(`
@@ -35,6 +36,85 @@ const GrabRelease = graphql(`
     }
   }
 `)
+
+const DeleteDownloaded = graphql(`
+  mutation DeleteDownloaded($seriesId: Int!, $season: Int) {
+    deleteDownloaded(seriesId: $seriesId, season: $season) {
+      undone
+      problems
+    }
+  }
+`)
+
+const LookForAgain = graphql(`
+  mutation LookForAgain($seriesId: Int!, $season: Int, $episode: Int) {
+    lookForAgain(seriesId: $seriesId, season: $season, episode: $episode)
+  }
+`)
+
+export type DeleteTarget = { seriesId: number; show: string; season?: number | null }
+
+const seasonName = (n: number) => (n === 0 ? 'specials' : `season ${n}`)
+
+/** Deletes what tinystream downloaded of a show, or one season of it, once it's been asked. */
+export function useDeleteDownloaded() {
+  const qc = useQueryClient()
+  const remove = useMutation({
+    mutationFn: async (t: DeleteTarget) => (await request(DeleteDownloaded, { seriesId: t.seriesId, season: t.season ?? null })).deleteDownloaded,
+    onSuccess: (r, t) =>
+      r.problems.length > 0
+        ? toast({ title: `Couldn't delete all of ${t.show}`, body: r.problems.join('\n'), tone: 'danger', duration: 7000 })
+        : toast({ title: t.season == null ? `Deleted ${t.show}` : `Deleted ${seasonName(t.season)} of ${t.show}`, tone: 'ok' }),
+    onError: toastError,
+    onSettled: () => void qc.invalidateQueries(),
+  })
+  return async (t: DeleteTarget) => {
+    const ok = await ask({
+      title: t.season == null ? `Delete ${t.show}?` : `Delete ${seasonName(t.season)} of ${t.show}?`,
+      body:
+        t.season == null
+          ? 'Every episode tinystream downloaded of it is deleted from your downloads, finished or not, and from your library. Files you added yourself stay. Its episodes are skipped and it stops downloading automatically.'
+          : "Every episode tinystream downloaded of it is deleted from your downloads, finished or not, and from your library. Files you added yourself stay. Its episodes are skipped, so they won't be downloaded again.",
+      confirm: 'Delete',
+      danger: true,
+    })
+    if (ok) remove.mutate(t)
+  }
+}
+
+/** Menu items deleting a season (when there's one) or the whole show. */
+export function DeleteItems({ target, onDelete, close }: { target: DeleteTarget; onDelete: (t: DeleteTarget) => void; close: () => void }) {
+  return (
+    <>
+      {target.season != null && (
+        <MenuItem onClick={() => (close(), onDelete(target))}>
+          <span className="flex items-center gap-2 text-danger">
+            <Trash2 className="size-3.5 shrink-0" /> Delete {seasonName(target.season)}
+          </span>
+        </MenuItem>
+      )}
+      <MenuItem onClick={() => (close(), onDelete({ ...target, season: null }))}>
+        <span className="flex items-center gap-2 text-danger">
+          <Trash2 className="size-3.5 shrink-0" /> Delete show
+        </span>
+      </MenuItem>
+    </>
+  )
+}
+
+/** Puts skipped episodes of a show back, to be downloaded if it's monitored. */
+export function useLookForAgain() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { seriesId: number; season?: number; episode?: number }) =>
+      request(LookForAgain, { seriesId: v.seriesId, season: v.season ?? null, episode: v.episode ?? null }),
+    onError: toastError,
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['series'] })
+      void qc.invalidateQueries({ queryKey: ['wanted'] })
+    },
+  })
+}
 
 export function StateBadge({ state }: { state: EpisodeState }) {
   return (

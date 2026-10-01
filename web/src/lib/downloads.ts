@@ -120,6 +120,7 @@ export const stateLabels: Record<EpisodeState, string> = {
   GRABBED: 'Downloading',
   MISSING: 'Missing',
   DONE: 'In library',
+  SKIPPED: 'Skipped',
 }
 
 export const monitorLabels = {

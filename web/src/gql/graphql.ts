@@ -98,6 +98,7 @@ export type EpisodeState =
   | 'GRABBED'
   | 'IDLE'
   | 'MISSING'
+  | 'SKIPPED'
   | 'WANTED';
 
 export type Hardware =
@@ -637,7 +638,7 @@ export type TitleSeriesQueryVariables = Exact<{
 }>;
 
 
-export type TitleSeriesQuery = { title: { series: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } | null } | null };
+export type TitleSeriesQuery = { title: { series: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number, skipped: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } | null } | null };
 
 export type TitleScheduleQueryVariables = Exact<{
   id: number;
@@ -659,7 +660,7 @@ export type UpdateSeriesMutationVariables = Exact<{
 }>;
 
 
-export type UpdateSeriesMutation = { updateSeries: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } };
+export type UpdateSeriesMutation = { updateSeries: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number, skipped: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } };
 
 export type RefreshSeriesScheduleMutationVariables = Exact<{
   id: number;
@@ -738,6 +739,23 @@ export type GrabReleaseMutationVariables = Exact<{
 
 export type GrabReleaseMutation = { grabRelease: { id: number } };
 
+export type DeleteDownloadedMutationVariables = Exact<{
+  seriesId: number;
+  season?: number | null | undefined;
+}>;
+
+
+export type DeleteDownloadedMutation = { deleteDownloaded: { undone: number, problems: Array<string> } };
+
+export type LookForAgainMutationVariables = Exact<{
+  seriesId: number;
+  season?: number | null | undefined;
+  episode?: number | null | undefined;
+}>;
+
+
+export type LookForAgainMutation = { lookForAgain: boolean };
+
 export type PersonFragment = { id: number, username: string, avatar: string | null };
 
 export type PermissionsFieldsFragment = { allLibraries: boolean, libraries: Array<string>, request: boolean, autoApprove: boolean, requestLimit: number, manageRequests: boolean, manageShows: boolean, downloads: boolean, editMetadata: boolean, watchTogether: boolean, shareLinks: boolean, clip: boolean, clipMaxLength: number, clipLimit: number, clipStorage: number, clipLinks: boolean };
@@ -770,7 +788,7 @@ export type SeriesEpisodeFieldsFragment = { season: number, episode: number, abs
 
 export type SeedingFieldsFragment = { ratio: number | null, time: string | null, idle: string | null, then: SeedAction };
 
-export type SeriesFieldsFragment = { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> };
+export type SeriesFieldsFragment = { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number, skipped: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> };
 
 export type ReleaseCandidateFieldsFragment = { batch: boolean, release: { title: string, source: string, link: string, infoHash: string | null, size: number | null, seeders: number | null, leechers: number | null, published: number | null, page: string | null }, attributes: { group: string | null, resolution: number | null, codec: string | null, source: string | null, dualAudio: boolean, version: number, proper: boolean, tenBit: boolean }, episodes: Array<{ season: number, episode: number }>, verdict: { accepted: boolean, score: number, rejections: Array<string>, warnings: Array<string> } };
 
@@ -1043,13 +1061,13 @@ export type ImportDownloadMutationVariables = Exact<{
 
 export type ImportDownloadMutation = { importDownload: { id: number } };
 
-export type RemoveDownloadMutationVariables = Exact<{
-  id: number;
+export type RemoveDownloadsMutationVariables = Exact<{
+  ids: Array<number> | number;
   deleteFiles: boolean;
 }>;
 
 
-export type RemoveDownloadMutation = { removeDownload: number };
+export type RemoveDownloadsMutation = { removeDownloads: Array<number> };
 
 export type HomeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1711,6 +1729,7 @@ export const SeriesFieldsFragmentDoc = new TypedDocumentString(`
     grabbed
     total
     upcoming
+    skipped
   }
   episodes {
     ...SeriesEpisodeFields
@@ -2468,6 +2487,7 @@ fragment SeriesFields on Series {
     grabbed
     total
     upcoming
+    skipped
   }
   episodes {
     ...SeriesEpisodeFields
@@ -2582,6 +2602,7 @@ fragment SeriesFields on Series {
     grabbed
     total
     upcoming
+    skipped
   }
   episodes {
     ...SeriesEpisodeFields
@@ -2781,6 +2802,19 @@ export const GrabReleaseDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GrabReleaseMutation, GrabReleaseMutationVariables>;
+export const DeleteDownloadedDocument = new TypedDocumentString(`
+    mutation DeleteDownloaded($seriesId: Int!, $season: Int) {
+  deleteDownloaded(seriesId: $seriesId, season: $season) {
+    undone
+    problems
+  }
+}
+    `) as unknown as TypedDocumentString<DeleteDownloadedMutation, DeleteDownloadedMutationVariables>;
+export const LookForAgainDocument = new TypedDocumentString(`
+    mutation LookForAgain($seriesId: Int!, $season: Int, $episode: Int) {
+  lookForAgain(seriesId: $seriesId, season: $season, episode: $episode)
+}
+    `) as unknown as TypedDocumentString<LookForAgainMutation, LookForAgainMutationVariables>;
 export const LibrariesDocument = new TypedDocumentString(`
     query Libraries {
   libraries {
@@ -4217,11 +4251,11 @@ export const ImportDownloadDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ImportDownloadMutation, ImportDownloadMutationVariables>;
-export const RemoveDownloadDocument = new TypedDocumentString(`
-    mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {
-  removeDownload(id: $id, deleteFiles: $deleteFiles)
+export const RemoveDownloadsDocument = new TypedDocumentString(`
+    mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {
+  removeDownloads(ids: $ids, deleteFiles: $deleteFiles)
 }
-    `) as unknown as TypedDocumentString<RemoveDownloadMutation, RemoveDownloadMutationVariables>;
+    `) as unknown as TypedDocumentString<RemoveDownloadsMutation, RemoveDownloadsMutationVariables>;
 export const HomeDocument = new TypedDocumentString(`
     query Home {
   home {

@@ -349,6 +349,7 @@ type EpisodeCounts {
 	grabbed: Int!
 	total: Int!
 	upcoming: Int!
+	skipped: Int!
 }
 
 type EpisodeDownload {
@@ -374,6 +375,7 @@ enum EpisodeState {
 	GRABBED
 	MISSING
 	DONE
+	SKIPPED
 }
 
 type EpisodesImported {
@@ -590,7 +592,9 @@ type Mutation {
 	resumeDownloads(ids: [Int!]!): [Download!]!
 	recheckDownloads(ids: [Int!]!): [Download!]!
 	importDownload(id: Int!): Download!
-	removeDownload(id: Int!, deleteFiles: Boolean! = false): Int!
+	removeDownloads(ids: [Int!]!, deleteFiles: Boolean! = false): [Int!]!
+	deleteDownloaded(seriesId: Int!, season: Int): UndoReport!
+	lookForAgain(seriesId: Int!, season: Int, episode: Int): Boolean!
 	addSeries(input: NewSeries!): Series!
 	manageTitle(titleId: Int!): Series!
 	updateSeries(id: Int!, patch: SeriesPatch!): Series!

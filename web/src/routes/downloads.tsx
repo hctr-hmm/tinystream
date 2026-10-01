@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { DeleteItems, useDeleteDownloaded } from '../components/downloads'
 import { ask, toast, toastError } from '../components/feedback'
 import { Empty, Page, PageTitle, Section } from '../components/Page'
 import { ListSkeleton, useArrived } from '../components/Skeleton'
@@ -79,8 +80,8 @@ const ImportDoc = graphql(`
 `)
 
 const RemoveDoc = graphql(`
-  mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {
-    removeDownload(id: $id, deleteFiles: $deleteFiles)
+  mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {
+    removeDownloads(ids: $ids, deleteFiles: $deleteFiles)
   }
 `)
 
@@ -94,6 +95,7 @@ function run(action: Action, ids: number[]): Promise<unknown> {
   return request(RecheckDoc, { ids })
 }
 import { bytes, clockTime, duration, episodeCode, relative, speed } from '../lib/downloads'
+import { useMe } from '../lib/hooks'
 import { useTitle } from '../lib/title'
 
 export const Route = createFileRoute('/downloads')({ component: DownloadsPage })
@@ -336,6 +338,7 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
     onError: toastError,
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
+  const del = useDeletion(lead, season)
 
   const toggle = () => {
     if (open) opened.delete(key)
@@ -383,6 +386,22 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
                 {running ? <Pause className="size-4" /> : <Play className="size-4" />}
               </IconButton>
             )}
+            {del && (
+              <Popover
+                portal
+                trigger={({ toggle }) => (
+                  <IconButton label="More" onClick={toggle}>
+                    <EllipsisVertical className="size-4" />
+                  </IconButton>
+                )}
+              >
+                {(close) => (
+                  <Panel className="w-60 p-1.5">
+                    <DeleteItems target={del.target} onDelete={del.run} close={close} />
+                  </Panel>
+                )}
+              </Popover>
+            )}
           </div>
           {where === 'active' && (
             <div className="mt-3">
@@ -423,6 +442,14 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
   )
 }
 
+/** Deleting `d`'s season or show, for people who may. */
+function useDeletion(d: Download, season: number | null) {
+  const run = useDeleteDownloaded()
+  const can = useMe()?.permissions
+  if (d.seriesId == null || !can?.manageShows || !can.downloads) return null
+  return { target: { seriesId: d.seriesId, show: d.seriesName ?? d.name, season }, run }
+}
+
 function status(d: Download): { text: string; tone: 'quiet' | 'ok' | 'live' | 'warn' | 'danger' } {
   if (d.state === 'FAILED') return { text: 'Failed', tone: 'danger' }
   if (d.state === 'REMOVED') return { text: 'Removed', tone: 'quiet' }
@@ -458,11 +485,13 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
   const remove = useMutation({
-    mutationFn: (files: boolean) => request(RemoveDoc, { id: d.id, deleteFiles: files }),
+    mutationFn: (files: boolean) => request(RemoveDoc, { ids: [d.id], deleteFiles: files }),
     onSuccess: (_, files) => toast({ title: files ? 'Download deleted' : 'Download removed', body: d.seriesName ?? d.name, tone: 'ok' }),
     onError: toastError,
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
+  const seasons = [...new Set(d.episodes.map((e) => e.season))]
+  const del = useDeletion(d, seasons.length === 1 ? seasons[0] : null)
   const l = d.live
   const s = status(d)
   const downloading = d.state === 'DOWNLOADING'
@@ -479,6 +508,8 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
   const paused = d.state === 'PAUSED'
   const live = downloading || d.state === 'SEEDING' || paused
   const seeded = (d.state === 'SEEDING' || (paused && d.finishedAt)) && l
+  const removable = d.state !== 'REMOVED' && d.state !== 'DONE'
+  const importable = !!d.finishedAt && d.importState !== 'DONE' && d.state !== 'REMOVED'
 
   return (
     <div className={`group relative flex gap-3.5 overflow-hidden px-4 py-3.5 ${arrived ? 'animate-[arrive_2.4s_ease-out]' : ''}`}>
@@ -542,14 +573,14 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                     </span>
                   </MenuItem>
                 )}
-                {d.finishedAt && d.importState !== 'DONE' && d.state !== 'REMOVED' && (
+                {importable && (
                   <MenuItem onClick={() => (close(), act.mutate('import'))}>
                     <span className="flex items-center gap-2">
                       <FolderInput className="size-3.5 shrink-0" /> Import into the library
                     </span>
                   </MenuItem>
                 )}
-                {d.state !== 'REMOVED' && d.state !== 'DONE' && (
+                {removable && (
                   <>
                     <MenuItem onClick={() => (close(), remove.mutate(false))}>
                       <span className="flex items-center gap-2">
@@ -574,8 +605,14 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                     </MenuItem>
                   </>
                 )}
-                {(d.state === 'REMOVED' || d.state === 'DONE') && (
+                {!removable && !importable && !del && (
                   <p className="px-2.5 py-1.5 text-xs text-ink-3">Nothing to do; it's finished.</p>
+                )}
+                {del && (
+                  <>
+                    {(removable || importable) && <div className="my-1 h-px bg-line" />}
+                    <DeleteItems target={del.target} onDelete={del.run} close={close} />
+                  </>
                 )}
               </Panel>
             )}

@@ -2,9 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Check, CheckCheck, CircleCheck, Play, RefreshCw, Search, Wand2 } from 'lucide-react'
+import { Check, CheckCheck, CircleCheck, Play, RefreshCw, RotateCcw, Search, Wand2 } from 'lucide-react'
 import { DiscoverShelf } from '../components/DiscoverCard'
-import { ReleaseDialog, StateBadge } from '../components/downloads'
+import { ReleaseDialog, StateBadge, useLookForAgain } from '../components/downloads'
 import { NextEpisode, SeriesPanel, useItemSeries } from '../components/SeriesPanel'
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { toast, toastError } from '../components/feedback'
@@ -138,6 +138,7 @@ function TitlePage() {
   const features = useFeatures()
   const { data: series } = useItemSeries(Number(id), !!features && item?.kind === 'SHOW', !!me?.permissions.manageShows)
   const [searchEpisode, setSearchEpisode] = useState<SeriesEpisode | null>(null)
+  const lookAgain = useLookForAgain()
   const fetching = useFetching(Number(id), item?.matchState === 'PENDING' && !!item.libraryProvider)
 
   useEffect(() => {
@@ -423,6 +424,7 @@ function TitlePage() {
                       admin={!!can?.manageShows}
                       download={downloads?.find((d) => d.state === 'DOWNLOADING' && d.seriesId === series?.id && d.episodes.some((x) => x.season === g.season && x.episode === g.episode))}
                       onSearch={() => setSearchEpisode(g)}
+                      onLookAgain={() => series && lookAgain.mutate({ seriesId: series.id, season: g.season, episode: g.episode })}
                     />
                   ) })),
               ]
@@ -662,7 +664,19 @@ function EpisodeRow({
 }
 
 /** An episode that isn't in the library: coming up, being fetched, or missing. */
-function GhostRow({ e, admin, download, onSearch }: { e: SeriesEpisode; admin: boolean; download?: Download; onSearch: () => void }) {
+function GhostRow({
+  e,
+  admin,
+  download,
+  onSearch,
+  onLookAgain,
+}: {
+  e: SeriesEpisode
+  admin: boolean
+  download?: Download
+  onSearch: () => void
+  onLookAgain: () => void
+}) {
   const l = download?.live
   const upcoming = !e.aired && e.airAt && e.airAt * 1000 > Date.now()
   return (
@@ -701,7 +715,12 @@ function GhostRow({ e, admin, download, onSearch }: { e: SeriesEpisode; admin: b
         )}
       </div>
       {admin && !upcoming && (
-        <div className="self-start">
+        <div className="flex self-start">
+          {e.state === 'SKIPPED' && (
+            <IconButton label="Look for it again" onClick={onLookAgain} className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
+              <RotateCcw className="size-4.5" />
+            </IconButton>
+          )}
           <IconButton label="Search for this episode" onClick={onSearch} className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
             <Search className="size-4.5" />
           </IconButton>

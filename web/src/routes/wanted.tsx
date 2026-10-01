@@ -2,13 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Search } from 'lucide-react'
+import { EllipsisVertical, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { ReleaseDialog, StateBadge } from '../components/downloads'
+import { DeleteItems, ReleaseDialog, StateBadge, useDeleteDownloaded } from '../components/downloads'
 import { Empty, Page, PageTitle } from '../components/Page'
 import { ListSkeleton } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
-import { Badge, Button, Segmented } from '../components/ui'
+import { Badge, Button, IconButton, Panel, Popover, Segmented } from '../components/ui'
 import { graphql } from '../gql'
 import type { WantedQuery } from '../gql/graphql'
 import { request } from '../lib/api'
@@ -36,6 +36,7 @@ const WantedQueryDoc = graphql(`
 
 type WantedEntry = WantedQuery['wanted'][number]
 import { airs, countdown, episodeCode, relative, useNow } from '../lib/downloads'
+import { useMe } from '../lib/hooks'
 import { useTitle } from '../lib/title'
 
 export const Route = createFileRoute('/wanted')({ component: WantedPage })
@@ -49,6 +50,8 @@ function WantedPage() {
   const now = useNow(1000)
   const { data } = useQuery({ queryKey: ['wanted'], queryFn: async () => (await request(WantedQueryDoc)).wanted, refetchInterval: 10_000 })
   const [filter, setFilter] = useState<Filter>('all')
+  const canDelete = !!useMe()?.permissions.downloads
+  const deleteDownloaded = useDeleteDownloaded()
   const [searching, setSearching] = useState<{ seriesId: number; show: string; season: number; episodes: number[] } | null>(null)
 
   const groups = useMemo(() => {
@@ -116,6 +119,26 @@ function WantedPage() {
                 >
                   <Search className="size-3.5" /> Search
                 </Button>
+                {canDelete && (
+                  <Popover
+                    portal
+                    trigger={({ toggle }) => (
+                      <IconButton label="More" onClick={toggle}>
+                        <EllipsisVertical className="size-4" />
+                      </IconButton>
+                    )}
+                  >
+                    {(close) => (
+                      <Panel className="w-60 p-1.5">
+                        <DeleteItems
+                          target={{ seriesId: first.seriesId, show: first.show, season: first.season }}
+                          onDelete={deleteDownloaded}
+                          close={close}
+                        />
+                      </Panel>
+                    )}
+                  </Popover>
+                )}
               </div>
               <div className="-mx-2 divide-y divide-line">
                 {list.map((e) => (

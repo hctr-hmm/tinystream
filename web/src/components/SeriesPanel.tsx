@@ -2,16 +2,17 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { CalendarClock, CircleAlert, RefreshCw, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { CalendarClock, CircleAlert, EllipsisVertical, RefreshCw, RotateCcw, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { graphql } from '../gql'
 import type { SeedingInput } from '../gql/graphql'
 import { type Item, type Monitor, type Seeding, type Series, request, settingsQuery } from '../lib/api'
 import { airs, countdown, episodeCode, relative, useNow } from '../lib/downloads'
-import { MonitorPicker, ReleaseDialog } from './downloads'
+import { useMe } from '../lib/hooks'
+import { DeleteItems, MonitorPicker, ReleaseDialog, useDeleteDownloaded, useLookForAgain } from './downloads'
 import { ask, toastError } from './feedback'
 import { Squircle } from './Squircle'
-import { Button, Dialog, Field, IconButton, Input, Segmented, Select } from './ui'
+import { Button, Dialog, Field, IconButton, Input, MenuItem, Panel, Popover, Segmented, Select } from './ui'
 
 const TitleSeriesQuery = graphql(`
   query TitleSeries($id: Int!) {
@@ -130,6 +131,9 @@ export function SeriesPanel({ item, series, season }: { item: Item; series: Seri
     onSuccess: refresh,
   })
   const schedule = useMutation({ mutationFn: () => request(RefreshSchedule, { id: series!.id }), onSuccess: refresh, onError: toastError })
+  const canDelete = !!useMe()?.permissions.downloads
+  const deleteDownloaded = useDeleteDownloaded()
+  const lookAgain = useLookForAgain()
 
   if (item.kind !== 'SHOW') return null
   const unmatched = !item.providerId
@@ -165,6 +169,7 @@ export function SeriesPanel({ item, series, season }: { item: Item; series: Seri
             {c && c.wanted > 0 && <span className="text-amber-300">{c.wanted} to find</span>}
             {c && c.missing > 0 && <span className="text-danger">{c.missing} missing</span>}
             {c && c.upcoming > 0 && <span>{c.upcoming} not aired yet</span>}
+            {c && c.skipped > 0 && <span>{c.skipped} skipped</span>}
             <span>{series.effectiveProfile}</span>
             {series.scheduleAt && <span>schedule {relative(series.scheduleAt)}</span>}
             <span className="flex-1" />
@@ -177,6 +182,36 @@ export function SeriesPanel({ item, series, season }: { item: Item; series: Seri
             <Button size="sm" onClick={() => setSettings(true)}>
               <SlidersHorizontal className="size-3.5" /> Settings
             </Button>
+            {(canDelete || (c && c.skipped > 0)) && (
+              <Popover
+                portal
+                trigger={({ toggle }) => (
+                  <IconButton label="More" onClick={toggle}>
+                    <EllipsisVertical className="size-4" />
+                  </IconButton>
+                )}
+              >
+                {(close) => (
+                  <Panel className="w-64 p-1.5">
+                    {c && c.skipped > 0 && (
+                      <MenuItem onClick={() => (close(), lookAgain.mutate({ seriesId: series.id }))}>
+                        <span className="flex items-center gap-2">
+                          <RotateCcw className="size-3.5 shrink-0" /> Look for skipped episodes again
+                        </span>
+                      </MenuItem>
+                    )}
+                    {c && c.skipped > 0 && canDelete && <div className="my-1 h-px bg-line" />}
+                    {canDelete && (
+                      <DeleteItems
+                        target={{ seriesId: series.id, show: series.name, season }}
+                        onDelete={deleteDownloaded}
+                        close={close}
+                      />
+                    )}
+                  </Panel>
+                )}
+              </Popover>
+            )}
           </div>
           {schedule.error && <p className="mt-2 text-xs text-danger">{(schedule.error as Error).message}</p>}
         </>

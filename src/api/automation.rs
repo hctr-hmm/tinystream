@@ -312,6 +312,7 @@ pub enum EpisodeState {
     Missing,
 
     Done,
+    Skipped,
 }
 
 impl EpisodeState {
@@ -321,6 +322,7 @@ impl EpisodeState {
             "grabbed" => Self::Grabbed,
             "missing" => Self::Missing,
             "done" => Self::Done,
+            "skipped" => Self::Skipped,
             _ => Self::Idle,
         }
     }
@@ -1324,26 +1326,108 @@ impl AutomationMutation {
         changed(ctx, vec![id]).await?.pop().ok_or_else(|| ApiError::not_found("download"))
     }
 
-    async fn remove_download(
+    async fn remove_downloads(
         &self,
         ctx: &Context<'_>,
-        id: i64,
+        ids: Vec<i64>,
         #[graphql(default)] delete_files: bool,
-    ) -> ApiResult<i64> {
+    ) -> ApiResult<Vec<i64>> {
         let state = ctx.state();
         ctx.allowed(|p| p.downloads)?;
-        let (hash, _) = download_hash(state, id).await?;
-        if let Some(h) = hash {
-            state.automation.engine.remove(&h, delete_files);
+        for &id in &ids {
+            let (hash, _) = download_hash(state, id).await?;
+            if let Some(h) = hash {
+                state.automation.engine.remove(&h, delete_files);
+            }
+            sqlx::query("UPDATE downloads SET state = 'removed', removed_at = ? WHERE id = ?")
+                .bind(now())
+                .bind(id)
+                .execute(&state.db)
+                .await?;
         }
-        sqlx::query("UPDATE downloads SET state = 'removed', removed_at = ? WHERE id = ?")
-            .bind(now())
-            .bind(id)
-            .execute(&state.db)
-            .await?;
         state.events.send(Event::DownloadsChanged);
         state.automation.wake();
-        Ok(id)
+        Ok(ids)
+    }
+
+    async fn delete_downloaded(&self, ctx: &Context<'_>, series_id: i64, season: Option<u32>) -> ApiResult<UndoReport> {
+        let state = ctx.state();
+        let user = ctx.allowed(|p| p.downloads && p.manage_shows)?;
+        Series::load(state, user, series_id).await?;
+        let show = series::get(state, series_id).await.map_err(bad)?;
+        let downloads: Vec<(i64, Option<String>, String, String)> =
+            sqlx::query_as("SELECT id, hash, state, episodes FROM downloads WHERE series_id = ?")
+                .bind(series_id)
+                .fetch_all(&state.db)
+                .await?;
+        let mut report = UndoReport::default();
+        for (id, hash, current, episodes) in downloads {
+            let seasons: Vec<u32> = serde_json::from_str::<Vec<(u32, u32)>>(&episodes)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(s, _)| s)
+                .collect();
+            if season.is_some_and(|n| !seasons.contains(&n)) {
+                continue;
+            }
+            // A download that has other seasons in it stays; only this season's files leave the
+            // library.
+            let whole = season.is_none_or(|n| seasons.iter().all(|&s| s == n));
+            if whole && !matches!(current.as_str(), "removed" | "done") {
+                if let Some(h) = &hash {
+                    state.automation.engine.remove(h, true);
+                }
+                sqlx::query("UPDATE downloads SET state = 'removed', removed_at = ? WHERE id = ?")
+                    .bind(now())
+                    .bind(id)
+                    .execute(&state.db)
+                    .await?;
+            }
+            let placed = fsops::delete_placed(&state.db, &format!("import-{id}"), season).await.map_err(bad)?;
+            report.undone += placed.undone;
+            report.problems.extend(placed.problems);
+        }
+        if season.is_none() {
+            series::set_monitor(state, series_id, Monitor::None).await.map_err(bad)?;
+        }
+        sqlx::query(
+            "UPDATE episodes SET state = 'skipped', download_id = NULL, next_search = NULL
+             WHERE series_id = ? AND (? IS NULL OR season = ?)",
+        )
+        .bind(series_id)
+        .bind(season)
+        .bind(season)
+        .execute(&state.db)
+        .await?;
+        state.scanner.request(&show.library);
+        state.events.send(Event::DownloadsChanged);
+        state.events.send(Event::SeriesChanged { series_id });
+        state.automation.wake();
+        Ok(report)
+    }
+
+    async fn look_for_again(
+        &self,
+        ctx: &Context<'_>,
+        series_id: i64,
+        season: Option<u32>,
+        episode: Option<u32>,
+    ) -> ApiResult<bool> {
+        let state = ctx.state();
+        let user = ctx.allowed(|p| p.manage_shows)?;
+        Series::load(state, user, series_id).await?;
+        sqlx::query(
+            "UPDATE episodes SET state = 'idle'
+             WHERE series_id = ?1 AND state = 'skipped' AND (?2 IS NULL OR season = ?2) AND (?3 IS NULL OR episode = ?3)",
+        )
+        .bind(series_id)
+        .bind(season)
+        .bind(episode)
+        .execute(&state.db)
+        .await?;
+        state.events.send(Event::SeriesChanged { series_id });
+        state.automation.wake();
+        Ok(true)
     }
 
     async fn add_series(&self, ctx: &Context<'_>, input: NewSeries) -> ApiResult<Series> {
