@@ -444,6 +444,27 @@
 [data-arrive] > :nth-child(5) { animation-delay: 280ms; }
 [data-arrive] > :nth-child(n + 6) { animation-delay: 350ms; }
 
+/* Switching tabs: the old content fades back while the next loads, then that slides in. */
+.swap {
+  transition:
+    opacity 300ms ease-out,
+    filter 300ms ease-out;
+}
+.swap[data-fetching] {
+  opacity: 0.45;
+  filter: blur(6px) saturate(0.6);
+}
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateX(var(--from));
+  }
+}
+.swap-in {
+  animation: swap-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* A new title resolves a letter at a time. */
 @keyframes resolve {
   from {

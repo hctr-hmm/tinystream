@@ -9,7 +9,7 @@ import { ask, toast, toastError } from '../components/feedback'
 import { Empty, Page, PageTitle } from '../components/Page'
 import { Bone, useArrived } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
-import { Badge, Button, Dialog, IconButton, Input, Progress, Segmented, Spinner, Toggle } from '../components/ui'
+import { Badge, Button, Dialog, IconButton, Input, Progress, Segmented, Spinner, Swap, Toggle } from '../components/ui'
 import { graphql } from '../gql'
 import type { ClipScope } from '../gql/graphql'
 import { type Clip, type Person, request } from '../lib/api'
@@ -80,6 +80,7 @@ import { useTitle } from '../lib/title'
 import { SendTo } from '../player/ClipEditor'
 
 type Scope = 'mine' | 'received' | 'sent'
+const ORDER: Scope[] = ['mine', 'received', 'sent']
 
 export const Route = createFileRoute('/clips')({
   validateSearch: (s: Record<string, unknown>): { tab?: Scope; clip?: number } => ({
@@ -99,12 +100,14 @@ function ClipsPage() {
   useTitle('Clips')
   const { tab = 'mine', clip: open } = Route.useSearch()
   const navigate = useNavigate()
-  const { data } = useQuery({
+  const { data, isPlaceholderData } = useQuery({
     queryKey: ['clips', tab],
-    queryFn: async (): Promise<ClipList> => {
+    queryFn: async (): Promise<ClipList & { scope: Scope }> => {
       const r = await request(ClipsQuery, { scope: SCOPES[tab] })
-      return { clips: r.clips, you: r.clipAllowance }
+      return { clips: r.clips, you: r.clipAllowance, scope: tab }
     },
+    // The last tab stays up until the next one is ready, so switching slides between them.
+    placeholderData: (p) => p,
   })
   const arrived = useArrived(!!data)
   const go = (search: { tab?: Scope; clip?: number }) => void navigate({ to: '/clips', search: { tab, ...search }, replace: true })
@@ -132,14 +135,18 @@ function ClipsPage() {
             </div>
           ))}
         </Grid>
-      ) : data.clips.length === 0 ? (
-        <Empty title={EMPTY[tab].title} />
       ) : (
-        <Grid>
-          {data.clips.map((c) => (
-            <ClipCard key={c.id} clip={c} scope={tab} onOpen={() => go({ clip: c.id })} />
-          ))}
-        </Grid>
+        <Swap value={data.scope} order={ORDER} fetching={isPlaceholderData}>
+          {data.clips.length === 0 ? (
+            <Empty title={EMPTY[data.scope].title} />
+          ) : (
+            <Grid>
+              {data.clips.map((c) => (
+                <ClipCard key={c.id} clip={c} scope={data.scope} onOpen={() => go({ clip: c.id })} />
+              ))}
+            </Grid>
+          )}
+        </Swap>
       )}
       {open !== undefined && <ClipDialog id={open} onClose={() => go({ clip: undefined })} />}
     </Page>

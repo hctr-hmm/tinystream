@@ -3,6 +3,7 @@
 import { type CSSProperties, type ComponentPropsWithoutRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { createPortal } from 'react-dom'
+import { useCorners } from '../lib/theme'
 import { Squircle } from './Squircle'
 
 type ButtonProps = ComponentPropsWithoutRef<'button'> & {
@@ -598,7 +599,10 @@ export function Dialog({
   )
 }
 
-/** A row of mutually exclusive choices, the chosen one lifted. */
+/**
+ * A row of mutually exclusive choices, the chosen one lifted. The lift slides
+ * over to a new choice, its leading edge first, so it stretches on the way.
+ */
 export function Segmented<T extends string>({
   value,
   options,
@@ -610,18 +614,64 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void
   size?: 'sm' | 'md'
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const index = options.findIndex((o) => o.value === value)
+  const [thumb, setThumb] = useState<{ left: number; right: number; index: number; dir: number } | null>(null)
+  const corners = useCorners()
+
+  useLayoutEffect(() => {
+    const row = ref.current
+    if (!row) return
+    const place = () => {
+      const on = row.children[index + 1] as HTMLElement | undefined
+      if (!on) return setThumb(null)
+      const left = on.offsetLeft
+      const right = row.clientWidth - left - on.offsetWidth
+      // Only a new choice moves it; a label changing width just resizes it.
+      setThumb((t) => (t && t.left === left && t.right === right && t.index === index ? t : { left, right, index, dir: t && t.index !== index ? Math.sign(index - t.index) : 0 }))
+    }
+    place()
+    const ro = new ResizeObserver(place)
+    ro.observe(row)
+    return () => ro.disconnect()
+  }, [index])
+
+  const lead = '340ms cubic-bezier(0.3, 1.35, 0.5, 1)'
+  const trail = '420ms cubic-bezier(0.65, 0, 0.25, 1) 50ms'
+  const transition = !thumb?.dir ? 'none' : thumb.dir > 0 ? `left ${trail}, right ${lead}` : `left ${lead}, right ${trail}`
   return (
     <Squircle radius={11} edge className="inline-flex bg-raised p-0.5">
-      {options.map((o) => (
-        <SegmentedOption key={o.value} on={o.value === value} tip={o.title} size={size} onClick={() => onChange(o.value)}>
-          {o.label}
-        </SegmentedOption>
-      ))}
+      <div ref={ref} className="relative flex">
+        <div
+          aria-hidden
+          className="absolute inset-y-0 bg-float shadow-(--shadow-chip)"
+          style={thumb ? { left: thumb.left, right: thumb.right, borderRadius: Math.round(9 * corners.scale), transition } : { display: 'none' }}
+        />
+        {options.map((o, i) => (
+          <SegmentedOption key={o.value} on={i === index} placed={!!thumb} tip={o.title} size={size} onClick={() => onChange(o.value)}>
+            {o.label}
+          </SegmentedOption>
+        ))}
+      </div>
     </Squircle>
   )
 }
 
-function SegmentedOption({ on, tip: label, size, onClick, children }: { on: boolean; tip?: string; size: 'sm' | 'md'; onClick: () => void; children: ReactNode }) {
+function SegmentedOption({
+  on,
+  placed,
+  tip: label,
+  size,
+  onClick,
+  children,
+}: {
+  on: boolean
+  placed: boolean
+  tip?: string
+  size: 'sm' | 'md'
+  onClick: () => void
+  children: ReactNode
+}) {
   const { props, tip } = useTip(label)
   return (
     <Squircle
@@ -629,12 +679,28 @@ function SegmentedOption({ on, tip: label, size, onClick, children }: { on: bool
       radius={9}
       aria-pressed={on}
       onClick={onClick}
-      className={`flex items-center gap-1.5 whitespace-nowrap transition-colors ${size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-[13px]'} ${on ? 'bg-float text-ink shadow-(--shadow-chip)' : 'text-ink-2 hover:text-ink'}`}
+      className={`flex items-center gap-1.5 whitespace-nowrap transition-[color,scale] duration-200 active:scale-[0.96] ${size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-[13px]'} ${on ? 'text-ink' : 'text-ink-2 hover:text-ink'} ${on && !placed ? 'bg-float shadow-(--shadow-chip)' : ''}`}
       {...props}
     >
       {children}
       {tip}
     </Squircle>
+  )
+}
+
+/**
+ * What a `Segmented` switches between: a new choice slides in from the side
+ * it was picked toward. While `fetching`, the old one stays, faded back.
+ */
+export function Swap<T extends string>({ value, order, fetching = false, children }: { value: T; order: readonly T[]; fetching?: boolean; children: ReactNode }) {
+  const [seen, setSeen] = useState({ value, dir: 0 })
+  if (value !== seen.value) setSeen({ value, dir: Math.sign(order.indexOf(value) - order.indexOf(seen.value)) })
+  return (
+    <div data-fetching={fetching || undefined} className="swap">
+      <div key={value} className={seen.dir ? 'swap-in' : undefined} style={{ '--from': `${seen.dir * 32}px` } as CSSProperties}>
+        {children}
+      </div>
+    </div>
   )
 }
 

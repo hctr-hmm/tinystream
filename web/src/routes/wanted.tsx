@@ -8,7 +8,7 @@ import { DeleteItems, ReleaseDialog, StateBadge, useDeleteDownloaded } from '../
 import { Empty, Page, PageTitle } from '../components/Page'
 import { ListSkeleton } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
-import { Badge, Button, IconButton, Panel, Popover, Segmented } from '../components/ui'
+import { Badge, Button, IconButton, Panel, Popover, Segmented, Swap } from '../components/ui'
 import { graphql } from '../gql'
 import type { WantedQuery } from '../gql/graphql'
 import { request } from '../lib/api'
@@ -42,6 +42,8 @@ import { useTitle } from '../lib/title'
 export const Route = createFileRoute('/wanted')({ component: WantedPage })
 
 type Filter = 'all' | 'wanted' | 'upcoming' | 'missing' | 'grabbed'
+const FILTERS: Filter[] = ['all', 'wanted', 'grabbed', 'upcoming', 'missing']
+const FILTER_LABELS: Record<Filter, string> = { all: 'All', wanted: 'Searching', grabbed: 'Downloading', upcoming: 'Upcoming', missing: 'Missing' }
 
 /** Wanted episodes that haven't aired aren't being searched for yet. */
 const filterOf = (e: WantedEntry): Filter => (e.state === 'WANTED' && !e.aired ? 'upcoming' : (e.state.toLowerCase() as Filter))
@@ -75,94 +77,88 @@ function WantedPage() {
             size="sm"
             value={filter}
             onChange={setFilter}
-            options={[
-              { value: 'all', label: `All ${count('all')}` },
-              { value: 'wanted', label: `Searching ${count('wanted')}` },
-              { value: 'grabbed', label: `Downloading ${count('grabbed')}` },
-              { value: 'upcoming', label: `Upcoming ${count('upcoming')}` },
-              { value: 'missing', label: `Missing ${count('missing')}` },
-            ]}
+            options={FILTERS.map((f) => ({ value: f, label: `${FILTER_LABELS[f]} ${count(f)}` }))}
           />
         }
       >
         Wanted
       </PageTitle>
-      {data && groups.length === 0 && (
-        <Empty title={filter === 'all' ? 'Nothing is missing' : 'Nothing here'} />
-      )}
-      <div className="space-y-4">
-        {groups.map((list) => {
-          const first = list[0]
-          return (
-            <Squircle key={`${first.seriesId}:${first.season}`} radius={16} edge className="bg-raised p-4">
-              <div className="mb-3 flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  {first.title ? (
-                    <Link to="/title/$id" params={{ id: String(first.title.id) }} className="text-[15px] font-semibold tracking-tight hover:underline">
-                      {first.show}
-                    </Link>
-                  ) : (
-                    <span className="text-[15px] font-semibold tracking-tight">{first.show}</span>
-                  )}
-                  <span className="ml-2 text-sm text-ink-3">Season {first.season}</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    setSearching({
-                      seriesId: first.seriesId,
-                      show: first.show,
-                      season: first.season,
-                      episodes: list.length === 1 ? [first.episode] : [],
-                    })
-                  }
-                >
-                  <Search className="size-3.5" /> Search
-                </Button>
-                {canDelete && (
-                  <Popover
-                    portal
-                    trigger={({ toggle }) => (
-                      <IconButton label="More" onClick={toggle}>
-                        <EllipsisVertical className="size-4" />
-                      </IconButton>
+      <Swap value={filter} order={FILTERS}>
+        {groups.length === 0 && <Empty title={filter === 'all' ? 'Nothing is missing' : 'Nothing here'} />}
+        <div className="space-y-4">
+          {groups.map((list) => {
+            const first = list[0]
+            return (
+              <Squircle key={`${first.seriesId}:${first.season}`} radius={16} edge className="bg-raised p-4">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    {first.title ? (
+                      <Link to="/title/$id" params={{ id: String(first.title.id) }} className="text-[15px] font-semibold tracking-tight hover:underline">
+                        {first.show}
+                      </Link>
+                    ) : (
+                      <span className="text-[15px] font-semibold tracking-tight">{first.show}</span>
                     )}
-                  >
-                    {(close) => (
-                      <Panel className="w-60 p-1.5">
-                        <DeleteItems
-                          target={{ seriesId: first.seriesId, show: first.show, season: first.season }}
-                          onDelete={deleteDownloaded}
-                          close={close}
-                        />
-                      </Panel>
-                    )}
-                  </Popover>
-                )}
-              </div>
-              <div className="-mx-2 divide-y divide-line">
-                {list.map((e) => (
-                  <div key={e.episode} className="flex items-center gap-3 px-2 py-2">
-                    <span className="w-16 shrink-0 text-xs text-ink-3 tabular">{episodeCode(e.season, e.episode)}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm">{e.name ?? `Episode ${e.episode}`}</span>
-                    <span className="hidden shrink-0 text-xs text-ink-3 sm:block">{e.airAt ? airs(e.airAt, now) : ''}</span>
-                    <span className="w-36 shrink-0 text-right text-xs text-ink-3 tabular">
-                      {filterOf(e) === 'upcoming'
-                        ? ''
-                        : e.state === 'WANTED' && e.nextSearch
-                          ? `next look ${countdown(e.nextSearch, now).replace('airing now', 'now')}`
-                          : e.searchedAt
-                            ? `looked ${relative(e.searchedAt, now)}`
-                            : ''}
-                    </span>
-                    {filterOf(e) === 'upcoming' ? <Badge>Not aired</Badge> : <StateBadge state={e.state} />}
+                    <span className="ml-2 text-sm text-ink-3">Season {first.season}</span>
                   </div>
-                ))}
-              </div>
-            </Squircle>
-          )
-        })}
-      </div>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      setSearching({
+                        seriesId: first.seriesId,
+                        show: first.show,
+                        season: first.season,
+                        episodes: list.length === 1 ? [first.episode] : [],
+                      })
+                    }
+                  >
+                    <Search className="size-3.5" /> Search
+                  </Button>
+                  {canDelete && (
+                    <Popover
+                      portal
+                      trigger={({ toggle }) => (
+                        <IconButton label="More" onClick={toggle}>
+                          <EllipsisVertical className="size-4" />
+                        </IconButton>
+                      )}
+                    >
+                      {(close) => (
+                        <Panel className="w-60 p-1.5">
+                          <DeleteItems
+                            target={{ seriesId: first.seriesId, show: first.show, season: first.season }}
+                            onDelete={deleteDownloaded}
+                            close={close}
+                          />
+                        </Panel>
+                      )}
+                    </Popover>
+                  )}
+                </div>
+                <div className="-mx-2 divide-y divide-line">
+                  {list.map((e) => (
+                    <div key={e.episode} className="flex items-center gap-3 px-2 py-2">
+                      <span className="w-16 shrink-0 text-xs text-ink-3 tabular">{episodeCode(e.season, e.episode)}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm">{e.name ?? `Episode ${e.episode}`}</span>
+                      <span className="hidden shrink-0 text-xs text-ink-3 sm:block">{e.airAt ? airs(e.airAt, now) : ''}</span>
+                      <span className="w-36 shrink-0 text-right text-xs text-ink-3 tabular">
+                        {filterOf(e) === 'upcoming'
+                          ? ''
+                          : e.state === 'WANTED' && e.nextSearch
+                            ? `next look ${countdown(e.nextSearch, now).replace('airing now', 'now')}`
+                            : e.searchedAt
+                              ? `looked ${relative(e.searchedAt, now)}`
+                              : ''}
+                      </span>
+                      {filterOf(e) === 'upcoming' ? <Badge>Not aired</Badge> : <StateBadge state={e.state} />}
+                    </div>
+                  ))}
+                </div>
+              </Squircle>
+            )
+          })}
+        </div>
+      </Swap>
       {searching && (
         <ReleaseDialog
           seriesId={searching.seriesId}
