@@ -118,7 +118,7 @@ function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: numbe
           </Button>
         )}
       </div>
-      <div className="max-h-[min(34rem,70dvh)] overflow-y-auto p-1.5">
+      <div className="max-h-[min(34rem,70dvh)] overflow-y-auto overscroll-contain p-1.5">
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
             <BellOff className="size-5 text-ink-3" />
