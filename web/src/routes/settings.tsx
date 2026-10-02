@@ -131,8 +131,8 @@ const SkippedQuery = graphql(`
 `)
 
 /** The parts of config.toml the Server tab edits. */
-type ServerConfig = Pick<Settings, 'network' | 'log' | 'scan' | 'metadata' | 'transcode'>
-const serverPart = ({ network, log, scan, metadata, transcode }: Settings): ServerConfig => ({ network, log, scan, metadata, transcode })
+type ServerConfig = Pick<Settings, 'network' | 'log' | 'scan' | 'metadata' | 'transcode' | 'signIn'>
+const serverPart = ({ network, log, scan, metadata, transcode, signIn }: Settings): ServerConfig => ({ network, log, scan, metadata, transcode, signIn })
 import { useMe } from '../lib/hooks'
 import { notifyEnabled, setNotify } from '../lib/notify'
 import { useTitle } from '../lib/title'
@@ -497,6 +497,21 @@ function Server() {
               onChange={(e) =>
                 set((c) => void (c.network.cors = e.target.value.split(',').map((s) => s.trim()).filter(Boolean)))
               }
+            />
+          </Field>
+        </div>
+      </Card>
+
+      <Card title="Signing in">
+        <div className="max-w-sm">
+          <Field label="The sign-in page shows">
+            <Select
+              value={draft.signIn.style}
+              options={[
+                { value: 'PROFILES', label: 'Everyone’s picture, without names' },
+                { value: 'USERNAME', label: 'Only a username and password' },
+              ]}
+              onChange={(v) => set((c) => void (c.signIn.style = v))}
             />
           </Field>
         </div>

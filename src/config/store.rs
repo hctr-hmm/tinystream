@@ -12,7 +12,7 @@ use tokio::sync::watch;
 use toml_edit::{ArrayOfTables, DocumentMut, Item, Table};
 
 use super::{
-    Automation, Clips, Config, Downloads, Log, Metadata, Network, Provider, Requests, Scan, TEMPLATE, Transcode,
+    Automation, Clips, Config, Downloads, Log, Metadata, Network, Provider, Requests, Scan, SignIn, TEMPLATE, Transcode,
 };
 use crate::events::{Event, Events};
 
@@ -38,6 +38,7 @@ pub struct SettingsPatch {
     pub downloads: Option<Downloads>,
     pub automation: Option<Automation>,
     pub requests: Option<Requests>,
+    pub sign_in: Option<SignIn>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, async_graphql::InputObject)]
@@ -179,6 +180,9 @@ impl ConfigStore {
             }
             if let Some(v) = patch.requests {
                 sync_section(doc, "requests", &v, &Requests::default())?;
+            }
+            if let Some(v) = patch.sign_in {
+                sync_section(doc, "sign-in", &v, &SignIn::default())?;
             }
             Ok(())
         })

@@ -40,9 +40,10 @@ export async function createCredential(options: unknown) {
   }
 }
 
-export async function getCredential(options: unknown) {
+export async function getCredential(options: unknown, signal?: AbortSignal) {
   const pk = (options as Json).publicKey as Json
   const cred = (await navigator.credentials.get({
+    signal,
     publicKey: {
       ...pk,
       challenge: toBytes(pk.challenge),

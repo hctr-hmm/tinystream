@@ -405,6 +405,10 @@
   animation-duration: 460ms;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+::view-transition-group(profile) {
+  animation-duration: 440ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 
 /*
  * Artwork develops as it arrives: blurry, washed out and
@@ -555,6 +559,46 @@
   }
   1% {
     visibility: visible;
+  }
+}
+
+/*
+ * On narrow screens the sign-in pictures overlap in a strip you swipe
+ * through. Any of them can reach the middle, and the one there comes forward.
+ */
+@media (width < 40rem) {
+  .profile-strip {
+    padding-inline: calc(50% - 2rem);
+    scrollbar-width: none;
+  }
+  .profile-strip > * + * {
+    margin-left: -2.25rem;
+  }
+}
+@media (width < 40rem) and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .profile-strip > * {
+      animation: profile-forward linear both;
+      animation-timeline: view(inline);
+    }
+  }
+}
+@keyframes profile-forward {
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.35;
+    z-index: 0;
+  }
+  36%,
+  64% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+    z-index: 10;
   }
 }
 

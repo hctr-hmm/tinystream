@@ -598,6 +598,9 @@ graphql(`
     requests {
       monitor
     }
+    signIn {
+      style
+    }
     sources {
       name
       kind

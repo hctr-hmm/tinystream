@@ -72,6 +72,8 @@ pub struct Config {
     pub automation: Automation,
     #[serde(default)]
     pub requests: Requests,
+    #[serde(default)]
+    pub sign_in: SignIn,
     #[serde(default, rename = "source")]
     pub sources: Vec<Source>,
     #[serde(default, rename = "profile")]
@@ -430,6 +432,24 @@ impl Default for Requests {
     fn default() -> Self {
         Self { monitor: Monitor::Missing, mode: None, max_open: None }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Default, async_graphql::Enum)]
+#[serde(rename_all = "kebab-case")]
+pub enum SignInStyle {
+    #[default]
+    Profiles,
+
+    Username,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Default, Deserialize, Serialize, async_graphql::SimpleObject, async_graphql::InputObject,
+)]
+#[graphql(name = "SignInConfig", input_name = "SignInConfigInput")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields, default)]
+pub struct SignIn {
+    pub style: SignInStyle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, async_graphql::Enum)]

@@ -46,6 +46,7 @@ pub fn router(state: Arc<AppState>) -> Router {
 
     let files = Router::new()
         .route("/users/{id}/avatar", get(users::avatar))
+        .route("/sign-in/{key}/avatar", get(auth::profile_avatar))
         .route("/media/{id}/stream", get(media::stream))
         .route("/media/{id}/subtitles/{track}", get(media::subtitles))
         .route("/media/{id}/fonts/{index}", get(media::font))

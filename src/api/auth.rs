@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::sync::Arc;
+
 use async_graphql::{Context, Json, Object, SimpleObject};
+use axum::extract::{Path, State};
 use axum::http::header;
+use axum::response::IntoResponse;
 use serde_json::Value;
 use webauthn_rs::prelude::{PublicKeyCredential, RegisterPublicKeyCredential, SecurityKey, Uuid};
 
 use super::schema::Ctx;
 use crate::auth::{self, User, passkeys};
+use crate::config::SignInStyle;
 use crate::db::now;
 use crate::error::{ApiError, ApiResult};
 use crate::media::hw::Capabilities;
@@ -14,6 +19,27 @@ use crate::state::AppState;
 
 async fn user_count(state: &AppState) -> ApiResult<i64> {
     Ok(sqlx::query_scalar("SELECT COUNT(*) FROM users").fetch_one(&state.db).await?)
+}
+
+fn profiles_on(state: &AppState) -> bool {
+    state.config.current().sign_in.style == SignInStyle::Profiles
+}
+
+async fn account(
+    state: &AppState,
+    username: Option<String>,
+    profile: Option<String>,
+) -> ApiResult<Option<(i64, String)>> {
+    let (column, value) = match (username, profile) {
+        (Some(u), None) => ("username", u.trim().to_string()),
+        (None, Some(p)) if profiles_on(state) => ("handle", p),
+        (None, Some(_)) => return Ok(None),
+        _ => return Err(ApiError::bad_request("sign in with either a username or a profile")),
+    };
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT id, password_hash FROM users WHERE {column} = ?")))
+        .bind(value)
+        .fetch_optional(&state.db)
+        .await?)
 }
 
 async fn keys_of(state: &AppState, user_id: i64) -> ApiResult<Vec<(i64, SecurityKey)>> {
@@ -47,6 +73,14 @@ pub struct PasskeyChallenge {
 }
 
 #[derive(SimpleObject, sqlx::FromRow)]
+pub struct SignInProfile {
+    key: String,
+    avatar: Option<String>,
+
+    passkey: bool,
+}
+
+#[derive(SimpleObject, sqlx::FromRow)]
 pub struct Passkey {
     id: i64,
     name: String,
@@ -71,6 +105,10 @@ impl Server {
 
     async fn version(&self) -> &'static str {
         env!("CARGO_PKG_VERSION")
+    }
+
+    async fn sign_in_style(&self, ctx: &Context<'_>) -> SignInStyle {
+        ctx.state().config.current().sign_in.style
     }
 
     async fn clips(&self, ctx: &Context<'_>) -> bool {
@@ -102,6 +140,33 @@ impl AuthQuery {
     async fn server(&self) -> Server {
         Server
     }
+
+    async fn sign_in_profiles(&self, ctx: &Context<'_>) -> ApiResult<Vec<SignInProfile>> {
+        let state = ctx.state();
+        if !profiles_on(state) {
+            return Ok(Vec::new());
+        }
+        Ok(sqlx::query_as(
+            "SELECT u.handle AS key,
+                    CASE WHEN a.updated_at IS NULL THEN NULL
+                         ELSE '/api/sign-in/' || u.handle || '/avatar?v=' || a.updated_at END AS avatar,
+                    EXISTS (SELECT 1 FROM passkeys p WHERE p.user_id = u.id) AS passkey
+             FROM users u LEFT JOIN avatars a ON a.user_id = u.id ORDER BY u.handle",
+        )
+        .fetch_all(&state.db)
+        .await?)
+    }
+}
+
+pub async fn profile_avatar(
+    State(state): State<Arc<AppState>>,
+    Path(key): Path<String>,
+) -> ApiResult<impl IntoResponse> {
+    let id: Option<i64> = match profiles_on(&state) {
+        true => sqlx::query_scalar("SELECT id FROM users WHERE handle = ?").bind(key).fetch_optional(&state.db).await?,
+        false => None,
+    };
+    super::users::avatar_image(&state, id.ok_or_else(|| ApiError::not_found("picture"))?).await
 }
 
 #[derive(Default)]
@@ -132,13 +197,16 @@ impl AuthMutation {
         sign_in(ctx, id).await
     }
 
-    async fn sign_in(&self, ctx: &Context<'_>, username: String, password: String) -> ApiResult<SignedIn> {
-        let row: Option<(i64, String)> = sqlx::query_as("SELECT id, password_hash FROM users WHERE username = ?")
-            .bind(username.trim())
-            .fetch_optional(&ctx.state().db)
-            .await?;
-        let wrong = || ApiError::new(axum::http::StatusCode::UNAUTHORIZED, "wrong username or password");
-        let Some((id, hash)) = row else {
+    async fn sign_in(
+        &self,
+        ctx: &Context<'_>,
+        username: Option<String>,
+        profile: Option<String>,
+        password: String,
+    ) -> ApiResult<SignedIn> {
+        let message = if profile.is_some() { "wrong password" } else { "wrong username or password" };
+        let wrong = || ApiError::new(axum::http::StatusCode::UNAUTHORIZED, message);
+        let Some((id, hash)) = account(ctx.state(), username, profile).await? else {
             return Err(wrong());
         };
         if !auth::verify_password(password, hash).await {
@@ -155,13 +223,15 @@ impl AuthMutation {
         Ok(true)
     }
 
-    async fn start_passkey_sign_in(&self, ctx: &Context<'_>, username: String) -> ApiResult<PasskeyChallenge> {
+    async fn start_passkey_sign_in(
+        &self,
+        ctx: &Context<'_>,
+        username: Option<String>,
+        profile: Option<String>,
+    ) -> ApiResult<PasskeyChallenge> {
         let state = ctx.state();
         let wa = passkeys::webauthn_for(&ctx.session().headers)?;
-        let user_id: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE username = ?")
-            .bind(username.trim())
-            .fetch_optional(&state.db)
-            .await?;
+        let user_id = account(state, username, profile).await?.map(|(id, _)| id);
         let keys = match user_id {
             Some(id) => keys_of(state, id).await?,
             None => Vec::new(),

@@ -73,6 +73,7 @@ export type ConfigPatch = {
   network?: NetworkConfigInput | null | undefined;
   requests?: RequestsConfigInput | null | undefined;
   scan?: ScanConfigInput | null | undefined;
+  signIn?: SignInConfigInput | null | undefined;
   transcode?: TranscodeConfigInput | null | undefined;
 };
 
@@ -384,6 +385,14 @@ export type ServerAppearanceInput = {
   style: ComponentStyle;
 };
 
+export type SignInConfigInput = {
+  style: SignInStyle;
+};
+
+export type SignInStyle =
+  | 'PROFILES'
+  | 'USERNAME';
+
 export type SourceInput = {
   apiKey?: string | null | undefined;
   categories: Array<number>;
@@ -681,6 +690,11 @@ export type UndoFileChangesMutationVariables = Exact<{
 
 export type UndoFileChangesMutation = { undoFileChanges: { undone: number, problems: Array<string> } };
 
+export type SignInProfilesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SignInProfilesQuery = { signInProfiles: Array<{ key: string, avatar: string | null, passkey: boolean }> };
+
 export type SetupMutationVariables = Exact<{
   username: string;
   password: string;
@@ -690,7 +704,8 @@ export type SetupMutationVariables = Exact<{
 export type SetupMutation = { setup: { user: { id: number } } };
 
 export type SignInMutationVariables = Exact<{
-  username: string;
+  username?: string | null | undefined;
+  profile?: string | null | undefined;
   password: string;
 }>;
 
@@ -698,7 +713,8 @@ export type SignInMutationVariables = Exact<{
 export type SignInMutation = { signIn: { user: { id: number } } };
 
 export type StartPasskeySignInMutationVariables = Exact<{
-  username: string;
+  username?: string | null | undefined;
+  profile?: string | null | undefined;
 }>;
 
 
@@ -919,7 +935,7 @@ export type ReleaseCandidateFieldsFragment = { batch: boolean, release: { title:
 
 export type CalendarEntryFieldsFragment = { seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null };
 
-export type SettingsFieldsFragment = { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } };
+export type SettingsFieldsFragment = { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, signIn: { style: SignInStyle }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } };
 
 export type LibrariesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -929,7 +945,7 @@ export type LibrariesQuery = { libraries: Array<{ name: string, showCount: numbe
 export type SettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SettingsQuery = { settings: { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } }, server: { transcoding: { vaapi: string | null, vaapiError: string | null, softwareH264: boolean } } };
+export type SettingsQuery = { settings: { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, signIn: { style: SignInStyle }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } }, server: { transcoding: { vaapi: string | null, vaapiError: string | null, softwareH264: boolean } } };
 
 export type SchemeFieldsFragment = { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } };
 
@@ -2016,6 +2032,9 @@ export const SettingsFieldsFragmentDoc = new TypedDocumentString(`
   requests {
     monitor
   }
+  signIn {
+    style
+  }
   sources {
     name
     kind
@@ -2651,6 +2670,15 @@ export const UndoFileChangesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UndoFileChangesMutation, UndoFileChangesMutationVariables>;
+export const SignInProfilesDocument = new TypedDocumentString(`
+    query SignInProfiles {
+  signInProfiles {
+    key
+    avatar
+    passkey
+  }
+}
+    `) as unknown as TypedDocumentString<SignInProfilesQuery, SignInProfilesQueryVariables>;
 export const SetupDocument = new TypedDocumentString(`
     mutation Setup($username: String!, $password: String!) {
   setup(username: $username, password: $password) {
@@ -2661,8 +2689,8 @@ export const SetupDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<SetupMutation, SetupMutationVariables>;
 export const SignInDocument = new TypedDocumentString(`
-    mutation SignIn($username: String!, $password: String!) {
-  signIn(username: $username, password: $password) {
+    mutation SignIn($username: String, $profile: String, $password: String!) {
+  signIn(username: $username, profile: $profile, password: $password) {
     user {
       id
     }
@@ -2670,8 +2698,8 @@ export const SignInDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<SignInMutation, SignInMutationVariables>;
 export const StartPasskeySignInDocument = new TypedDocumentString(`
-    mutation StartPasskeySignIn($username: String!) {
-  startPasskeySignIn(username: $username) {
+    mutation StartPasskeySignIn($username: String, $profile: String) {
+  startPasskeySignIn(username: $username, profile: $profile) {
     challenge
     options
   }
@@ -3311,6 +3339,9 @@ fragment SettingsFields on Settings {
   }
   requests {
     monitor
+  }
+  signIn {
+    style
   }
   sources {
     name

@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Camera, ImageUp, Minus, Plus, Trash2 } from 'lucide-react'
-import { type DragEvent, type PointerEvent, type WheelEvent, useEffect, useRef, useState } from 'react'
+import { type DragEvent, type PointerEvent, type ReactNode, type WheelEvent, useEffect, useRef, useState } from 'react'
 import { graphql } from '../gql'
 import { request } from '../lib/api'
 import { toastError } from './feedback'
@@ -43,12 +43,15 @@ export function Avatar({
   size = 32,
   className = '',
   src,
+  fallback,
 }: {
   user: Who
   size?: number
   className?: string
   /** Where the picture is, when not the usual place (e.g. for guests in a room). */
   src?: string | null
+  /** Shown without a picture, instead of the name's first letter. */
+  fallback?: ReactNode
 }) {
   const [broken, setBroken] = useState(false)
   const url = src !== undefined ? src : avatarUrl(user)
@@ -68,7 +71,7 @@ export function Avatar({
       {url && !broken ? (
         <img src={url} alt="" draggable={false} onError={() => setBroken(true)} className="size-full object-cover" />
       ) : (
-        user.username.slice(0, 1)
+        (fallback ?? user.username.slice(0, 1))
       )}
       <span className="pointer-events-none absolute inset-0 rounded-full inset-ring inset-ring-glow/8" />
     </span>

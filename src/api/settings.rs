@@ -9,7 +9,7 @@ use super::schema::Ctx;
 use crate::auth::permissions;
 use crate::config::{
     Automation, Clips, Config, Downloads, LibraryInput, Log, Metadata, Network, Profile, Provider, Requests, Scan,
-    SettingsPatch, Source, Transcode,
+    SettingsPatch, SignIn, Source, Transcode,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::paths::resolve_config_path;
@@ -86,6 +86,10 @@ impl Settings {
 
     async fn requests(&self) -> &Requests {
         &self.0.requests
+    }
+
+    async fn sign_in(&self) -> &SignIn {
+        &self.0.sign_in
     }
 
     async fn sources(&self) -> &[Source] {

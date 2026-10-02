@@ -270,6 +270,7 @@ input ConfigPatch {
 	downloads: DownloadsConfigInput
 	automation: AutomationConfigInput
 	requests: RequestsConfigInput
+	signIn: SignInConfigInput
 }
 
 type ConfiguredLibrary {
@@ -628,9 +629,9 @@ enum Monitor {
 
 type Mutation {
 	setup(username: String!, password: String!): SignedIn!
-	signIn(username: String!, password: String!): SignedIn!
+	signIn(username: String, profile: String, password: String!): SignedIn!
 	signOut: Boolean!
-	startPasskeySignIn(username: String!): PasskeyChallenge!
+	startPasskeySignIn(username: String, profile: String): PasskeyChallenge!
 	finishPasskeySignIn(challenge: String!, credential: JSON!): SignedIn!
 	changePassword(current: String!, new: String!): Boolean!
 	startPasskeyRegistration(name: String): PasskeyChallenge!
@@ -981,6 +982,7 @@ type ProviderTitle {
 type Query {
 	viewer: User
 	server: Server!
+	signInProfiles: [SignInProfile!]!
 	users: [User!]!
 	user(id: Int!): User
 	permissionDefaults: Permissions!
@@ -1321,6 +1323,7 @@ input SeriesPatch {
 type Server {
 	setupRequired: Boolean!
 	version: String!
+	signInStyle: SignInStyle!
 	clips: Boolean!
 	downloads: Boolean!
 	sources: Int!
@@ -1353,6 +1356,7 @@ type Settings {
 	downloads: DownloadsConfig!
 	automation: AutomationConfig!
 	requests: RequestsConfig!
+	signIn: SignInConfig!
 	sources: [Source!]!
 	profiles: [Profile!]!
 	libraries: [ConfiguredLibrary!]!
@@ -1364,6 +1368,25 @@ type Settings {
 type Shelf {
 	library: String!
 	titles: [Title!]!
+}
+
+type SignInConfig {
+	style: SignInStyle!
+}
+
+input SignInConfigInput {
+	style: SignInStyle!
+}
+
+type SignInProfile {
+	key: String!
+	avatar: String
+	passkey: Boolean!
+}
+
+enum SignInStyle {
+	PROFILES
+	USERNAME
 }
 
 type SignedIn {
