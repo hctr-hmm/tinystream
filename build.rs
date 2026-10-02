@@ -45,12 +45,16 @@ fn version() {
     };
     println!("cargo:rustc-env=TINYSTREAM_VERSION={version}");
 
-    let mut watched = vec!["HEAD".to_owned(), "packed-refs".to_owned()];
-    watched.extend(git(&["symbolic-ref", "-q", "HEAD"]));
-    for p in watched.iter().filter_map(|p| git(&["rev-parse", "--git-path", p])) {
-        if Path::new(&p).exists() {
-            println!("cargo:rerun-if-changed={p}");
-        }
+    // logs/HEAD records every move of HEAD; packed-refs is only needed without it, and watching it
+    // unconditionally rebuilds whenever an unrelated branch is deleted.
+    let path = |p: &str| git(&["rev-parse", "--git-path", p]).filter(|p| Path::new(p).exists());
+    let mut watched: Vec<String> = ["HEAD", "logs/HEAD"].into_iter().filter_map(path).collect();
+    watched.extend(git(&["symbolic-ref", "-q", "HEAD"]).and_then(|r| path(&r)));
+    if path("logs/HEAD").is_none() {
+        watched.extend(path("packed-refs"));
+    }
+    for p in watched {
+        println!("cargo:rerun-if-changed={p}");
     }
 }
 
