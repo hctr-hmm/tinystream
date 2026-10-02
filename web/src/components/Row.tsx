@@ -22,7 +22,7 @@ export function Row({ children }: { children: ReactNode }) {
     }
   }, [])
   const page = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' })
-  const arrow = 'absolute top-[calc(50%-1.5rem)] z-10 hidden size-10 place-items-center rounded-full bg-float/90 text-ink shadow-lg backdrop-blur-md transition-opacity hover:bg-float pointer-fine:grid'
+  const arrow = 'absolute top-[calc(50%-1.5rem)] z-10 hidden size-10 material place-items-center rounded-full bg-float/90 text-ink shadow-lg backdrop-blur-md transition-opacity hover:bg-float pointer-fine:grid'
   return (
     <div className="group/row relative">
       <div

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { type ComponentPropsWithoutRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { type CSSProperties, type ComponentPropsWithoutRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Squircle } from './Squircle'
@@ -12,7 +12,7 @@ type ButtonProps = ComponentPropsWithoutRef<'button'> & {
 }
 
 const variants = {
-  primary: 'bg-ink text-canvas hover:bg-white active:bg-ink/85',
+  primary: 'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent/85',
   quiet: 'bg-panel text-ink hover:bg-float active:bg-panel',
   plain: 'bg-transparent text-ink-2 hover:bg-hover hover:text-ink active:bg-press',
   danger: 'bg-transparent text-danger hover:bg-danger/10 active:bg-danger/15',
@@ -70,8 +70,8 @@ export function Spinner({ className = 'size-5' }: { className?: string }) {
 /** A floating layer: squircle panel, lit edge, deep shadow. */
 export function Panel({ className = '', children, radius = 14 }: { className?: string; children: ReactNode; radius?: number }) {
   return (
-    <div className="lift">
-      <Squircle radius={radius} edge className={`bg-float ${className}`}>
+    <div className="lift" style={{ '--lift-radius': `${radius}px` } as CSSProperties}>
+      <Squircle radius={radius} edge className={`material bg-float ${className}`}>
         {children}
       </Squircle>
     </div>
@@ -319,7 +319,7 @@ function TipBubble({ anchor, children }: { anchor: DOMRect; children: ReactNode 
     <div
       ref={ref}
       role="tooltip"
-      className="pointer-events-none fixed z-[60] max-w-80 rounded-md break-words bg-float px-2 py-1 text-xs text-ink shadow-[0_0_0_1px_var(--color-line-strong),0_6px_16px_rgb(0_0_0/0.45)]"
+      className="pointer-events-none fixed z-[60] max-w-80 material rounded-md break-words bg-float px-2 py-1 text-xs text-ink shadow-(--shadow-tip)"
       style={pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: 'hidden' }}
     >
       <div className={pos ? 'animate-[fade_100ms_ease-out]' : undefined}>{children}</div>
@@ -538,10 +538,10 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-5 w-8.5 shrink-0 rounded-full transition-colors ${checked ? 'bg-ink' : 'bg-press'}`}
+      className={`relative h-5 w-8.5 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-press'}`}
     >
       <span
-        className={`absolute top-0.5 size-4 rounded-full transition-all ${checked ? 'left-4 bg-canvas' : 'left-0.5 bg-ink-2'}`}
+        className={`absolute top-0.5 size-4 rounded-full transition-all ${checked ? 'left-4 bg-on-accent' : 'left-0.5 bg-ink-2'}`}
       />
     </button>
   )
@@ -552,7 +552,7 @@ export function Checkbox({ className = '', ...rest }: Omit<ComponentPropsWithout
   return (
     <span className={`relative inline-flex size-4 shrink-0 ${className}`}>
       <input type="checkbox" className="peer absolute inset-0 cursor-pointer opacity-0" {...rest} />
-      <span className="pointer-events-none flex size-4 items-center justify-center rounded-[5px] bg-press text-canvas shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors peer-checked:bg-ink peer-hover:bg-float peer-checked:peer-hover:bg-white peer-focus-visible:ring-2 peer-focus-visible:ring-ink/40 peer-disabled:opacity-40 [&>svg]:scale-50 [&>svg]:opacity-0 [&>svg]:transition-all peer-checked:[&>svg]:scale-100 peer-checked:[&>svg]:opacity-100">
+      <span className="pointer-events-none flex size-4 items-center justify-center rounded-[5px] bg-press text-on-accent inset-ring inset-ring-glow/8 transition-colors peer-checked:bg-accent peer-hover:bg-float peer-checked:peer-hover:bg-accent-hover peer-focus-visible:ring-2 peer-focus-visible:ring-ink/40 peer-disabled:opacity-40 [&>svg]:scale-50 [&>svg]:opacity-0 [&>svg]:transition-all peer-checked:[&>svg]:scale-100 peer-checked:[&>svg]:opacity-100">
         <Check className="size-3" strokeWidth={3} />
       </span>
     </span>
@@ -585,7 +585,7 @@ export function Dialog({
   // Portaled, so no masked or blurred ancestor can clip it.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-[8vh] animate-[fade_120ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-shade/50 px-4 py-[8vh] animate-[fade_120ms_ease-out]"
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className={`w-full animate-[pop_140ms_ease-out] ${width}`}>
@@ -629,7 +629,7 @@ function SegmentedOption({ on, tip: label, size, onClick, children }: { on: bool
       radius={9}
       aria-pressed={on}
       onClick={onClick}
-      className={`flex items-center gap-1.5 whitespace-nowrap transition-colors ${size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-[13px]'} ${on ? 'bg-float text-ink shadow-[0_1px_2px_rgb(0_0_0/0.4)]' : 'text-ink-2 hover:text-ink'}`}
+      className={`flex items-center gap-1.5 whitespace-nowrap transition-colors ${size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-[13px]'} ${on ? 'bg-float text-ink shadow-(--shadow-chip)' : 'text-ink-2 hover:text-ink'}`}
       {...props}
     >
       {children}
@@ -642,8 +642,8 @@ const tones = {
   quiet: 'bg-panel text-ink-2',
   ok: 'bg-ok/12 text-ok',
   danger: 'bg-danger/12 text-danger',
-  live: 'bg-sky-400/12 text-sky-300',
-  warn: 'bg-amber-400/12 text-amber-300',
+  live: 'bg-info-deep/12 text-info',
+  warn: 'bg-warn-deep/12 text-warn',
   strong: 'bg-ink text-canvas',
 }
 
@@ -657,7 +657,7 @@ export function Badge({ tone = 'quiet', children, title }: { tone?: keyof typeof
 
 /** A thin bar; `indeterminate` animates when there's no number yet. */
 export function Progress({ value, tone = 'ink', className = '' }: { value: number | null; tone?: 'ink' | 'ok' | 'live'; className?: string }) {
-  const color = tone === 'ok' ? 'bg-ok' : tone === 'live' ? 'bg-sky-300' : 'bg-ink'
+  const color = tone === 'ok' ? 'bg-ok' : tone === 'live' ? 'bg-info' : 'bg-ink'
   return (
     <div className={`relative h-1 overflow-hidden rounded-full bg-press ${className}`}>
       {value === null ? (

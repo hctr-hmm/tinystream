@@ -12,6 +12,8 @@ import type { ClipList } from '../lib/clips'
 import { useStatus } from '../lib/hooks'
 import { receive, refresh as refreshNotifications } from '../lib/notifications'
 import { preload, startFetching, stopFetching } from '../lib/refreshing'
+import { useAppearance } from '../lib/appearance'
+import { bootstrap } from '../lib/theme'
 import { queryClient } from '../router'
 import appCss from '../styles.css?url'
 
@@ -20,7 +22,6 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-      { name: 'theme-color', content: '#191919' },
       { title: 'tinystream' },
     ],
     links: [
@@ -34,8 +35,10 @@ export const Route = createRootRoute({
 
 function Document({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // The theme is put on <html> before the app loads, so it won't match what's rendered here.
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: bootstrap }} />
         <HeadContent />
       </head>
       <body>
@@ -152,6 +155,9 @@ function useLiveUpdates(enabled: boolean) {
               case 'NOTIFICATIONS':
                 refreshNotifications(qc)
                 break
+              case 'APPEARANCE':
+                invalidate(['appearance'], ['schemes'], ['appearance-settings'], ['server-appearance'])
+                break
             }
             break
           case 'SeriesChanged':
@@ -194,6 +200,7 @@ function Gate() {
   const path = useRouterState({ select: (s) => (s.resolvedLocation ?? s.location).pathname })
   const fullscreen = path.startsWith('/watch/') || path.startsWith('/together/')
   useLiveUpdates(!!data?.viewer)
+  useAppearance(data?.viewer?.id ?? null, !isPending)
 
   if (isPending) return null
   // Rooms decide for themselves who gets in; public ones need no account.

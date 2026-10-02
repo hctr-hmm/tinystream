@@ -167,8 +167,8 @@ function DownloadsPage() {
         </Squircle>
       )}
       {engine?.listenError && (
-        <Squircle radius={14} edge className="mb-6 flex items-start gap-3 bg-amber-400/10 p-4">
-          <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-300" />
+        <Squircle radius={14} edge className="mb-6 flex items-start gap-3 bg-warn-deep/10 p-4">
+          <CircleAlert className="mt-0.5 size-5 shrink-0 text-warn" />
           <p className="text-sm text-ink-2">{engine.listenError}</p>
         </Squircle>
       )}
@@ -218,7 +218,7 @@ function Traffic({ engine, stamp, downloads }: { engine: EngineOverview; stamp: 
       <Sparkline values={down} interval={POLL} max={max} className="absolute inset-x-0 bottom-0 h-20 w-full" />
       <Sparkline values={up} interval={POLL} max={max} color="var(--color-ok)" className="absolute inset-x-0 bottom-0 h-20 w-full opacity-80" />
       <div className="relative flex flex-wrap items-end gap-x-10 gap-y-4 p-5 pb-8">
-        <Stat label="Download" tone="text-sky-300" icon={<ArrowDown className="size-5" />} value={speed(engine.downloadRate)} />
+        <Stat label="Download" tone="text-info" icon={<ArrowDown className="size-5" />} value={speed(engine.downloadRate)} />
         <Stat label="Upload" tone="text-ok" icon={<ArrowUp className="size-5" />} value={speed(engine.uploadRate)} />
         <div className="flex-1" />
         <div className="flex gap-6 pb-1 text-xs text-ink-3 tabular">
@@ -407,7 +407,7 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
             <div className="mt-3">
               <div className="relative h-1 overflow-hidden rounded-full bg-press">
                 <div
-                  className="h-full rounded-full bg-sky-300 transition-[width] ease-linear"
+                  className="h-full rounded-full bg-info transition-[width] ease-linear"
                   style={{ width: `${(progress ?? 0) * 100}%`, transitionDuration: `${POLL}ms` }}
                 />
               </div>
@@ -417,7 +417,7 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
                   {bytes(done)} of {bytes(size)}
                 </span>
                 {rate > 0 && (
-                  <span className="flex items-center gap-1 text-sky-300">
+                  <span className="flex items-center gap-1 text-info">
                     <ArrowDown className="size-3" /> <Ticker value={speed(rate)} />
                   </span>
                 )}
@@ -623,10 +623,10 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
           <div className="mt-3">
             <div className="relative h-1 overflow-hidden rounded-full bg-press">
               {predicted === null ? (
-                <div className="absolute inset-y-0 w-1/3 animate-[slide_1.2s_ease-in-out_infinite] rounded-full bg-sky-300" />
+                <div className="absolute inset-y-0 w-1/3 animate-[slide_1.2s_ease-in-out_infinite] rounded-full bg-info" />
               ) : (
                 <div
-                  className="h-full rounded-full bg-sky-300 transition-[width] ease-linear"
+                  className="h-full rounded-full bg-info transition-[width] ease-linear"
                   style={{ width: `${predicted * 100}%`, transitionDuration: `${POLL}ms` }}
                 />
               )}
@@ -639,7 +639,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                   {bytes(l?.done)} of {bytes(d.size)}
                 </span>
                 {l && l.downloadRate > 0 && (
-                  <span className="flex items-center gap-1 text-sky-300">
+                  <span className="flex items-center gap-1 text-info">
                     <ArrowDown className="size-3" /> <Ticker value={speed(l.downloadRate)} />
                   </span>
                 )}

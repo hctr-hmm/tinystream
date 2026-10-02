@@ -3,7 +3,11 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/geist';
 
-@theme {
+/*
+ * Colours come from the scheme in use (src/theme.rs derives them; the app
+ * writes them over these). What's here is Grey, the default.
+ */
+@theme static {
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
 
   /* Layers, back to front. Each step up is a little lighter. */
@@ -22,8 +26,119 @@
   --color-danger: #eb8a7a;
   --color-ok: #8fc79a;
 
+  /* Primary buttons, toggles and the like; on-accent is what's written on them. */
+  --color-accent: #ebebea;
+  --color-accent-hover: #ffffff;
+  --color-on-accent: #191919;
+
+  /* Accents by meaning: live and downloading, waiting and warnings, clips, people. */
+  --color-info: #7dd3fc;
+  --color-info-deep: #38bdf8;
+  --color-warn: #fcd34d;
+  --color-warn-soft: #fde68a;
+  --color-warn-deep: #fbbf24;
+  --color-highlight: #f9a8d4;
+  --color-social: #c4b5fd;
+
+  --color-focus: rgb(255 255 255 / 0.55);
+  --color-selection: rgb(255 255 255 / 0.18);
+  --color-scrollbar: rgb(255 255 255 / 0.12);
+  /* Overlays: glow lightens (or, on light schemes, darkens) what's under it; shade darkens. */
+  --color-glow: #ffffff;
+  --color-shade: #000000;
+
+  /* Over artwork and video. Neutral, unless someone asks for the scheme there too. */
+  --color-media-ink: #ffffff;
+  --color-media-shade: #000000;
+  --color-media-panel: #262626;
+  --color-media-canvas: #101010;
+
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
+}
+
+:root[data-media-tint] {
+  --color-media-ink: var(--color-ink);
+  --color-media-shade: var(--color-canvas);
+  --color-media-panel: var(--color-panel);
+  --color-media-canvas: var(--color-canvas);
+}
+
+/*
+ * Component styles: material and motion only, never layout. Layered is how
+ * tinystream always looked. Squircle corners are scaled in lib/theme.ts.
+ */
+:root {
+  --lift: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-shade) 35%, transparent))
+    drop-shadow(0 12px 32px color-mix(in srgb, var(--color-shade) 45%, transparent));
+  --shadow-chip: 0 1px 2px color-mix(in srgb, var(--color-shade) 40%, transparent);
+  --shadow-tip: 0 0 0 1px var(--color-line-strong), 0 6px 16px color-mix(in srgb, var(--color-shade) 45%, transparent);
+  --edge-top: 0.14;
+  --edge-middle: 0.07;
+  --edge-bottom: 0.045;
+  --pop-y: -3px;
+  --pop-scale: 0.985;
+}
+:root[data-style='flat'] {
+  --lift: drop-shadow(0 0 0 transparent);
+  --shadow-chip: 0 0 0 1px var(--color-line-strong);
+  --shadow-tip: 0 0 0 1px var(--color-line-strong);
+  --edge-top: 0.1;
+  --edge-middle: 0.1;
+  --edge-bottom: 0.1;
+  --pop-y: 0px;
+  --pop-scale: 1;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+}
+:root[data-style='glass'] {
+  --shadow-chip: 0 1px 3px color-mix(in srgb, var(--color-shade) 30%, transparent);
+  --edge-top: 0.26;
+  --edge-middle: 0.1;
+  --edge-bottom: 0.16;
+  --pop-y: -6px;
+  --pop-scale: 0.95;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+}
+/*
+ * Glass: what floats is see-through and blurs what's behind it. A filter on
+ * an ancestor would cut the blur off from the page, so the lift is a shadow.
+ */
+:root[data-style='glass'] {
+  --lift: none;
+  .lift {
+    border-radius: var(--lift-radius, 16px);
+    box-shadow: 0 18px 48px -10px color-mix(in srgb, var(--color-shade) 45%, transparent);
+  }
+  .material {
+    background-color: color-mix(in srgb, var(--color-float) 70%, transparent);
+    backdrop-filter: blur(28px) saturate(1.8);
+  }
+  .material-bar {
+    background-color: color-mix(in srgb, var(--color-canvas) 62%, transparent);
+    backdrop-filter: blur(32px) saturate(1.8);
+  }
+}
+:root[data-style='flat'] .material-bar {
+  background-color: var(--color-canvas);
+  backdrop-filter: none;
+}
+/* Same shapes and motion, just solid enough to read without the blur. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root[data-style='glass'] :is(.material, .material-bar) {
+    background-color: color-mix(in srgb, var(--color-float) 96%, transparent);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-style='glass'] :is(.material, .material-bar) {
+    background-color: color-mix(in srgb, var(--color-float) 96%, transparent);
+    backdrop-filter: none;
+  }
 }
 
 @layer base {
@@ -40,10 +155,10 @@
     min-height: 100dvh;
   }
   ::selection {
-    background: rgb(255 255 255 / 0.18);
+    background: var(--color-selection);
   }
   :focus-visible {
-    outline: 2px solid rgb(255 255 255 / 0.55);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
   button {
@@ -51,7 +166,7 @@
   }
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+    scrollbar-color: var(--color-scrollbar) transparent;
   }
 }
 
@@ -61,7 +176,7 @@
 
 /* A soft, deep shadow for things that float above the page. */
 @utility lift {
-  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35)) drop-shadow(0 12px 32px rgb(0 0 0 / 0.45));
+  filter: var(--lift);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -76,7 +191,7 @@
 @keyframes pop {
   from {
     opacity: 0;
-    transform: translateY(-3px) scale(0.985);
+    transform: translateY(var(--pop-y)) scale(var(--pop-scale));
   }
 }
 
@@ -84,14 +199,14 @@
 @keyframes nudge-right {
   from {
     opacity: 0;
-    transform: translateX(-6px) scale(0.985);
+    transform: translateX(-6px) scale(var(--pop-scale));
   }
 }
 
 @keyframes nudge-left {
   from {
     opacity: 0;
-    transform: translateX(6px) scale(0.985);
+    transform: translateX(6px) scale(var(--pop-scale));
   }
 }
 
@@ -138,7 +253,7 @@
 /* A row that just changed state glows once, then settles. */
 @keyframes arrive {
   0% {
-    background-color: rgb(143 199 154 / 0.16);
+    background-color: color-mix(in srgb, var(--color-ok) 16%, transparent);
   }
   100% {
     background-color: transparent;
@@ -226,7 +341,7 @@
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%) 0 0 / 250% 100%;
+  background: linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--color-media-ink) 22%, transparent) 50%, transparent 65%) 0 0 / 250% 100%;
   transition: opacity 600ms ease-out;
 }
 
@@ -366,7 +481,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle 65cqmin at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.55), transparent 70%);
+  background: radial-gradient(circle 65cqmin at var(--gx, 50%) var(--gy, 0%), color-mix(in srgb, var(--color-media-ink) 55%, transparent), transparent 70%);
 }
 [data-tilting] .glare {
   opacity: 1;
@@ -467,17 +582,17 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(100deg, transparent 30%, rgb(143 199 154 / 0.2) 50%, transparent 70%);
+  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--color-ok) 20%, transparent) 50%, transparent 70%);
   animation: glint 1400ms cubic-bezier(0.45, 0, 0.2, 1) both;
 }
 
 /* A ring that closed gives off one soft pulse. */
 @keyframes ring-done {
   0% {
-    box-shadow: 0 0 0 0 rgb(125 211 252 / 0.6);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-info) 60%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 10px rgb(125 211 252 / 0);
+    box-shadow: 0 0 0 10px transparent;
   }
 }
 

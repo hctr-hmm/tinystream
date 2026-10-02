@@ -169,7 +169,7 @@ function ClipCard({ clip: c, scope, onOpen }: { clip: Clip; scope: Scope; onOpen
     <button onClick={onOpen} className="group min-w-0 text-left outline-none">
       <Squircle radius={14} edge className="relative aspect-video w-full overflow-hidden bg-raised">
         <Cover clip={c} />
-        <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-2xs font-medium text-white tabular backdrop-blur-md">
+        <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-media-shade/65 px-1.5 py-0.5 text-2xs font-medium text-media-ink tabular backdrop-blur-md">
           {c.screenshot ? (
             <>
               <Camera className="size-3" /> {stamp(c.start)}
@@ -179,7 +179,7 @@ function ClipCard({ clip: c, scope, onOpen }: { clip: Clip; scope: Scope; onOpen
           )}
         </span>
         {c.public && c.linkLive && (
-          <span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/60 text-white backdrop-blur-md">
+          <span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-media-shade/60 text-media-ink backdrop-blur-md">
             <Link2 className="size-3" />
           </span>
         )}
@@ -214,7 +214,7 @@ function Cover({ clip: c }: { clip: Clip }) {
     <div className="grid size-full place-items-center p-4 text-center">
       {c.state === 'RENDERING' || c.state === 'QUEUED' ? (
         <div className="w-2/3">
-          <Icon className="mx-auto mb-3 size-5 animate-pulse text-pink-300" />
+          <Icon className="mx-auto mb-3 size-5 animate-pulse text-highlight" />
           <Progress value={c.state === 'RENDERING' ? (c.progress ?? 0) : null} />
         </div>
       ) : c.state === 'FAILED' ? (
@@ -276,7 +276,7 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
   return (
     <Dialog onClose={onClose} width="max-w-3xl">
       <div className="-mx-2 -mt-2">
-        <Squircle radius={14} className="relative aspect-video w-full overflow-hidden bg-black">
+        <Squircle radius={14} className="relative aspect-video w-full overflow-hidden bg-media-shade">
           {ready && c.screenshot ? (
             <a href={c.file} target="_blank" rel="noreferrer" className="block size-full">
               <img key={c.renderedAt} src={c.file} alt={clipName(c)} className="size-full object-contain" />
@@ -298,9 +298,9 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
               ) : (
                 <div className="w-60">
                   {c.screenshot ? (
-                    <Camera className="mx-auto mb-4 size-6 animate-pulse text-pink-300" />
+                    <Camera className="mx-auto mb-4 size-6 animate-pulse text-highlight" />
                   ) : (
-                    <Scissors className="mx-auto mb-4 size-6 animate-pulse text-pink-300" />
+                    <Scissors className="mx-auto mb-4 size-6 animate-pulse text-highlight" />
                   )}
                   <Progress value={c.state === 'RENDERING' ? (c.progress ?? 0) : null} />
                   <p className="mt-3 text-[13px] text-ink-3">
@@ -345,7 +345,7 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
             {ready && c.bytes ? ` · ${bytes(c.bytes)}` : ''} · {relative(c.createdAt)}
           </p>
           {c.source.status === 'CHANGED' && c.canManage && !c.screenshot && (
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-200/90">
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-warn-soft/90">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
               Source video was replaced; check the range.
             </p>

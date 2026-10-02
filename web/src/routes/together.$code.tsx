@@ -55,13 +55,13 @@ function Room({ ctx }: { ctx: RoomContext }) {
 function Arriving({ backdrop, title }: { backdrop?: string; title?: string }) {
   const [broken, setBroken] = useState(false)
   return (
-    <div className="fixed inset-0 grid place-items-center bg-black text-white/80">
+    <div className="fixed inset-0 grid place-items-center bg-media-shade text-media-ink/80">
       {backdrop && !broken && (
         <img src={backdrop} alt="" onError={() => setBroken(true)} className="absolute inset-0 size-full object-cover opacity-25 blur-sm" />
       )}
       <div className="relative flex flex-col items-center gap-4">
         <Spinner className="size-9" />
-        {title && <p className="text-[15px] text-white/70">Joining {title}…</p>}
+        {title && <p className="text-[15px] text-media-ink/70">Joining {title}…</p>}
       </div>
     </div>
   )
@@ -70,14 +70,14 @@ function Arriving({ backdrop, title }: { backdrop?: string; title?: string }) {
 function Gone({ message, signedIn }: { message: string; signedIn: boolean }) {
   const navigate = useNavigate()
   return (
-    <div className="fixed inset-0 grid place-items-center bg-black p-6">
+    <div className="fixed inset-0 grid place-items-center bg-media-shade p-6">
       <div className="max-w-sm text-center">
-        <p className="text-[22px] font-semibold tracking-tight text-white">Nothing playing here</p>
-        <p className="mt-2 text-[15px] leading-relaxed text-white/60">{message}</p>
+        <p className="text-[22px] font-semibold tracking-tight text-media-ink">Nothing playing here</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-media-ink/60">{message}</p>
         {signedIn && (
           <button
             onClick={() => void navigate({ to: '/' })}
-            className="mt-6 inline-flex h-11 items-center rounded-[14px] bg-white px-5 text-[15px] font-medium text-black hover:bg-white/90"
+            className="mt-6 inline-flex h-11 items-center rounded-[14px] bg-media-ink px-5 text-[15px] font-medium text-media-shade hover:bg-media-ink/90"
           >
             Go home
           </button>

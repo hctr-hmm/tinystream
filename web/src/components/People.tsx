@@ -492,7 +492,7 @@ function Setting({
     <Tip label={`Go back to the default: ${was(defaults)}`} className="flex">
       <button
         onClick={() => onReset(keys)}
-        className="group/reset inline-flex h-5 shrink-0 items-center gap-1 rounded-md bg-sky-400/12 px-1.5 text-2xs font-medium text-sky-300 transition-colors hover:bg-sky-400/20"
+        className="group/reset inline-flex h-5 shrink-0 items-center gap-1 rounded-md bg-info-deep/12 px-1.5 text-2xs font-medium text-info transition-colors hover:bg-info-deep/20"
       >
         <span className="group-hover/reset:hidden">Custom</span>
         <RotateCcw className="hidden size-3 group-hover/reset:block" />
@@ -502,7 +502,7 @@ function Setting({
   )
   return (
     <div className={`relative py-3 transition-opacity ${dim ? 'opacity-45' : ''}`}>
-      {custom && <span className="absolute top-3 bottom-3 -left-3 w-0.5 rounded-full bg-sky-300/70" />}
+      {custom && <span className="absolute top-3 bottom-3 -left-3 w-0.5 rounded-full bg-info/70" />}
       <div className="flex items-center gap-3">
         <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-panel text-ink-2 [&>svg]:size-3.5">{icon}</span>
         <div className="min-w-0 flex-1">
@@ -511,7 +511,7 @@ function Setting({
             {reset}
           </p>
           {hint && <p className="mt-0.5 text-xs text-ink-3">{hint}</p>}
-          {line && <p className="mt-0.5 text-xs text-sky-300/80">{line}</p>}
+          {line && <p className="mt-0.5 text-xs text-info/80">{line}</p>}
         </div>
         {!wide && children}
       </div>

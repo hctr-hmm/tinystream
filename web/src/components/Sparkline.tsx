@@ -126,7 +126,7 @@ export function PieceMap({ pieces, className = '' }: { pieces: number[]; classNa
       {pieces.map((p, i) => (
         <div
           key={i}
-          className="min-w-0 flex-1 bg-sky-300 transition-opacity duration-700"
+          className="min-w-0 flex-1 bg-info transition-opacity duration-700"
           style={{ opacity: p >= 255 ? 0.9 : 0.1 + (p / 255) * 0.55 }}
         />
       ))}

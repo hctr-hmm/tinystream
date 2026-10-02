@@ -375,7 +375,7 @@ function TitlePage() {
                       {s.upcoming > 0 && (
                         <Tip
                           label={`${s.upcoming} episode${s.upcoming === 1 ? '' : 's'} yet to air`}
-                          className="size-1.5 rounded-full bg-amber-300"
+                          className="size-1.5 rounded-full bg-warn"
                         />
                       )}
                     </Squircle>
@@ -509,7 +509,7 @@ function Resolve({ text, hold }: { text: string; hold: boolean }) {
 function TitleBar({ item }: { item: Item }) {
   return (
     <div className="sticky top-12 z-20 h-0 md:top-0">
-      <div className="scrolled-in absolute inset-x-0 top-0 border-b border-line bg-canvas/80 backdrop-blur-xl">
+      <div className="scrolled-in absolute inset-x-0 top-0 material-bar border-b border-line bg-canvas/80 backdrop-blur-xl">
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-5 text-left md:px-10"
@@ -603,7 +603,7 @@ function EpisodeRow({
         params={{ id: String(e.id) }}
         viewTransition
         onClick={(ev) => morphFrom(ev, 'still')}
-        className="block rounded-[15px] outline-none focus-visible:outline-2 focus-visible:outline-white/70"
+        className="block rounded-[15px] outline-none focus-visible:outline-2 focus-visible:outline-glow/70"
       >
         <Squircle radius={14} edge={next} className={`flex gap-4 p-3 transition-colors group-hover:bg-hover ${next ? 'bg-raised' : ''}`}>
           <Squircle radius={10} edge className="relative aspect-video w-36 shrink-0 bg-panel md:w-44" data-morph>
@@ -613,12 +613,12 @@ function EpisodeRow({
               <div className="grid size-full place-items-center text-sm text-ink-3 tabular">{e.episode}</div>
             )}
             <div className="drain" data-on={e.finished || undefined} />
-            <div className="absolute inset-0 grid place-items-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
-              <Play className="size-6 fill-white text-white" />
+            <div className="absolute inset-0 grid place-items-center bg-media-shade/30 opacity-0 transition-opacity group-hover:opacity-100">
+              <Play className="size-6 fill-media-ink text-media-ink" />
             </div>
             {progress > 0 && (
-              <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/50">
-                <div className="h-full bg-white" style={{ width: `${progress * 100}%` }} />
+              <div className="absolute inset-x-0 bottom-0 h-[3px] bg-media-shade/50">
+                <div className="h-full bg-media-ink" style={{ width: `${progress * 100}%` }} />
               </div>
             )}
           </Squircle>
@@ -705,7 +705,7 @@ function GhostRow({
         {l && l.stage !== 'METADATA' && (
           <div className="mt-2.5 max-w-sm">
             <div className="h-1 overflow-hidden rounded-full bg-press">
-              <div className="h-full rounded-full bg-sky-300 transition-[width] duration-[2s] ease-linear" style={{ width: `${l.progress * 100}%` }} />
+              <div className="h-full rounded-full bg-info transition-[width] duration-[2s] ease-linear" style={{ width: `${l.progress * 100}%` }} />
             </div>
             <p className="mt-1 text-xs text-ink-3 tabular">
               {(l.progress * 100).toFixed(1)}%{l.downloadRate > 0 && ` · ${speed(l.downloadRate)}`}
@@ -756,7 +756,7 @@ function MatchDialog({ item, onClose }: { item: Item; onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[10vh] animate-[fade_120ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-shade/50 px-4 pt-[10vh] animate-[fade_120ms_ease-out]"
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >

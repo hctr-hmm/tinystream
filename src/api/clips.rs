@@ -1250,10 +1250,11 @@ pub async fn page(
     Query(q): Query<PageQuery>,
     headers: HeaderMap,
 ) -> Response {
+    let theme = super::appearance::public_head(&state).await.unwrap_or_default();
     let Some(r) = public_clip(&state, &code).await else {
         return (
             StatusCode::NOT_FOUND,
-            Html(shell("Clip not found", "", "<p class=note>This clip isn't available.</p>")),
+            Html(shell("Clip not found", &theme, "<p class=note>This clip isn't available.</p>")),
         )
             .into_response();
     };
@@ -1269,7 +1270,7 @@ pub async fn page(
     let (w, h) = (r.width_px.unwrap_or(1280), r.height_px.unwrap_or(720));
 
     if r.screenshot {
-        return Html(screenshot_page(&r, &base, &code, &title, &about, ready)).into_response();
+        return Html(screenshot_page(&r, &base, &code, &title, &about, ready, &theme)).into_response();
     }
 
     if q.embed.is_some() {
@@ -1308,8 +1309,7 @@ pub async fn page(
 <meta name="twitter:player:width" content="{w}">
 <meta name="twitter:player:height" content="{h}">
 <meta name="twitter:player:stream" content="{video}">
-<meta name="twitter:player:stream:content_type" content="video/mp4">
-<meta name="theme-color" content="#0b0b10">"##,
+<meta name="twitter:player:stream:content_type" content="video/mp4">"##,
         page = escape(&page_url),
         title = escape(&title),
         desc = escape(&format!("{about} · {length}")),
@@ -1337,10 +1337,10 @@ pub async fn page(
         )
     };
     let refresh = if ready { "" } else { r#"<meta http-equiv="refresh" content="5">"# };
-    Html(shell(&title, &format!("{meta}\n{refresh}"), &body)).into_response()
+    Html(shell(&title, &format!("{meta}\n{theme}\n{refresh}"), &body)).into_response()
 }
 
-fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, ready: bool) -> String {
+fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, ready: bool, theme: &str) -> String {
     let page_url = format!("{base}/c/{code}");
     let image = format!("{base}/c/{code}/image.png");
     let at = r.range_start as i64;
@@ -1363,8 +1363,7 @@ fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, re
 <meta property="og:image:height" content="{h}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{title}">
-<meta name="twitter:image" content="{image}">
-<meta name="theme-color" content="#0b0b10">"##,
+<meta name="twitter:image" content="{image}">"##,
         page = escape(&page_url),
         title = escape(title),
         desc = escape(&format!("{about} · {at}")),
@@ -1390,7 +1389,7 @@ fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, re
         )
     };
     let refresh = if ready { "" } else { r#"<meta http-equiv="refresh" content="3">"# };
-    shell(title, &format!("{meta}\n{refresh}"), &body)
+    shell(title, &format!("{meta}\n{theme}\n{refresh}"), &body)
 }
 
 fn shell(title: &str, head: &str, body: &str) -> String {
@@ -1403,20 +1402,22 @@ fn shell(title: &str, head: &str, body: &str) -> String {
 <title>{title}</title>
 {head}
 <style>
-:root {{ color-scheme: dark; }}
+html {{ color-scheme: dark; }}
 * {{ box-sizing: border-box; }}
-body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0b0b10; color: #ececf1;
+body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--color-canvas, #191919);
+  color: var(--color-ink, #ebebea);
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 24px; }}
 main {{ width: min(100%, 1100px); }}
 video, img {{ display: block; width: 100%; max-height: 80vh; background: #000; border-radius: 14px; }}
 img {{ height: auto; object-fit: contain; }}
 .bar {{ display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }}
 h1 {{ font-size: 18px; font-weight: 600; margin: 0; }}
-p {{ margin: 2px 0 0; color: #9d9dab; }}
-.button {{ flex: none; padding: 9px 16px; border-radius: 999px; background: #ececf1; color: #0b0b10; font-weight: 600;
+p {{ margin: 2px 0 0; color: var(--color-ink-2, #9b9b98); }}
+.button {{ flex: none; padding: 9px 16px; border-radius: 999px; background: var(--color-accent, #ebebea);
+  color: var(--color-on-accent, #191919); font-weight: 600;
   text-decoration: none; }}
 .wait {{ text-align: center; }}
-.note {{ color: #9d9dab; }}
+.note {{ color: var(--color-ink-2, #9b9b98); }}
 </style>
 </head>
 <body><main>{body}</main></body>
