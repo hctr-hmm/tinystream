@@ -2,7 +2,7 @@
 
 import { useNavigate } from '@tanstack/react-router'
 import { Bell, BellOff, CircleCheck, CirclePlay, CircleX, Inbox as InboxIcon, Radio, Scissors, Send, Users, X } from 'lucide-react'
-import { type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { type CSSProperties, type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { relative, useNow } from '../lib/downloads'
 import { type Notice, type NoticeKind, onArrival, pillNotices, useInbox, useMarkRead, useRemove } from '../lib/notifications'
@@ -96,13 +96,35 @@ export function NotificationsMenu({ align = 'end' }: { align?: 'start' | 'end' }
   )
 }
 
+/** How long a cleared row takes to flick away and fold shut, before it's really gone. */
+const FOLD = 520
+/** Rows past this many in a cascade all go at once. */
+const CASCADE = 8
+
 function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: number; onClose: () => void }) {
   const read = useMarkRead()
   const remove = useRemove()
   const follow = useFollow()
   const now = useNow(30_000)
+  const [gone, setGone] = useState<Set<number> | 'all'>(new Set())
+  const [cleared, setCleared] = useState(false)
   const fresh = items.filter((n) => n.readAt == null)
   const earlier = items.filter((n) => n.readAt != null)
+  const clearing = gone === 'all'
+  const leaving = (id: number) => clearing || gone.has(id)
+  const later = (fn: () => void, ms: number) =>
+    matchMedia('(prefers-reduced-motion: reduce)').matches ? fn() : setTimeout(fn, ms)
+  const drop = (id: number) => {
+    setGone((g) => (g === 'all' ? g : new Set(g).add(id)))
+    later(() => (remove.mutate(id), setCleared(true)), FOLD)
+  }
+  const clear = () => {
+    setGone('all')
+    later(() => (remove.mutate('all'), setGone(new Set()), setCleared(true)), FOLD + Math.min(items.length + 2, CASCADE) * 40)
+  }
+  // Rows and headings, top to bottom, so a cascade can go in order.
+  let i = 0
+  const order = () => (clearing ? Math.min(i++, CASCADE) : 0)
   return (
     <Panel radius={16} className="w-[min(24rem,calc(100vw-1.5rem))]">
       <div className="flex items-center gap-2 border-b border-line py-2 pr-2 pl-4">
@@ -113,31 +135,56 @@ function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: numbe
           </Button>
         )}
         {items.length > 0 && unread === 0 && (
-          <Button size="sm" variant="plain" onClick={() => remove.mutate('all')}>
+          <Button size="sm" variant="plain" disabled={clearing} onClick={clear}>
             Clear
           </Button>
         )}
       </div>
       <div className="max-h-[min(34rem,70dvh)] overflow-y-auto overscroll-contain p-1.5">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-            <BellOff className="size-5 text-ink-3" />
-            <p className="text-sm text-ink-2">Nothing yet</p>
+          <div className={cleared ? 'unfold' : ''}>
+            <div>
+              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+                <BellOff className={`size-5 origin-top text-ink-3 ${cleared ? 'animate-[hush_700ms_ease-out_120ms_both]' : ''}`} />
+                <p className="text-sm text-ink-2">Nothing yet</p>
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            {fresh.length > 0 && earlier.length > 0 && <Heading>New</Heading>}
+            {fresh.length > 0 && earlier.length > 0 && (
+              <Fold gone={clearing} i={order()}>
+                <Heading>New</Heading>
+              </Fold>
+            )}
             {fresh.map((n) => (
-              <Row key={n.id} n={n} now={now} onOpen={() => (onClose(), follow(n))} onRemove={() => remove.mutate(n.id)} />
+              <Fold key={n.id} gone={leaving(n.id)} i={order()}>
+                <Row n={n} now={now} onOpen={() => (onClose(), follow(n))} onRemove={() => drop(n.id)} />
+              </Fold>
             ))}
-            {earlier.length > 0 && fresh.length > 0 && <Heading>Earlier</Heading>}
+            {earlier.length > 0 && fresh.length > 0 && (
+              <Fold gone={clearing} i={order()}>
+                <Heading>Earlier</Heading>
+              </Fold>
+            )}
             {earlier.map((n) => (
-              <Row key={n.id} n={n} now={now} onOpen={() => (onClose(), follow(n))} onRemove={() => remove.mutate(n.id)} />
+              <Fold key={n.id} gone={leaving(n.id)} i={order()}>
+                <Row n={n} now={now} onOpen={() => (onClose(), follow(n))} onRemove={() => drop(n.id)} />
+              </Fold>
             ))}
           </>
         )}
       </div>
     </Panel>
+  )
+}
+
+/** Folds shut once it's gone. The inner box has no padding of its own, so it can fold all the way. */
+function Fold({ gone, i, children }: { gone: boolean; i: number; children: ReactNode }) {
+  return (
+    <div className="fold" data-gone={gone || undefined} style={{ '--i': i } as CSSProperties}>
+      <div>{children}</div>
+    </div>
   )
 }
 

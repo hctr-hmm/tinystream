@@ -469,6 +469,76 @@
   animation: swap-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/*
+ * Cleared notifications wind up, get flicked off to the side, and the gap
+ * they leave folds shut. Clearing them all does it in a cascade (by --i).
+ */
+.fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.fold > * {
+  min-height: 0;
+}
+.fold[data-gone] {
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition-delay: calc(var(--i, 0) * 40ms + 180ms);
+}
+.fold[data-gone] > * {
+  animation: flick 380ms both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes flick {
+  0% {
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  25% {
+    transform: translateX(-6px) scale(1.01);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.2);
+  }
+  100% {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(45%) rotate(2deg) scale(0.94);
+  }
+}
+
+/* What's left once everything's cleared opens up, and the bell rocks to a stop. */
+.unfold > * {
+  min-height: 0;
+}
+.unfold {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  animation: unfold 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes unfold {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+@keyframes hush {
+  0% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-16deg);
+  }
+  40% {
+    transform: rotate(12deg);
+  }
+  60% {
+    transform: rotate(-7deg);
+  }
+  80% {
+    transform: rotate(3deg);
+  }
+}
+
 /* A new title resolves a letter at a time. */
 @keyframes resolve {
   from {
