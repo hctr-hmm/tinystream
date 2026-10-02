@@ -29,6 +29,7 @@ import { graphql } from '../gql'
 import { type Library, type User, librariesQuery, request } from '../lib/api'
 import { disconnect } from '../lib/graphql'
 import { speed, useFeatures } from '../lib/downloads'
+import { shortcut } from '../lib/format'
 import { useClipsOn } from '../lib/hooks'
 import { prune, recents } from '../lib/recents'
 import { Avatar } from './Avatar'
@@ -330,7 +331,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
           >
             <Search className="size-4" />
             <span className="flex-1 text-left">Search</span>
-            <kbd className="font-sans text-2xs text-ink-3">Ctrl K</kbd>
+            <kbd className="font-sans text-2xs text-ink-3">{shortcut('Ctrl+K')}</kbd>
           </Squircle>
         </button>
         <nav className="space-y-0.5">
@@ -833,7 +834,7 @@ const SHORTCUTS: { group: string; keys: [string, string][] }[] = [
   {
     group: 'Anywhere',
     keys: [
-      ['Ctrl K', 'Search and commands'],
+      ['Ctrl+K', 'Search and commands'],
       ['/', 'Search'],
       ['?', 'This list'],
       ['N', 'Notifications'],
@@ -861,7 +862,7 @@ const SHORTCUTS: { group: string; keys: [string, string][] }[] = [
       ['<  >', 'Slower or faster'],
       ['P', 'Picture in picture'],
       ['X', 'Make a clip'],
-      ['Shift S', 'Take a screenshot'],
+      ['Shift+S', 'Take a screenshot'],
       ['0–9', 'Jump to 0–90%'],
     ],
   },
@@ -887,7 +888,7 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
                         </span>
                       ) : (
                         <kbd key={i} className="min-w-6 rounded-md border border-line-strong bg-panel px-1.5 py-0.5 text-center font-sans text-2xs text-ink">
-                          {part}
+                          {shortcut(part)}
                         </kbd>
                       ),
                     )}

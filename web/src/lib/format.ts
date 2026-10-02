@@ -35,3 +35,12 @@ export function language(code: string | null | undefined) {
   if (!code) return null
   return LANGUAGES[code.toLowerCase()] ?? code
 }
+
+const MAC = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform)
+const MAC_MODIFIERS: Record<string, string> = { Ctrl: '⌘', Alt: '⌥', Shift: '⇧' }
+
+/** "Ctrl+K" → "⌘K" on macOS, "Ctrl + K" elsewhere */
+export function shortcut(combo: string) {
+  const keys = combo.split('+')
+  return MAC ? keys.map((k) => MAC_MODIFIERS[k] ?? k).join('') : keys.join(' + ')
+}
