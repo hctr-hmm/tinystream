@@ -27,11 +27,11 @@ env:
 jobs:
   fmt:
     name: Format
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       RUSTUP_TOOLCHAIN: nightly
     steps:
-      - uses: actions/checkout@v4
+      - uses: useblacksmith/checkout@v1
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
@@ -39,12 +39,12 @@ jobs:
 
   web:
     name: Web UI
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: useblacksmith/checkout@v1
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
@@ -58,11 +58,11 @@ jobs:
   rust:
     name: Build and test
     needs: web
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       TINYSTREAM_SKIP_WEB_BUILD: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: useblacksmith/checkout@v1
       - uses: ./.github/actions/native-deps
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -76,7 +76,7 @@ jobs:
   features:
     name: Features (${{ matrix.features.name }})
     needs: web
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +88,7 @@ jobs:
     env:
       TINYSTREAM_SKIP_WEB_BUILD: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: useblacksmith/checkout@v1
       - uses: ./.github/actions/native-deps
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -103,11 +103,11 @@ jobs:
   msrv:
     name: MSRV
     needs: web
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       TINYSTREAM_SKIP_WEB_BUILD: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: useblacksmith/checkout@v1
       - uses: ./.github/actions/native-deps
       - name: Read rust-version from Cargo.toml
         id: msrv
