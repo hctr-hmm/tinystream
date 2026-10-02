@@ -173,7 +173,7 @@ export function People() {
   return (
     <>
       <Card
-        title="People"
+        title="Users"
         aside={
           <Button variant="primary" onClick={() => setAdding(true)}>
             <Plus className="size-4" /> Add someone
@@ -220,7 +220,7 @@ export function People() {
       </Card>
 
       {defaults && users && (
-        <Card title="Defaults">
+        <Card title="Default permissions">
           <DefaultsEditor defaults={defaults} users={users} libraries={libraries} downloads={downloads} />
         </Card>
       )}
@@ -408,7 +408,7 @@ function PermissionEditor(props: EditorProps) {
         </Setting>
       </Group>
 
-      <Group title="Helping out">
+      <Group title="Management">
         {downloads && (
           <>
             <Setting
@@ -850,7 +850,7 @@ function AddPerson({ onClose, onAdded }: { onClose: () => void; onAdded: (id: nu
     </Dialog>
   )
 }
-/** Your own picture, in Settings → Your account. */
+/** Your own picture, in Settings → Account. */
 export function Profile() {
   const me = useMe()
   if (!me) return null

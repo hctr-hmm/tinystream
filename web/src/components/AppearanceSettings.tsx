@@ -222,12 +222,12 @@ export function AppearanceSettings() {
     <>
       <Card title="Colours" description={mine.colors ? undefined : `Following the server: ${describe(server.colors)}.`}>
         <div className="space-y-4">
-          <Row label="Use">
+          <Row label="Colours">
             <Segmented
               value={mine.colors ? 'own' : 'server'}
               options={[
                 { value: 'server', label: 'Server default' },
-                { value: 'own', label: 'My own' },
+                { value: 'own', label: 'Custom' },
               ]}
               onChange={(v) => set({ colors: v === 'own' ? { ...server.colors } : null })}
             />
@@ -236,23 +236,23 @@ export function AppearanceSettings() {
         </div>
       </Card>
 
-      <Card title="Style" description="How surfaces look and move. Colours stay the same.">
-        <Select
-          value={mine.style ?? ''}
-          options={[{ value: '', label: `Server default (${styleName(server.style)})` }, ...STYLES]}
-          onChange={(v) => set({ style: (v || null) as ComponentStyle | null })}
-        />
-      </Card>
-
-      <Card title="Artwork and video">
-        <Row label="Colour what's over artwork and video" hint="Off keeps posters, backdrops and the player neutral">
-          <Toggle label="Colour what's over artwork and video" checked={mine.mediaTint} onChange={(mediaTint) => set({ mediaTint })} />
-        </Row>
+      <Card title="Style">
+        <div className="space-y-4">
+          <Field label="Surfaces">
+            <Select
+              value={mine.style ?? ''}
+              options={[{ value: '', label: `Server default (${styleName(server.style)})` }, ...STYLES]}
+              onChange={(v) => set({ style: (v || null) as ComponentStyle | null })}
+            />
+          </Field>
+          <Row label="Tint controls over artwork and video">
+            <Toggle label="Tint controls over artwork and video" checked={mine.mediaTint} onChange={(mediaTint) => set({ mediaTint })} />
+          </Row>
+        </div>
       </Card>
 
       <Card
         title="Colour schemes"
-        description="Built-in ones can't be changed, but any scheme can be forked into a copy you can edit."
         aside={
           <div className="flex gap-2">
             <Button onClick={() => setImporting(true)}>
@@ -338,7 +338,7 @@ function ServerDefaults({ value, schemes }: { value: { colors: SchemeChoiceInput
     onError: toastError,
   })
   return (
-    <Card title="Server defaults" description="For everyone who hasn't picked their own, and for pages seen signed out. Only built-in and published schemes.">
+    <Card title="Server default">
       <div className="space-y-4">
         <ChoiceEditor value={value.colors} schemes={schemes} onChange={(colors) => save.mutate({ ...value, colors })} />
         <Field label="Style">
@@ -396,7 +396,7 @@ function SchemeRow({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(s.shareCode)
-      toast({ title: 'Code copied', body: 'Anyone on any tinystream can import it.', tone: 'ok' })
+      toast({ title: 'Code copied', tone: 'ok' })
     } catch (e) {
       toastError(e)
     }
@@ -485,7 +485,7 @@ function Warnings({ warnings }: { warnings: Warning[] }) {
           <li key={`${w.foreground}/${w.background}`}>
             {LABELS[w.foreground as TokenName] ?? w.foreground} on {(LABELS[w.background as TokenName] ?? w.background).toLowerCase()}:{' '}
             <span className="tabular">
-              {w.ratio}:1, {w.minimum}:1 is easy to read
+              {w.ratio}:1, needs {w.minimum}:1
             </span>
           </li>
         ))}
@@ -606,8 +606,7 @@ function SchemeEditor({ scheme, base, onClose, onReveal }: { scheme: Scheme | nu
             <Input value={name} maxLength={48} onChange={(e) => setName(e.target.value)} />
           </Field>
           <div>
-            <p className="mb-2 text-[13px] text-ink-2">Seeds</p>
-            <p className="mb-3 text-xs leading-relaxed text-ink-3">Everything else is worked out from these.</p>
+            <p className="mb-2 text-[13px] text-ink-2">Base colours</p>
             <div className="space-y-2">
               {SEEDS.map((n) => (
                 <div key={n} className="flex items-center gap-3">
@@ -618,8 +617,7 @@ function SchemeEditor({ scheme, base, onClose, onReveal }: { scheme: Scheme | nu
             </div>
           </div>
           <div>
-            <p className="mb-2 text-[13px] text-ink-2">Every colour</p>
-            <p className="mb-3 text-xs leading-relaxed text-ink-3">Pin one to set it exactly instead of working it out.</p>
+            <p className="mb-2 text-[13px] text-ink-2">All colours</p>
             <div className="space-y-1">
               {TOKENS.map((n) => (
                 <div key={n} className="flex min-h-9 items-center gap-3">

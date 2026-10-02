@@ -2,7 +2,29 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ChevronRight, CornerLeftUp, Folder, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  ArrowDownToLine,
+  ChevronRight,
+  CircleUser,
+  CornerLeftUp,
+  FileCode,
+  FileX,
+  Folder,
+  FolderPen,
+  KeyRound,
+  Library,
+  type LucideIcon,
+  Palette,
+  Plus,
+  RefreshCw,
+  Rss,
+  Scissors,
+  Server as ServerIcon,
+  SlidersHorizontal,
+  Trash2,
+  Users,
+  Zap,
+} from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { ask } from '../components/feedback'
 import { Page, PageTitle } from '../components/Page'
@@ -151,49 +173,74 @@ function SettingsPage() {
   const { tab } = Route.useSearch()
   const navigate = useNavigate()
   const admin = !!me?.isAdmin
-  const current: Tab = tab ?? (admin ? 'libraries' : 'account')
+  const current: Tab = tab ?? 'account'
   const { data: settings } = useSettings()
   const downloads = admin && !!settings?.downloads
-  const tabs: { id: Tab; label: string }[] = admin
-    ? [
-        { id: 'libraries', label: 'Libraries' },
-        { id: 'server', label: 'Server' },
-        { id: 'clips', label: 'Clips' },
-        ...(downloads
-          ? ([
-              { id: 'downloads', label: 'Downloads' },
-              { id: 'sources', label: 'Sources' },
-              { id: 'profiles', label: 'Quality' },
-              { id: 'automation', label: 'Automation' },
-              { id: 'renames', label: 'Renames' },
-            ] as { id: Tab; label: string }[])
-          : []),
-        { id: 'users', label: 'People' },
-        { id: 'account', label: 'Your account' },
-        { id: 'appearance', label: 'Appearance' },
-        { id: 'file', label: 'config.toml' },
-        { id: 'skipped', label: 'Skipped files' },
-      ]
-    : [
-        { id: 'account', label: 'Your account' },
-        { id: 'appearance', label: 'Appearance' },
-      ]
+  const sections: { title: string; tabs: { id: Tab; label: string; icon: LucideIcon }[] }[] = [
+    {
+      title: 'You',
+      tabs: [
+        { id: 'account', label: 'Account', icon: CircleUser },
+        { id: 'appearance', label: 'Appearance', icon: Palette },
+      ],
+    },
+    ...(admin
+      ? [
+          {
+            title: 'Library',
+            tabs: [
+              { id: 'libraries', label: 'Libraries', icon: Library },
+              { id: 'clips', label: 'Clips', icon: Scissors },
+              { id: 'skipped', label: 'Skipped files', icon: FileX },
+            ],
+          },
+          ...(downloads
+            ? [
+                {
+                  title: 'Downloads',
+                  tabs: [
+                    { id: 'downloads', label: 'Torrents', icon: ArrowDownToLine },
+                    { id: 'sources', label: 'Sources', icon: Rss },
+                    { id: 'profiles', label: 'Quality profiles', icon: SlidersHorizontal },
+                    { id: 'automation', label: 'Automation', icon: Zap },
+                    { id: 'renames', label: 'Renames', icon: FolderPen },
+                  ],
+                },
+              ]
+            : []),
+          {
+            title: 'Server',
+            tabs: [
+              { id: 'server', label: 'General', icon: ServerIcon },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'file', label: 'Config file', icon: FileCode },
+            ],
+          },
+        ]
+      : []),
+  ] as { title: string; tabs: { id: Tab; label: string; icon: LucideIcon }[] }[]
 
   return (
     <Page>
       <PageTitle>Settings</PageTitle>
       <div className="flex flex-col gap-8 md:flex-row">
-        <nav className="flex shrink-0 gap-0.5 overflow-x-auto md:w-44 md:flex-col">
-          {tabs.map((t) => (
-            <Squircle
-              key={t.id}
-              as="button"
-              radius={8}
-              onClick={() => navigate({ to: '/settings', search: { tab: t.id }, replace: true })}
-              className={`h-8 shrink-0 px-2.5 text-left text-sm transition-colors ${current === t.id ? 'bg-press text-ink' : 'text-ink-2 hover:bg-hover hover:text-ink'}`}
-            >
-              {t.label}
-            </Squircle>
+        <nav className="flex shrink-0 gap-0.5 overflow-x-auto md:w-48 md:flex-col md:gap-5">
+          {sections.map((section) => (
+            <div key={section.title} className="contents md:flex md:flex-col md:gap-0.5">
+              <p className="mb-1 hidden px-2.5 text-2xs font-medium tracking-wide text-ink-3 uppercase md:block">{section.title}</p>
+              {section.tabs.map((t) => (
+                <Squircle
+                  key={t.id}
+                  as="button"
+                  radius={8}
+                  onClick={() => navigate({ to: '/settings', search: { tab: t.id }, replace: true })}
+                  className={`flex h-8 shrink-0 items-center gap-2.5 px-2.5 text-left text-sm transition-colors ${current === t.id ? 'bg-press text-ink' : 'text-ink-2 hover:bg-hover hover:text-ink'}`}
+                >
+                  <t.icon className={`size-4 shrink-0 ${current === t.id ? 'text-ink' : 'text-ink-3'}`} />
+                  {t.label}
+                </Squircle>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="min-w-0 flex-1">
@@ -228,7 +275,7 @@ function ConfigErrorBanner() {
   )
 }
 const providers: { value: '' | Provider; label: string }[] = [
-  { value: '', label: 'None, use folder names' },
+  { value: '', label: 'None (folder names)' },
   { value: 'ANILIST', label: 'AniList (anime)' },
   { value: 'TMDB', label: 'TMDB (shows and movies)' },
 ]
@@ -347,7 +394,7 @@ function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary |
             }}
           />
         )}
-        <Field label="Details from">
+        <Field label="Metadata provider">
           <Select value={provider} options={providers} onChange={setProvider} />
         </Field>
         {settings?.downloads && (
@@ -368,7 +415,7 @@ function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary |
                   />
                 </Field>
                 <Field label="Download folder">
-                  <Input value={downloadPath} onChange={(e) => setDownloadPath(e.target.value)} placeholder="the global one" />
+                  <Input value={downloadPath} onChange={(e) => setDownloadPath(e.target.value)} placeholder="Global download folder" />
                 </Field>
               </div>
             )}
@@ -478,7 +525,7 @@ function Server() {
     <>
       <Card title="Network">
         <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
-          <Field label="Listen on">
+          <Field label="Host">
             <Input value={draft.network.host} onChange={(e) => set((c) => void (c.network.host = e.target.value))} />
           </Field>
           <Field label="Port">
@@ -490,7 +537,7 @@ function Server() {
           </Field>
         </div>
         <div className="mt-4">
-          <Field label="Other sites allowed to use the API" hint="Comma-separated, or *">
+          <Field label="Allowed origins (CORS)" hint="Comma-separated, or *">
             <Input
               value={draft.network.cors.join(', ')}
               placeholder="https://example.com"
@@ -502,14 +549,14 @@ function Server() {
         </div>
       </Card>
 
-      <Card title="Signing in">
+      <Card title="Sign-in">
         <div className="max-w-sm">
-          <Field label="The sign-in page shows">
+          <Field label="Sign-in page">
             <Select
               value={draft.signIn.style}
               options={[
-                { value: 'PROFILES', label: 'Everyone’s picture, without names' },
-                { value: 'USERNAME', label: 'Only a username and password' },
+                { value: 'PROFILES', label: 'Profile pictures' },
+                { value: 'USERNAME', label: 'Username and password' },
               ]}
               onChange={(v) => set((c) => void (c.signIn.style = v))}
             />
@@ -517,12 +564,12 @@ function Server() {
         </div>
       </Card>
 
-      <Card title="Scanning">
+      <Card title="Library scanning">
         <Row label="Watch folders for changes">
           <Toggle label="Watch folders" checked={draft.scan.watch} onChange={(v) => set((c) => void (c.scan.watch = v))} />
         </Row>
         <div className="mt-4 max-w-xs">
-          <Field label="Also rescan every" hint="e.g. 6h">
+          <Field label="Rescan interval" hint="e.g. 6h">
             <Input
               value={draft.scan.interval ?? ''}
               placeholder="off"
@@ -532,7 +579,7 @@ function Server() {
         </div>
       </Card>
 
-      <Card title="Details and artwork">
+      <Card title="Metadata">
         <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
           <Field label="TMDB API key" hint="themoviedb.org → Settings → API">
             <Input
@@ -548,17 +595,17 @@ function Server() {
       </Card>
 
       <Card
-        title="Converting video"
+        title="Transcoding"
         description={
           t.vaapi ? `VA-API: ${t.vaapi}` : t.vaapiError ? `VA-API unavailable: ${t.vaapiError}` : undefined
         }
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Use">
+          <Field label="Encoder">
             <Select
               value={draft.transcode.hardware}
               options={[
-                { value: 'AUTO', label: 'GPU when possible' },
+                { value: 'AUTO', label: 'GPU, falling back to CPU' },
                 { value: 'VAAPI', label: 'GPU (VA-API) only' },
                 { value: 'SOFTWARE', label: 'CPU only' },
               ]}
@@ -576,11 +623,13 @@ function Server() {
 
       <Card title="Logs" description={data.paths.log}>
         <div className="max-w-xs">
-          <Select
-            value={draft.log.level}
-            options={['error', 'warn', 'info', 'debug', 'trace'].map((l) => ({ value: l, label: l }))}
-            onChange={(v) => set((c) => void (c.log.level = v))}
-          />
+          <Field label="Level">
+            <Select
+              value={draft.log.level}
+              options={['error', 'warn', 'info', 'debug', 'trace'].map((l) => ({ value: l, label: l }))}
+              onChange={(v) => set((c) => void (c.log.level = v))}
+            />
+          </Field>
         </div>
       </Card>
 
@@ -657,7 +706,7 @@ function Account() {
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name it, e.g. YubiKey" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name, e.g. YubiKey" />
           </div>
           <Button variant="primary" onClick={() => addKey.mutate()} disabled={addKey.isPending}>
             Add passkey

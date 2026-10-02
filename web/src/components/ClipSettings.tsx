@@ -96,7 +96,7 @@ export function ClipSettings() {
   return (
     <>
       <Card
-        title="Clipping"
+        title="General"
         aside={
           <Button variant="primary" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
             Save
@@ -104,21 +104,21 @@ export function ClipSettings() {
         }
       >
         <div className="space-y-4">
-          <Row label="Clipping">
-            <Toggle label="Clipping" checked={draft.enabled} onChange={(v) => set({ enabled: v })} />
+          <Row label="Enable clipping">
+            <Toggle label="Enable clipping" checked={draft.enabled} onChange={(v) => set({ enabled: v })} />
           </Row>
           <Row label="Public links">
             <Toggle label="Public links" checked={draft.publicLinks} onChange={(v) => set({ publicLinks: v })} />
           </Row>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Renders at the same time">
+            <Field label="Concurrent renders">
               <Input
                 inputMode="numeric"
                 value={draft.concurrency}
                 onChange={(e) => set({ concurrency: Math.max(1, Number(e.target.value.replace(/\D/g, '')) || 1) })}
               />
             </Field>
-            <Field label="Space for everyone's clips, in GB">
+            <Field label="Total storage limit (GB)">
               <Input
                 inputMode="numeric"
                 placeholder="No limit"
@@ -126,13 +126,13 @@ export function ClipSettings() {
                 onChange={(e) => set({ maxStorage: (Number(e.target.value.replace(/\D/g, '')) || 0) * 1024 })}
               />
             </Field>
-            <Field label="Where clips are kept">
+            <Field label="Clip folder">
               <Input value={draft.path ?? ''} placeholder={admin?.dir ?? 'clips, in the data folder'} onChange={(e) => set({ path: text(e.target.value) })} />
             </Field>
-            <Field label="Extra fonts for subtitles">
+            <Field label="Subtitle fonts folder">
               <Input value={draft.fontsDir ?? ''} placeholder="None" onChange={(e) => set({ fontsDir: text(e.target.value) })} />
             </Field>
-            <Field label="Font when a subtitle's font is missing" hint="Built-in covers Latin, Greek and Cyrillic">
+            <Field label="Fallback subtitle font" hint="Built-in covers Latin, Greek and Cyrillic">
               <Input value={draft.defaultFont ?? ''} placeholder="Built-in Noto Sans" onChange={(e) => set({ defaultFont: text(e.target.value) })} />
             </Field>
           </div>
@@ -140,7 +140,7 @@ export function ClipSettings() {
       </Card>
 
       {admin && (
-        <Card title="Space" description={`${bytes(admin.bytes)}${admin.dir ? ` in ${admin.dir}` : ''}`}>
+        <Card title="Storage" description={`${bytes(admin.bytes)}${admin.dir ? ` in ${admin.dir}` : ''}`}>
           <div className="-mx-2 space-y-0.5">
             {admin.usage.map((u) => {
               const share = u.storage ? u.bytes / (u.storage * 1024 * 1024) : null

@@ -280,12 +280,12 @@ export function DownloadsSettings() {
   const kib = (v: number) => (v ? `${v}` : '')
   return (
     <>
-      <Card title="Where downloads go">
+      <Card title="Storage">
         <Field label="Download folder">
           <Input value={d.path ?? ''} placeholder={engine?.downloadPath} onChange={(e) => set((c) => void (c.path = e.target.value.trim() || null))} />
         </Field>
         <div className="mt-5">
-          <p className="mb-1.5 text-[13px] text-ink-2">Getting them into the library</p>
+          <p className="mb-1.5 text-[13px] text-ink-2">Import method</p>
           <Segmented
             value={d.import}
             onChange={(v) => set((c) => void (c.import = v))}
@@ -321,11 +321,11 @@ export function DownloadsSettings() {
           <Field label="Upload limit (KB/s)">
             <Input inputMode="numeric" value={kib(d.uploadLimit)} placeholder="unlimited" onChange={(e) => set((c) => void (c.uploadLimit = num(e.target.value)))} />
           </Field>
-          <Field label="Downloading at once">
+          <Field label="Active downloads">
             <Input inputMode="numeric" value={d.maxActive || ''} placeholder="no limit" onChange={(e) => set((c) => void (c.maxActive = num(e.target.value)))} />
           </Field>
         </div>
-        <p className="mt-6 mb-3 text-sm font-medium">Slower hours</p>
+        <p className="mt-6 mb-3 text-sm font-medium">Scheduled limits</p>
         <div className="grid gap-4 sm:grid-cols-4">
           <Field label="From">
             <Input value={d.slowFrom ?? ''} placeholder="08:00" onChange={(e) => set((c) => void (c.slowFrom = e.target.value.trim() || null))} />
@@ -343,7 +343,7 @@ export function DownloadsSettings() {
       </Card>
 
       <Card
-        title="Privacy"
+        title="Network"
         description={
           engine?.killSwitch ? (
             <span className="text-danger">{engine.killSwitch} is down right now; every torrent is paused.</span>
@@ -351,7 +351,7 @@ export function DownloadsSettings() {
         }
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Only use this network interface">
+          <Field label="Bind to interface">
             <Input value={d.bindInterface ?? ''} placeholder="wg0" onChange={(e) => set((c) => void (c.bindInterface = e.target.value.trim() || null))} />
           </Field>
           <Field label="Proxy" hint="socks5://user:pass@host:1080 or http://host:8080">
@@ -546,7 +546,7 @@ function SourceDialog({ source, onClose }: { source: SourceConfig | null; onClos
               <Input value={s.downloadPath ?? ''} onChange={(e) => set({ downloadPath: e.target.value.trim() || null })} />
             </Field>
             <div>
-              <Row label="Its own seeding rules">
+              <Row label="Custom seeding rules">
                 <Toggle
                   label="Own seeding rules"
                   checked={!!s.seeding}
@@ -719,7 +719,7 @@ function ProfileDialog({ existing, initial, onClose }: { existing: boolean; init
           <Field label="Max size per episode (MB)">
             <Input value={p.maxSize ?? ''} placeholder="none" onChange={(e) => set({ maxSize: e.target.value.trim() ? num(e.target.value) : null })} />
           </Field>
-          <Field label="At least this many seeding">
+          <Field label="Min seeders">
             <Input value={p.minSeeders} onChange={(e) => set({ minSeeders: num(e.target.value) })} />
           </Field>
         </div>
@@ -763,10 +763,10 @@ export function AutomationSettings() {
   const r = req.draft
   return (
     <>
-      <Card title="New shows">
+      <Card title="Default monitoring">
         <MonitorPicker value={a.defaultMonitor} onChange={(m) => auto.set((c) => void (c.defaultMonitor = m))} />
       </Card>
-      <Card title="Catching new episodes">
+      <Card title="Episode search">
         <div className="space-y-2">
           {a.retry.map((step, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-ink-2">
@@ -789,13 +789,13 @@ export function AutomationSettings() {
           </Button>
         </div>
         <div className="mt-5 max-w-xs">
-          <Field label="Check every source's feed every" hint="E.g. 15m.">
+          <Field label="RSS check interval" hint="e.g. 15m">
             <Input value={a.rssInterval} onChange={(e) => auto.set((c) => void (c.rssInterval = e.target.value))} />
           </Field>
         </div>
       </Card>
-      <Card title="Tidying up">
-        <Row label="Suggest fixes for badly named files">
+      <Card title="Renames">
+        <Row label="Suggest renames for badly named files">
           <Toggle label="Rename suggestions" checked={a.renameSuggestions} onChange={(v) => auto.set((c) => void (c.renameSuggestions = v))} />
         </Row>
       </Card>
@@ -803,7 +803,7 @@ export function AutomationSettings() {
 
       <div className="mt-8" />
       <Card title="Requests">
-        <p className="mb-1.5 text-[13px] text-ink-2">Approved shows download</p>
+        <p className="mb-1.5 text-[13px] text-ink-2">Monitoring for approved requests</p>
         <MonitorPicker size="sm" value={r.monitor} onChange={(m) => req.set((c) => void (c.monitor = m))} />
       </Card>
       {req.bar}
@@ -860,7 +860,7 @@ export function RenamesSettings() {
   return (
     <>
       <Card
-        title="Renames"
+        title="Suggestions"
         aside={
           <IconButton label="Look again" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
             <RefreshCw className={`size-4 ${refresh.isPending ? 'animate-spin' : ''}`} />
