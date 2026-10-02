@@ -819,6 +819,13 @@ export type SearchQueryVariables = Exact<{
 
 export type SearchQuery = { search: { titles: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }>, videos: Array<{ id: number, label: string | null, name: string | null, title: { name: string } }> } };
 
+export type RecentTitlesQueryVariables = Exact<{
+  ids: Array<number> | number;
+}>;
+
+
+export type RecentTitlesQuery = { titles: Array<{ id: number }> };
+
 export type DownloadStatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3120,6 +3127,13 @@ export const SearchDocument = new TypedDocumentString(`
   progress
   freshCount
 }`) as unknown as TypedDocumentString<SearchQuery, SearchQueryVariables>;
+export const RecentTitlesDocument = new TypedDocumentString(`
+    query RecentTitles($ids: [Int!]!) {
+  titles(ids: $ids) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<RecentTitlesQuery, RecentTitlesQueryVariables>;
 export const DownloadStatesDocument = new TypedDocumentString(`
     query DownloadStates {
   downloads {

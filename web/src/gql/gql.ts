@@ -71,6 +71,7 @@ type Documents = {
     "\n  query Transfers {\n    downloadEngine {\n      ...EngineFields\n    }\n    downloads {\n      ...DownloadFields\n    }\n  }\n": typeof types.TransfersDocument,
     "\n  mutation SignOut {\n    signOut\n  }\n": typeof types.SignOutDocument,
     "\n  query Search($query: String!) {\n    search(query: $query) {\n      titles {\n        ...Card\n      }\n      videos {\n        id\n        label\n        name\n        title {\n          name\n        }\n      }\n    }\n  }\n": typeof types.SearchDocument,
+    "\n  query RecentTitles($ids: [Int!]!) {\n    titles(ids: $ids) {\n      id\n    }\n  }\n": typeof types.RecentTitlesDocument,
     "\n  query DownloadStates {\n    downloads {\n      id\n      state\n    }\n  }\n": typeof types.DownloadStatesDocument,
     "\n  mutation PauseDownloads($ids: [Int!]!) {\n    pauseDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.PauseDownloadsDocument,
     "\n  mutation ResumeDownloads($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.ResumeDownloadsDocument,
@@ -226,6 +227,7 @@ const documents: Documents = {
     "\n  query Transfers {\n    downloadEngine {\n      ...EngineFields\n    }\n    downloads {\n      ...DownloadFields\n    }\n  }\n": types.TransfersDocument,
     "\n  mutation SignOut {\n    signOut\n  }\n": types.SignOutDocument,
     "\n  query Search($query: String!) {\n    search(query: $query) {\n      titles {\n        ...Card\n      }\n      videos {\n        id\n        label\n        name\n        title {\n          name\n        }\n      }\n    }\n  }\n": types.SearchDocument,
+    "\n  query RecentTitles($ids: [Int!]!) {\n    titles(ids: $ids) {\n      id\n    }\n  }\n": types.RecentTitlesDocument,
     "\n  query DownloadStates {\n    downloads {\n      id\n      state\n    }\n  }\n": types.DownloadStatesDocument,
     "\n  mutation PauseDownloads($ids: [Int!]!) {\n    pauseDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.PauseDownloadsDocument,
     "\n  mutation ResumeDownloads($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.ResumeDownloadsDocument,
@@ -549,6 +551,10 @@ export function graphql(source: "\n  mutation SignOut {\n    signOut\n  }\n"): t
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Search($query: String!) {\n    search(query: $query) {\n      titles {\n        ...Card\n      }\n      videos {\n        id\n        label\n        name\n        title {\n          name\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').SearchDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query RecentTitles($ids: [Int!]!) {\n    titles(ids: $ids) {\n      id\n    }\n  }\n"): typeof import('./graphql').RecentTitlesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

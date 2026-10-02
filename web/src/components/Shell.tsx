@@ -30,7 +30,7 @@ import { type Library, type User, librariesQuery, request } from '../lib/api'
 import { disconnect } from '../lib/graphql'
 import { speed, useFeatures } from '../lib/downloads'
 import { useClipsOn } from '../lib/hooks'
-import { recents } from '../lib/recents'
+import { prune, recents } from '../lib/recents'
 import { Avatar } from './Avatar'
 import { Feedback, toast, toastError } from './feedback'
 import { NotificationsMenu, PriorityPill, setInboxOpen } from './Notifications'
@@ -126,6 +126,14 @@ const SearchQuery = graphql(`
           name
         }
       }
+    }
+  }
+`)
+
+const RecentTitles = graphql(`
+  query RecentTitles($ids: [Int!]!) {
+    titles(ids: $ids) {
+      id
     }
   }
 `)
@@ -648,6 +656,13 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
     enabled: debounced.trim().length > 0,
     placeholderData: (prev) => prev,
   })
+  const [stored] = useState(recents)
+  const { data: recent } = useQuery({
+    queryKey: ['recents', stored.map((r) => r.id)],
+    queryFn: async () => prune(new Set((await request(RecentTitles, { ids: stored.map((r) => r.id) })).titles.map((t) => t.id))),
+    enabled: stored.length > 0,
+    gcTime: 0,
+  })
 
   const commands = useMemo(() => {
     const go = (to: string, params?: Record<string, string>) => () => void navigate({ to, params })
@@ -741,7 +756,7 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
           : []),
       ]
     : [
-        ...recents().map((r) => ({
+        ...(recent ?? []).map((r) => ({
           key: `r${r.id}`,
           group: 'Recent',
           title: r.title,

@@ -987,6 +987,10 @@ type Query {
 	libraries: [Library!]!
 	library(name: String!): Library
 	title(id: Int!): Title
+	"""
+	The titles among `ids` that still exist and are visible, in the given order.
+	"""
+	titles(ids: [Int!]!): [Title!]!
 	video(id: Int!): Video
 	home: Home!
 	search(query: String!): SearchResults!

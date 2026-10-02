@@ -799,6 +799,12 @@ impl LibraryQuery {
         Title::load(ctx.state(), &ctx.access()?, id).await
     }
 
+    /// The titles among `ids` that still exist and are visible, in the given order.
+    async fn titles(&self, ctx: &Context<'_>, ids: Vec<i64>) -> ApiResult<Vec<Title>> {
+        let limit = ids.len();
+        Title::load_many(ctx.state(), &ctx.access()?, ids, limit).await
+    }
+
     async fn video(&self, ctx: &Context<'_>, id: i64) -> ApiResult<Option<Video>> {
         Video::load(ctx.state(), &ctx.access()?, id).await
     }
