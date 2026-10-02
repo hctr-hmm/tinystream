@@ -86,7 +86,7 @@ export function ResultCard({
             )}
           </div>
           {status && (
-            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-2xs font-medium text-white backdrop-blur-md">
+            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-media-shade/65 px-1.5 py-0.5 text-2xs font-medium text-media-ink backdrop-blur-md">
               {status.icon} {status.label}
             </span>
           )}
@@ -245,7 +245,7 @@ export function AddDialog({ r, onClose }: { r: DiscoverResult; onClose: () => vo
           />
         </Field>
         {lib && !lib.managed && (
-          <p className="text-xs leading-relaxed text-amber-300">
+          <p className="text-xs leading-relaxed text-warn">
             {lib.name} isn't managed; can't download into it.
           </p>
         )}
@@ -254,7 +254,7 @@ export function AddDialog({ r, onClose }: { r: DiscoverResult; onClose: () => vo
           <MonitorPicker value={chosen} onChange={setMonitor} />
         </div>
         {chosen === 'MISSING' && aired !== undefined && aired >= MANY_EPISODES && (
-          <p className="text-xs leading-relaxed text-amber-300">
+          <p className="text-xs leading-relaxed text-warn">
             {r.name} has {aired} aired episodes, and all of them will be downloaded. Pick Future to only get new ones.
           </p>
         )}

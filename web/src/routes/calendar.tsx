@@ -162,11 +162,11 @@ function DayCard({ e, now }: { e: CalendarEntry; now: number }) {
             />
           )}
           {e.video && (
-            <div className="absolute inset-0 grid place-items-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
-              <Play className="size-5 fill-white text-white" />
+            <div className="absolute inset-0 grid place-items-center bg-media-shade/35 opacity-0 transition-opacity group-hover:opacity-100">
+              <Play className="size-5 fill-media-ink text-media-ink" />
             </div>
           )}
-          <span className="absolute top-1.5 left-1.5 hidden rounded-md bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white tabular backdrop-blur-md md:block">
+          <span className="absolute top-1.5 left-1.5 hidden rounded-md bg-media-shade/60 px-1.5 py-0.5 text-2xs font-medium text-media-ink tabular backdrop-blur-md md:block">
             {clockTime(e.airAt)}
           </span>
         </Squircle>
@@ -180,14 +180,14 @@ function DayCard({ e, now }: { e: CalendarEntry; now: number }) {
           {e.download && (
             <div className="mt-2 flex items-center gap-2">
               <div className="h-1 flex-1 overflow-hidden rounded-full bg-press">
-                <div className="h-full rounded-full bg-sky-300 transition-[width] duration-[3s] ease-linear" style={{ width: `${e.download.progress * 100}%` }} />
+                <div className="h-full rounded-full bg-info transition-[width] duration-[3s] ease-linear" style={{ width: `${e.download.progress * 100}%` }} />
               </div>
-              <span className="text-2xs text-sky-300 tabular">{Math.floor(e.download.progress * 100)}%</span>
+              <span className="text-2xs text-info tabular">{Math.floor(e.download.progress * 100)}%</span>
             </div>
           )}
           <div className="mt-1.5 flex flex-wrap gap-1">
             {e.download ? null : soon ? (
-              <span className="text-2xs font-medium text-amber-300"><Ticker value={countdown(e.airAt, now)} /></span>
+              <span className="text-2xs font-medium text-warn"><Ticker value={countdown(e.airAt, now)} /></span>
             ) : e.monitor !== 'NONE' || e.state === 'DONE' ? (
               aired || e.state === 'DONE' ? (
                 <StateBadge state={e.state} />
@@ -246,7 +246,7 @@ function UpNext({ entry: e, now, later }: { entry: CalendarEntry; now: number; l
   const dl = e.download
   const pct = dl ? dl.progress : null
   return (
-    <EntryLink e={e} className="group mb-8 block rounded-[23px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-white/70">
+    <EntryLink e={e} className="group mb-8 block rounded-[23px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-glow/70">
       <Squircle radius={22} edge className="relative min-h-52 overflow-hidden bg-raised md:h-60">
         {image && !broken && (
           <img
@@ -265,11 +265,11 @@ function UpNext({ entry: e, now, later }: { entry: CalendarEntry; now: number; l
         <div className="absolute inset-0 bg-linear-to-r from-canvas via-canvas/70 to-transparent" />
         {/* The bar fills the bottom edge while it downloads. */}
         {stage === 'downloading' && (
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-media-ink/10">
             {pct === null ? (
-              <div className="absolute inset-y-0 w-1/3 animate-[slide_1.2s_ease-in-out_infinite] bg-sky-300" />
+              <div className="absolute inset-y-0 w-1/3 animate-[slide_1.2s_ease-in-out_infinite] bg-info" />
             ) : (
-              <div className="h-full bg-sky-300 transition-[width] duration-[2s] ease-linear" style={{ width: `${pct * 100}%` }} />
+              <div className="h-full bg-info transition-[width] duration-[2s] ease-linear" style={{ width: `${pct * 100}%` }} />
             )}
           </div>
         )}
@@ -279,9 +279,9 @@ function UpNext({ entry: e, now, later }: { entry: CalendarEntry; now: number; l
               {stage === 'ready' ? (
                 <Play className="size-3.5 fill-current text-ok" />
               ) : stage === 'downloading' ? (
-                <ArrowDown className="size-3.5 text-sky-300" />
+                <ArrowDown className="size-3.5 text-info" />
               ) : (
-                <Radio className={`size-3.5 ${stage === 'countdown' ? '' : 'text-amber-300'}`} />
+                <Radio className={`size-3.5 ${stage === 'countdown' ? '' : 'text-warn'}`} />
               )}
               {stageLabels[stage]}
             </p>
@@ -298,13 +298,13 @@ function UpNext({ entry: e, now, later }: { entry: CalendarEntry; now: number; l
               )}
               {stage === 'searching' && (
                 <span className="flex items-center gap-3 text-[32px] leading-none font-semibold tracking-tight md:text-[40px]">
-                  <span className="size-3 animate-[pulse-dot_1.6s_ease-in-out_infinite] rounded-full bg-amber-300" />
+                  <span className="size-3 animate-[pulse-dot_1.6s_ease-in-out_infinite] rounded-full bg-warn" />
                   Searching…
                 </span>
               )}
               {stage === 'downloading' && (
                 <>
-                  <span className="text-[32px] leading-none font-semibold tracking-tight whitespace-nowrap text-sky-300 md:text-[40px]">
+                  <span className="text-[32px] leading-none font-semibold tracking-tight whitespace-nowrap text-info md:text-[40px]">
                     {pct === null ? 'Starting…' : <Ticker value={`${(pct * 100).toFixed(1)}%`} />}
                   </span>
                   {dl && (
@@ -322,7 +322,7 @@ function UpNext({ entry: e, now, later }: { entry: CalendarEntry; now: number; l
               {stage === 'ready' && (
                 <Squircle
                   radius={14}
-                  className="inline-flex h-12 items-center gap-2.5 bg-ink px-6 text-base font-semibold text-canvas transition-colors group-hover:bg-white"
+                  className="inline-flex h-12 items-center gap-2.5 bg-accent px-6 text-base font-semibold text-on-accent transition-colors group-hover:bg-accent-hover"
                 >
                   <Play className="size-5 fill-current" /> Play {episodeCode(e.season, e.episode)}
                 </Squircle>

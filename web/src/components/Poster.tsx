@@ -83,7 +83,7 @@ export function Poster({ card, caption }: { card: Card; caption?: string }) {
       data-fetching={fetching || undefined}
       {...tilt.handlers}
     >
-      <div className="rounded-[15px] outline-offset-3 transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5 group-focus-visible:outline-2 group-focus-visible:outline-white/70">
+      <div className="rounded-[15px] outline-offset-3 transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5 group-focus-visible:outline-2 group-focus-visible:outline-glow/70">
         <div ref={tilt.ref} className="tilt">
         <Squircle radius={14} edge className="aspect-[2/3] bg-raised" data-morph>
           <div className="refreshable size-full" style={{ '--blur': '12px', '--scale': 1.08 } as CSSProperties}>
@@ -101,22 +101,22 @@ export function Poster({ card, caption }: { card: Card; caption?: string }) {
           </div>
           <div className="sheen" />
           <div className="glare" />
-          <div className="absolute inset-0 bg-white/0 transition-colors group-hover:bg-white/[0.04]" />
+          <div className="absolute inset-0 bg-media-ink/0 transition-colors group-hover:bg-media-ink/[0.04]" />
           {card.progress !== null && !done && (
-            <div className="absolute inset-x-2.5 bottom-2.5 h-1 overflow-hidden rounded-full bg-black/50">
-              <div className="h-full bg-white" style={{ width: `${Math.max(4, card.progress * 100)}%` }} />
+            <div className="absolute inset-x-2.5 bottom-2.5 h-1 overflow-hidden rounded-full bg-media-shade/50">
+              <div className="h-full bg-media-ink" style={{ width: `${Math.max(4, card.progress * 100)}%` }} />
             </div>
           )}
           {fresh ? (
-            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white backdrop-blur-md tabular">
-              <span className="size-1.5 rounded-full bg-amber-300" />
+            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-media-shade/60 px-1.5 py-0.5 text-2xs font-medium text-media-ink backdrop-blur-md tabular">
+              <span className="size-1.5 rounded-full bg-warn" />
               {card.kind === 'SHOW' && card.freshCount > 1 ? `${card.freshCount} new` : 'New'}
             </span>
           ) : (
             card.kind === 'SHOW' &&
             card.watchedCount > 0 &&
             unwatched > 0 && (
-              <span className="absolute top-2 right-2 rounded-md bg-black/60 px-1.5 py-0.5 text-2xs font-medium text-white backdrop-blur-md tabular">
+              <span className="absolute top-2 right-2 rounded-md bg-media-shade/60 px-1.5 py-0.5 text-2xs font-medium text-media-ink backdrop-blur-md tabular">
                 {unwatched}
               </span>
             )

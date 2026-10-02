@@ -8,6 +8,7 @@ import { ask } from '../components/feedback'
 import { Page, PageTitle } from '../components/Page'
 import { People, Profile } from '../components/People'
 import { AutomationSettings, DownloadsSettings, ProfilesSettings, RenamesSettings, SourcesSettings } from '../components/DownloadSettings'
+import { AppearanceSettings } from '../components/AppearanceSettings'
 import { ClipSettings } from '../components/ClipSettings'
 import { Card, Row, useSave, useSettings } from '../components/SettingsKit'
 import { Squircle } from '../components/Squircle'
@@ -137,7 +138,7 @@ import { notifyEnabled, setNotify } from '../lib/notify'
 import { useTitle } from '../lib/title'
 import { createCredential } from '../lib/webauthn'
 
-type Tab = 'libraries' | 'server' | 'clips' | 'downloads' | 'sources' | 'profiles' | 'automation' | 'renames' | 'users' | 'account' | 'file' | 'skipped'
+type Tab = 'libraries' | 'server' | 'clips' | 'downloads' | 'sources' | 'profiles' | 'automation' | 'renames' | 'users' | 'account' | 'appearance' | 'file' | 'skipped'
 
 export const Route = createFileRoute('/settings')({
   validateSearch: (s: Record<string, unknown>): { tab?: Tab } => ({ tab: s.tab as Tab | undefined }),
@@ -169,10 +170,14 @@ function SettingsPage() {
           : []),
         { id: 'users', label: 'People' },
         { id: 'account', label: 'Your account' },
+        { id: 'appearance', label: 'Appearance' },
         { id: 'file', label: 'config.toml' },
         { id: 'skipped', label: 'Skipped files' },
       ]
-    : [{ id: 'account', label: 'Your account' }]
+    : [
+        { id: 'account', label: 'Your account' },
+        { id: 'appearance', label: 'Appearance' },
+      ]
 
   return (
     <Page>
@@ -203,6 +208,7 @@ function SettingsPage() {
           {current === 'renames' && downloads && <RenamesSettings />}
           {current === 'users' && admin && <People />}
           {current === 'account' && <Account />}
+          {current === 'appearance' && <AppearanceSettings />}
           {current === 'file' && admin && <RawConfig />}
           {current === 'skipped' && admin && <Skipped />}
         </div>

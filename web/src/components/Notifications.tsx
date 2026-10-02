@@ -11,14 +11,14 @@ import { Squircle } from './Squircle'
 import { Button, IconButton, Panel, Popover } from './ui'
 
 const KINDS: Record<NoticeKind, { icon: ReactNode; tint: string }> = {
-  AIRED: { icon: <Radio />, tint: 'text-amber-200' },
-  READY: { icon: <CirclePlay />, tint: 'text-sky-300' },
-  INVITE: { icon: <Users />, tint: 'text-violet-300' },
+  AIRED: { icon: <Radio />, tint: 'text-warn-soft' },
+  READY: { icon: <CirclePlay />, tint: 'text-info' },
+  INVITE: { icon: <Users />, tint: 'text-social' },
   REQUEST: { icon: <InboxIcon />, tint: 'text-ink-2' },
   REQUEST_APPROVED: { icon: <CircleCheck />, tint: 'text-ok' },
   REQUEST_DECLINED: { icon: <CircleX />, tint: 'text-danger' },
-  CLIP: { icon: <Send />, tint: 'text-pink-300' },
-  CLIP_READY: { icon: <Scissors />, tint: 'text-pink-300' },
+  CLIP: { icon: <Send />, tint: 'text-highlight' },
+  CLIP_READY: { icon: <Scissors />, tint: 'text-highlight' },
   OTHER: { icon: <InboxIcon />, tint: 'text-ink-2' },
 }
 
@@ -265,7 +265,7 @@ export function PriorityPill() {
         }`}
       >
         <div
-          className="overflow-hidden bg-float shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-[width,height,border-radius] duration-[420ms] ease-[cubic-bezier(.3,1.25,.4,1)]"
+          className="material overflow-hidden bg-float inset-ring inset-ring-glow/8 transition-[width,height,border-radius] duration-[420ms] ease-[cubic-bezier(.3,1.25,.4,1)]"
           style={size ? { width: size.w, height: size.h, borderRadius: open ? 22 : size.h / 2 } : { borderRadius: 20 }}
         >
           <div ref={inner} className="w-max">

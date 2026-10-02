@@ -108,7 +108,7 @@ export function NextEpisode({ series }: { series: Pick<Series, 'next' | 'status'
         <span className="text-ink">{n.name ? `${episodeCode(n.season, n.episode)} “${n.name}”` : `Episode ${n.episode}`}</span> airs{' '}
         {airs(n.airAt, now).replace(/^Today/, 'today').replace(/^Tomorrow/, 'tomorrow')}
       </span>
-      <span className={`tabular ${soon ? 'text-amber-300' : 'text-ink-3'}`}>· {countdown(n.airAt, now)}</span>
+      <span className={`tabular ${soon ? 'text-warn' : 'text-ink-3'}`}>· {countdown(n.airAt, now)}</span>
     </p>
   )
 }
@@ -154,7 +154,7 @@ export function SeriesPanel({ item, series, season }: { item: Item; series: Seri
       {series && (
         <>
           {!series.managed && monitor !== 'NONE' && (
-            <p className="mt-3 flex items-start gap-2 text-xs text-amber-300">
+            <p className="mt-3 flex items-start gap-2 text-xs text-warn">
               <CircleAlert className="mt-px size-3.5 shrink-0" />
               {series.library} isn't managed; can't import.
             </p>
@@ -165,8 +165,8 @@ export function SeriesPanel({ item, series, season }: { item: Item; series: Seri
                 <span className="text-ink-2">{c.have}</span> of {c.total} in library
               </span>
             )}
-            {c && c.grabbed > 0 && <span className="text-sky-300">{c.grabbed} downloading</span>}
-            {c && c.wanted > 0 && <span className="text-amber-300">{c.wanted} to find</span>}
+            {c && c.grabbed > 0 && <span className="text-info">{c.grabbed} downloading</span>}
+            {c && c.wanted > 0 && <span className="text-warn">{c.wanted} to find</span>}
             {c && c.missing > 0 && <span className="text-danger">{c.missing} missing</span>}
             {c && c.upcoming > 0 && <span>{c.upcoming} not aired yet</span>}
             {c && c.skipped > 0 && <span>{c.skipped} skipped</span>}

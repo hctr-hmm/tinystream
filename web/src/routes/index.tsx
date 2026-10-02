@@ -162,7 +162,7 @@ function Hero({ entry: e }: { entry: ContinueEntry }) {
   const left = remaining(e.position, v.duration)
   const label = e.newEpisode ? 'New episode' : resuming ? 'Continue watching' : 'Up next'
   return (
-    <Link to="/watch/$id" params={{ id: String(v.id) }} className="group mb-11 block rounded-[23px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-white/70">
+    <Link to="/watch/$id" params={{ id: String(v.id) }} className="group mb-11 block rounded-[23px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-glow/70">
       <Squircle radius={22} edge className="relative min-h-64 overflow-hidden bg-raised md:h-76">
         {image && !broken && (
           <Img
@@ -181,7 +181,7 @@ function Hero({ entry: e }: { entry: ContinueEntry }) {
         <div className="absolute inset-0 bg-linear-to-r from-canvas via-canvas/65 to-transparent" />
         <div className="relative flex h-full min-h-64 flex-col justify-end p-6 md:p-9">
           <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-ink-2 uppercase">
-            {e.newEpisode ? <Radio className="size-3.5 text-amber-300" /> : <RotateCcw className="size-3.5" />}
+            {e.newEpisode ? <Radio className="size-3.5 text-warn" /> : <RotateCcw className="size-3.5" />}
             {label}
           </p>
           <p className="mt-2 max-w-2xl text-[28px] leading-tight font-semibold tracking-[-0.02em] text-balance md:text-[38px]">{v.title.name}</p>
@@ -194,14 +194,14 @@ function Hero({ entry: e }: { entry: ContinueEntry }) {
                 {resuming && left ? <Ticker value={left} /> : (v.label ?? 'Play')}
               </span>
               {progress > 0 && (
-                <div className="mt-3 h-1 w-56 overflow-hidden rounded-full bg-white/15">
-                  <div className="h-full rounded-full bg-white" style={{ width: `${progress * 100}%` }} />
+                <div className="mt-3 h-1 w-56 overflow-hidden rounded-full bg-media-ink/15">
+                  <div className="h-full rounded-full bg-media-ink" style={{ width: `${progress * 100}%` }} />
                 </div>
               )}
             </div>
             <Squircle
               radius={14}
-              className="inline-flex h-11 items-center gap-2.5 bg-ink px-5 text-[15px] font-medium text-canvas transition-colors group-hover:bg-white"
+              className="inline-flex h-11 items-center gap-2.5 bg-accent px-5 text-[15px] font-medium text-on-accent transition-colors group-hover:bg-accent-hover"
             >
               <Play className="size-4.5 fill-current" />
               {resuming ? 'Resume' : 'Play'}
@@ -225,7 +225,7 @@ function ContinueCard({ entry }: { entry: ContinueEntry }) {
       params={{ id: String(v.id) }}
       viewTransition
       onClick={(e) => morphFrom(e, 'still')}
-      className="group block w-80 shrink-0 snap-start rounded-[17px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-white/70"
+      className="group block w-80 shrink-0 snap-start rounded-[17px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-glow/70"
       {...tilt.handlers}
     >
       <div ref={tilt.ref} className="tilt">
@@ -240,28 +240,28 @@ function ContinueCard({ entry }: { entry: ContinueEntry }) {
         ) : (
           <div className="size-full bg-panel" />
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-media-shade/75 via-media-shade/10 to-transparent" />
         {entry.newEpisode && (
-          <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 text-2xs font-medium text-white backdrop-blur-md">
-            <span className="size-1.5 rounded-full bg-amber-300" /> New episode
+          <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-md bg-media-shade/60 px-2 py-1 text-2xs font-medium text-media-ink backdrop-blur-md">
+            <span className="size-1.5 rounded-full bg-warn" /> New episode
           </span>
         )}
         <div className="absolute inset-x-3.5 bottom-3 flex items-end gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-white">{v.title.name}</p>
-            <p className="truncate text-xs text-white/60">
+            <p className="truncate text-sm font-medium text-media-ink">{v.title.name}</p>
+            <p className="truncate text-xs text-media-ink/60">
               {[v.label, entry.upNext ? 'Up next' : remaining(entry.position, v.duration)]
                 .filter(Boolean)
                 .join(' · ')}
             </p>
           </div>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-media-shade/45 text-media-ink opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
             <Play className="size-4 fill-current" />
           </span>
         </div>
         {progress > 0 && (
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
-            <div className="h-full bg-white" style={{ width: `${progress * 100}%` }} />
+          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-media-ink/15">
+            <div className="h-full bg-media-ink" style={{ width: `${progress * 100}%` }} />
           </div>
         )}
         <div className="glare" />
@@ -331,29 +331,29 @@ function ComingCard({ e, now }: { e: CalendarEntry; now: number }) {
       ) : (
         <div className="size-full bg-panel" />
       )}
-      <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-media-shade/85 via-media-shade/20 to-transparent" />
       <span
-        className={`absolute top-3 left-3 rounded-md bg-black/60 px-2 py-1 text-2xs font-medium tabular backdrop-blur-md ${dl ? 'text-sky-300' : 'text-white'}`}
+        className={`absolute top-3 left-3 rounded-md bg-media-shade/60 px-2 py-1 text-2xs font-medium tabular backdrop-blur-md ${dl ? 'text-info' : 'text-media-ink'}`}
       >
         {badge}
       </span>
       <div className="absolute inset-x-3.5 bottom-3">
-        <p className="truncate text-sm font-medium text-white">{e.show}</p>
-        <p className="truncate text-xs text-white/60">
+        <p className="truncate text-sm font-medium text-media-ink">{e.show}</p>
+        <p className="truncate text-xs text-media-ink/60">
           {episodeCode(e.season, e.episode)}
           {e.name && ` · ${e.name}`}
         </p>
       </div>
       {dl && (
-        <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
-          <div className="h-full bg-sky-300 transition-[width] duration-[3s] ease-linear" style={{ width: `${dl.progress * 100}%` }} />
+        <div className="absolute inset-x-0 bottom-0 h-[3px] bg-media-ink/15">
+          <div className="h-full bg-info transition-[width] duration-[3s] ease-linear" style={{ width: `${dl.progress * 100}%` }} />
         </div>
       )}
       <div className="glare" />
     </Squircle>
     </div>
   )
-  const cls = 'group block w-72 shrink-0 snap-start rounded-[17px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-white/70'
+  const cls = 'group block w-72 shrink-0 snap-start rounded-[17px] outline-offset-3 outline-none focus-visible:outline-2 focus-visible:outline-glow/70'
   return e.title ? (
     <Link to="/title/$id" params={{ id: String(e.title.id) }} className={cls} {...tilt.handlers}>
       {body}

@@ -246,6 +246,7 @@ impl UserMutation {
         if id == admin.id {
             return Err(ApiError::bad_request("you can't delete your own account"));
         }
+        sqlx::query("DELETE FROM schemes WHERE owner_id = ? AND published = 0").bind(id).execute(&state.db).await?;
         sqlx::query("DELETE FROM users WHERE id = ?").bind(id).execute(&state.db).await?;
         state.together.forget_host(id);
         state.events.send(Event::UsersChanged);

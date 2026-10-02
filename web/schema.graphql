@@ -1,3 +1,41 @@
+"""
+How tinystream looks for whoever's asking.
+"""
+type Appearance {
+	mode: SchemeMode!
+	"""
+	The scheme for the system's light mode; the only one in single mode.
+	"""
+	light: ColorScheme!
+	dark: ColorScheme!
+	style: ComponentStyle!
+	mediaTint: Boolean!
+}
+
+"""
+What someone picked for themselves; anything left out follows the server.
+"""
+type AppearanceSettings {
+	colors: SchemeChoice
+	style: ComponentStyle
+	"""
+	Let the scheme colour what sits over artwork and video, too.
+	"""
+	mediaTint: Boolean!
+}
+
+"""
+What someone picked for themselves; anything left out follows the server.
+"""
+input AppearanceSettingsInput {
+	colors: SchemeChoiceInput
+	style: ComponentStyle
+	"""
+	Let the scheme colour what sits over artwork and video, too.
+	"""
+	mediaTint: Boolean!
+}
+
 type AppliedRenames {
 	batch: String!
 	renamed: Int!
@@ -52,6 +90,7 @@ enum ChangedList {
 	REQUESTS
 	USERS
 	NOTIFICATIONS
+	APPEARANCE
 }
 
 type Chapter {
@@ -185,6 +224,33 @@ input ClipsConfigInput {
 	defaultFont: String
 }
 
+type ColorScheme {
+	id: String!
+	name: String!
+	builtIn: Boolean!
+	"""
+	Everyone on this server can pick it.
+	"""
+	published: Boolean!
+	editable: Boolean!
+	forkedFrom: SchemeOrigin
+	"""
+	`ts1.<payload>`: the scheme itself. Two schemes with the same code are the same scheme.
+	"""
+	code: String!
+	"""
+	The code with the name attached, for sharing.
+	"""
+	shareCode: String!
+	palette: Palette!
+}
+
+enum ComponentStyle {
+	LAYERED
+	FLAT
+	GLASS
+}
+
 enum Confidence {
 	HIGH
 	LOW
@@ -226,6 +292,19 @@ type ContinueEntry {
 	upNext: Boolean!
 	newEpisode: Boolean!
 	watchedAt: Int
+}
+
+type ContrastWarning {
+	foreground: String!
+	background: String!
+	ratio: Float!
+	minimum: Float!
+}
+
+type DecodedScheme {
+	name: String
+	code: String!
+	palette: Palette!
 }
 
 type DetectedSource {
@@ -587,6 +666,25 @@ type Mutation {
 	updateLibrary(name: String!, input: LibraryInput!): Settings!
 	removeLibrary(name: String!): Settings!
 	scan(library: String): Boolean!
+	"""
+	Creates a scheme, or changes one you may edit.
+	"""
+	saveScheme(id: String, input: SchemeInput!): ColorScheme!
+	"""
+	An editable copy of any scheme you can see.
+	"""
+	forkScheme(id: String!): ColorScheme!
+	importScheme(code: String!, name: String): ColorScheme!
+	deleteScheme(id: String!): String!
+	"""
+	Shares one of your schemes with everyone here, or takes it back.
+	"""
+	publishScheme(id: String!, published: Boolean!): ColorScheme!
+	setAppearance(input: AppearanceSettingsInput!): Appearance!
+	"""
+	What everyone sees unless they pick something else, signed-out pages included.
+	"""
+	setServerAppearance(input: ServerAppearanceInput!): ServerAppearance!
 	grabRelease(release: ReleaseInput!, seriesId: Int, episodes: [EpisodeNumberInput!]! = []): Download!
 	pauseDownloads(ids: [Int!]!): [Download!]!
 	resumeDownloads(ids: [Int!]!): [Download!]!
@@ -732,6 +830,16 @@ enum Numbering {
 	AUTO
 	SEASONAL
 	ABSOLUTE
+}
+
+type Palette {
+	seeds: [Token!]!
+	overrides: [Token!]!
+	"""
+	Every colour, derived from the seeds with the overrides applied.
+	"""
+	tokens: [Token!]!
+	warnings: [ContrastWarning!]!
 }
 
 type Passkey {
@@ -894,6 +1002,21 @@ type Query {
 	settings: Settings!
 	folders(path: String): FolderListing!
 	skippedFiles: [SkippedFile!]!
+	"""
+	How tinystream should look right now. Works signed out too, with the server's defaults.
+	"""
+	appearance: Appearance!
+	appearanceSettings: AppearanceSettings!
+	serverAppearance: ServerAppearance!
+	"""
+	Built-ins, then published schemes, then your own.
+	"""
+	colorSchemes: [ColorScheme!]!
+	colorScheme(id: String!): ColorScheme
+	"""
+	What a code holds, to look at before importing it.
+	"""
+	decodeScheme(code: String!): DecodedScheme!
 	downloads: [Download!]!
 	download(id: Int!): Download
 	downloadEngine: DownloadEngine!
@@ -1045,6 +1168,51 @@ type ScanStarted {
 	library: String!
 }
 
+"""
+Which schemes to use, by id: a built-in's name or a saved scheme's number.
+"""
+type SchemeChoice {
+	mode: SchemeMode!
+	single: String!
+	light: String!
+	dark: String!
+}
+
+"""
+Which schemes to use, by id: a built-in's name or a saved scheme's number.
+"""
+input SchemeChoiceInput {
+	mode: SchemeMode!
+	single: String!
+	light: String!
+	dark: String!
+}
+
+input SchemeInput {
+	name: String!
+	"""
+	Every seed, opaque.
+	"""
+	seeds: [TokenInput!]!
+	overrides: [TokenInput!]!
+}
+
+enum SchemeMode {
+	SINGLE
+	"""
+	One scheme for the system's light mode, one for its dark mode.
+	"""
+	SYSTEM
+}
+
+type SchemeOrigin {
+	"""
+	Gone when the parent was deleted or you can't see it any more.
+	"""
+	id: String
+	name: String!
+}
+
 type SearchResults {
 	titles: [Title!]!
 	videos: [Video!]!
@@ -1153,6 +1321,16 @@ type Server {
 	downloads: Boolean!
 	sources: Int!
 	transcoding: Transcoding!
+}
+
+type ServerAppearance {
+	colors: SchemeChoice!
+	style: ComponentStyle!
+}
+
+input ServerAppearanceInput {
+	colors: SchemeChoiceInput!
+	style: ComponentStyle!
 }
 
 type ServerPaths {
@@ -1281,6 +1459,16 @@ type Title {
 enum TitleKind {
 	SHOW
 	MOVIE
+}
+
+type Token {
+	name: String!
+	value: String!
+}
+
+input TokenInput {
+	name: String!
+	value: String!
 }
 
 type TorrentFile {

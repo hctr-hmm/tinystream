@@ -143,7 +143,7 @@ function ToastView({ t }: { t: Toast }) {
       onPointerLeave={() => setHover(false)}
       role="status"
     >
-      <Squircle radius={16} edge className="flex items-center gap-2 bg-float py-2.5 pr-2 pl-3">
+      <Squircle radius={16} edge className="material flex items-center gap-2 bg-float py-2.5 pr-2 pl-3">
         <div className="min-w-0 flex-1">
           {t.to ? (
             <Link to={t.to.to} params={t.to.params} onClick={() => dismiss(t.id)} className="block outline-none">

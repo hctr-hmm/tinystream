@@ -70,7 +70,7 @@ export function Avatar({
       ) : (
         user.username.slice(0, 1)
       )}
-      <span className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]" />
+      <span className="pointer-events-none absolute inset-0 rounded-full inset-ring inset-ring-glow/8" />
     </span>
   )
 }
@@ -112,7 +112,7 @@ export function AvatarPicker({ user, userId, size = 72 }: { user: Who; userId?: 
       >
         <Avatar user={user} size={size} />
         <span
-          className={`absolute inset-0 grid place-items-center rounded-full bg-black/55 text-ink transition-opacity ${over ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'}`}
+          className={`absolute inset-0 grid place-items-center rounded-full bg-shade/55 text-ink transition-opacity ${over ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'}`}
         >
           <Camera className="size-5" />
         </span>
@@ -232,7 +232,7 @@ function CropDialog({ file, userId, onClose, onSaved }: { file: File; userId?: n
           )}
           {/* Everything outside the circle is dimmed; the ring shows the edge. */}
           <div
-            className="pointer-events-none absolute top-1/2 left-1/2 rounded-full shadow-[0_0_0_999px_rgb(0_0_0/0.62),inset_0_0_0_1.5px_rgb(255_255_255/0.5)]"
+            className="pointer-events-none absolute top-1/2 left-1/2 rounded-full shadow-[0_0_0_999px_color-mix(in_srgb,var(--color-media-shade)_62%,transparent),inset_0_0_0_1.5px_color-mix(in_srgb,var(--color-media-ink)_50%,transparent)]"
             style={{ width: VIEW, height: VIEW, marginLeft: -VIEW / 2, marginTop: -VIEW / 2 }}
           />
         </div>

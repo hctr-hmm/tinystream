@@ -5,6 +5,7 @@ use std::sync::Arc;
 use async_graphql::{Context, InputObject, MergedObject, MergedSubscription, Schema, SimpleObject};
 use axum::http::HeaderMap;
 
+use super::appearance::{AppearanceMutation, AppearanceQuery};
 use super::auth::{AuthMutation, AuthQuery};
 #[cfg(feature = "torrent")]
 use super::automation::{AutomationMutation, AutomationQuery};
@@ -32,6 +33,7 @@ pub struct Query(
     ClipQuery,
     NotificationQuery,
     SettingsQuery,
+    AppearanceQuery,
     AutomationQuery,
 );
 
@@ -46,6 +48,7 @@ pub struct Query(
     ClipQuery,
     NotificationQuery,
     SettingsQuery,
+    AppearanceQuery,
 );
 
 #[cfg(feature = "torrent")]
@@ -58,6 +61,7 @@ pub struct Mutation(
     ClipMutation,
     NotificationMutation,
     SettingsMutation,
+    AppearanceMutation,
     AutomationMutation,
 );
 
@@ -71,6 +75,7 @@ pub struct Mutation(
     ClipMutation,
     NotificationMutation,
     SettingsMutation,
+    AppearanceMutation,
 );
 
 #[derive(MergedSubscription, Default)]

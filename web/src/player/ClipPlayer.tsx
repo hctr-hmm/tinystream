@@ -125,7 +125,7 @@ export function ClipPlayer({ src, poster, muted: startMuted = false }: { src: st
       ref={stage}
       onPointerMove={(e) => e.pointerType === 'mouse' && poke()}
       onPointerDown={poke}
-      className={`relative size-full bg-black select-none ${showChrome ? '' : 'cursor-none'}`}
+      className={`relative size-full bg-media-shade select-none ${showChrome ? '' : 'cursor-none'}`}
     >
       <video
         ref={videoRef}
@@ -155,12 +155,12 @@ export function ClipPlayer({ src, poster, muted: startMuted = false }: { src: st
       />
 
       {waiting && !error && (
-        <div className="pointer-events-none absolute inset-0 grid place-items-center text-white/80">
+        <div className="pointer-events-none absolute inset-0 grid place-items-center text-media-ink/80">
           <Spinner className="size-8" />
         </div>
       )}
       {error && (
-        <div className="pointer-events-none absolute inset-0 grid place-items-center p-6 text-center text-sm text-white/70">
+        <div className="pointer-events-none absolute inset-0 grid place-items-center p-6 text-center text-sm text-media-ink/70">
           The browser could not play this clip
         </div>
       )}
@@ -168,7 +168,7 @@ export function ClipPlayer({ src, poster, muted: startMuted = false }: { src: st
       {hud && <HudView hud={hud} />}
 
       <div
-        className={`absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/40 to-transparent px-3 pt-14 pb-2 transition-opacity duration-300 ${showChrome ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`absolute inset-x-0 bottom-0 bg-linear-to-t from-media-shade/80 via-media-shade/40 to-transparent px-3 pt-14 pb-2 transition-opacity duration-300 ${showChrome ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       >
         <Timeline time={time} duration={duration} buffered={buffered} chapters={[]} onSeek={seek} />
         <div className="mt-1 flex items-center gap-1">
@@ -176,8 +176,8 @@ export function ClipPlayer({ src, poster, muted: startMuted = false }: { src: st
             {playing ? <Pause className="size-5 fill-current" /> : <Play className="size-5 fill-current" />}
           </ChromeButton>
           <VolumeControl volume={volume} muted={muted} setVolume={setVolume} setMuted={setMuted} />
-          <span className="ml-2 text-[13px] text-white/80 tabular">
-            {clock(time)} <span className="text-white/40">/ {clock(duration)}</span>
+          <span className="ml-2 text-[13px] text-media-ink/80 tabular">
+            {clock(time)} <span className="text-media-ink/40">/ {clock(duration)}</span>
           </span>
           <div className="flex-1" />
           {typeof document !== 'undefined' && document.pictureInPictureEnabled && (

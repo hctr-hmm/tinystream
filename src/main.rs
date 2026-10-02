@@ -36,6 +36,7 @@ mod metadata;
 mod notifications;
 mod paths;
 mod state;
+mod theme;
 mod together;
 #[cfg(feature = "web-ui")]
 mod web;

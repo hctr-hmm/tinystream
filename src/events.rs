@@ -9,22 +9,60 @@ use crate::notifications::Notification;
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum Event {
     ConfigChanged,
-    ConfigError { message: String },
-    ScanStarted { library: String },
-    ScanFinished { library: String, items: usize, media: usize, skipped: usize },
-    LibraryChanged { library: String },
-    MetadataFetching { item_id: i64 },
-    MetadataUpdated { item_id: i64 },
-    MetadataFailed { item_id: i64 },
+    ConfigError {
+        message: String,
+    },
+    ScanStarted {
+        library: String,
+    },
+    ScanFinished {
+        library: String,
+        items: usize,
+        media: usize,
+        skipped: usize,
+    },
+    LibraryChanged {
+        library: String,
+    },
+    MetadataFetching {
+        item_id: i64,
+    },
+    MetadataUpdated {
+        item_id: i64,
+    },
+    MetadataFailed {
+        item_id: i64,
+    },
     DownloadsChanged,
-    SeriesChanged { series_id: i64 },
-    Imported { library: String, show: String, item_id: Option<i64>, episodes: Vec<(u32, u32)> },
+    SeriesChanged {
+        series_id: i64,
+    },
+    Imported {
+        library: String,
+        show: String,
+        item_id: Option<i64>,
+        episodes: Vec<(u32, u32)>,
+    },
     RenamesChanged,
     RequestsChanged,
     UsersChanged,
-    Notified { user_id: i64, notification: Notification },
-    NotificationsChanged { user_id: i64 },
-    ClipChanged { clip_id: i64, users: Vec<i64>, state: String, progress: Option<f32> },
+    Notified {
+        user_id: i64,
+        notification: Notification,
+    },
+    NotificationsChanged {
+        user_id: i64,
+    },
+    ClipChanged {
+        clip_id: i64,
+        users: Vec<i64>,
+        state: String,
+        progress: Option<f32>,
+    },
+    /// Someone's own appearance, or everyone's when there's no `user_id`.
+    AppearanceChanged {
+        user_id: Option<i64>,
+    },
 }
 
 #[derive(Clone)]

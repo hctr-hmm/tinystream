@@ -15,6 +15,17 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  query ColorSchemes {\n    colorSchemes {\n      ...SchemeFields\n    }\n  }\n": typeof types.ColorSchemesDocument,
+    "\n  query AppearanceSettings {\n    appearanceSettings {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n      mediaTint\n    }\n  }\n": typeof types.AppearanceSettingsDocument,
+    "\n  query ServerAppearance {\n    serverAppearance {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n    }\n  }\n": typeof types.ServerAppearanceDocument,
+    "\n  mutation SetAppearance($input: AppearanceSettingsInput!) {\n    setAppearance(input: $input) {\n      mode\n    }\n  }\n": typeof types.SetAppearanceDocument,
+    "\n  mutation SetServerAppearance($input: ServerAppearanceInput!) {\n    setServerAppearance(input: $input) {\n      style\n    }\n  }\n": typeof types.SetServerAppearanceDocument,
+    "\n  mutation SaveScheme($id: String, $input: SchemeInput!) {\n    saveScheme(id: $id, input: $input) {\n      ...SchemeFields\n    }\n  }\n": typeof types.SaveSchemeDocument,
+    "\n  mutation ForkScheme($id: String!) {\n    forkScheme(id: $id) {\n      ...SchemeFields\n    }\n  }\n": typeof types.ForkSchemeDocument,
+    "\n  mutation ImportScheme($code: String!, $name: String) {\n    importScheme(code: $code, name: $name) {\n      ...SchemeFields\n    }\n  }\n": typeof types.ImportSchemeDocument,
+    "\n  mutation DeleteScheme($id: String!) {\n    deleteScheme(id: $id)\n  }\n": typeof types.DeleteSchemeDocument,
+    "\n  mutation PublishScheme($id: String!, $published: Boolean!) {\n    publishScheme(id: $id, published: $published) {\n      id\n    }\n  }\n": typeof types.PublishSchemeDocument,
+    "\n  query DecodeScheme($code: String!) {\n    decodeScheme(code: $code) {\n      name\n      code\n      palette {\n        tokens {\n          name\n          value\n        }\n        warnings {\n          foreground\n          background\n          ratio\n          minimum\n        }\n      }\n    }\n  }\n": typeof types.DecodeSchemeDocument,
     "\n  mutation SetAvatar($image: Upload!, $userId: Int) {\n    setAvatar(image: $image, userId: $userId) {\n      id\n      avatar\n    }\n  }\n": typeof types.SetAvatarDocument,
     "\n  mutation RemoveAvatar($userId: Int) {\n    removeAvatar(userId: $userId) {\n      id\n      avatar\n    }\n  }\n": typeof types.RemoveAvatarDocument,
     "\n  query ClipStorage {\n    clipStorage {\n      usage {\n        user {\n          ...Person\n        }\n        bytes\n        rendered\n        clips\n        storage\n        limit\n      }\n      publicClips {\n        ...ClipFields\n      }\n      bytes\n      dir\n    }\n  }\n": typeof types.ClipStorageDocument,
@@ -89,6 +100,8 @@ type Documents = {
     "\n  fragment SettingsFields on Settings {\n    network {\n      host\n      port\n      cors\n    }\n    log {\n      level\n    }\n    scan {\n      watch\n      interval\n    }\n    metadata {\n      tmdbApiKey\n      language\n    }\n    transcode {\n      hardware\n      vaapiDevice\n    }\n    clips {\n      enabled\n      path\n      publicLinks\n      concurrency\n      maxStorage\n      fontsDir\n      defaultFont\n    }\n    downloads {\n      path\n      import\n      port\n      upnp\n      dht\n      maxActive\n      downloadLimit\n      uploadLimit\n      slowDownloadLimit\n      slowUploadLimit\n      slowFrom\n      slowTo\n      bindInterface\n      proxy\n      seeding {\n        ...SeedingFields\n      }\n    }\n    automation {\n      defaultMonitor\n      rssInterval\n      retry {\n        every\n        until\n      }\n      renameSuggestions\n    }\n    requests {\n      monitor\n    }\n    sources {\n      name\n      kind\n      url\n      feed\n      apiKey\n      categories\n      enabled\n      downloadPath\n      seeding {\n        ...SeedingFields\n      }\n    }\n    profiles {\n      name\n      resolutions\n      groups\n      require\n      reject\n      minSize\n      maxSize\n      codecs\n      preferDualAudio\n      batches\n      minSeeders\n    }\n    libraries {\n      name\n      path\n      metadataProvider\n      managed\n      profile\n      downloadPath\n      resolvedPath\n      exists\n      error\n      titleCount\n      skippedCount\n    }\n    raw\n    error\n    paths {\n      config\n      data\n      log\n    }\n  }\n": typeof types.SettingsFieldsFragmentDoc,
     "\n  query Libraries {\n    libraries {\n      name\n      showCount\n      movieCount\n    }\n  }\n": typeof types.LibrariesDocument,
     "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": typeof types.SettingsDocument,
+    "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n": typeof types.SchemeFieldsFragmentDoc,
+    "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": typeof types.AppearanceDocument,
     "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n": typeof types.ClipDocument,
     "\n  query Status {\n    server {\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": typeof types.StatusDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": typeof types.PeopleDocument,
@@ -157,6 +170,17 @@ type Documents = {
     "\n  query Wanted {\n    wanted {\n      seriesId\n      title {\n        id\n      }\n      show\n      season\n      episode\n      name\n      airAt\n      aired\n      state\n      attempts\n      searchedAt\n      nextSearch\n    }\n  }\n": typeof types.WantedDocument,
 };
 const documents: Documents = {
+    "\n  query ColorSchemes {\n    colorSchemes {\n      ...SchemeFields\n    }\n  }\n": types.ColorSchemesDocument,
+    "\n  query AppearanceSettings {\n    appearanceSettings {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n      mediaTint\n    }\n  }\n": types.AppearanceSettingsDocument,
+    "\n  query ServerAppearance {\n    serverAppearance {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n    }\n  }\n": types.ServerAppearanceDocument,
+    "\n  mutation SetAppearance($input: AppearanceSettingsInput!) {\n    setAppearance(input: $input) {\n      mode\n    }\n  }\n": types.SetAppearanceDocument,
+    "\n  mutation SetServerAppearance($input: ServerAppearanceInput!) {\n    setServerAppearance(input: $input) {\n      style\n    }\n  }\n": types.SetServerAppearanceDocument,
+    "\n  mutation SaveScheme($id: String, $input: SchemeInput!) {\n    saveScheme(id: $id, input: $input) {\n      ...SchemeFields\n    }\n  }\n": types.SaveSchemeDocument,
+    "\n  mutation ForkScheme($id: String!) {\n    forkScheme(id: $id) {\n      ...SchemeFields\n    }\n  }\n": types.ForkSchemeDocument,
+    "\n  mutation ImportScheme($code: String!, $name: String) {\n    importScheme(code: $code, name: $name) {\n      ...SchemeFields\n    }\n  }\n": types.ImportSchemeDocument,
+    "\n  mutation DeleteScheme($id: String!) {\n    deleteScheme(id: $id)\n  }\n": types.DeleteSchemeDocument,
+    "\n  mutation PublishScheme($id: String!, $published: Boolean!) {\n    publishScheme(id: $id, published: $published) {\n      id\n    }\n  }\n": types.PublishSchemeDocument,
+    "\n  query DecodeScheme($code: String!) {\n    decodeScheme(code: $code) {\n      name\n      code\n      palette {\n        tokens {\n          name\n          value\n        }\n        warnings {\n          foreground\n          background\n          ratio\n          minimum\n        }\n      }\n    }\n  }\n": types.DecodeSchemeDocument,
     "\n  mutation SetAvatar($image: Upload!, $userId: Int) {\n    setAvatar(image: $image, userId: $userId) {\n      id\n      avatar\n    }\n  }\n": types.SetAvatarDocument,
     "\n  mutation RemoveAvatar($userId: Int) {\n    removeAvatar(userId: $userId) {\n      id\n      avatar\n    }\n  }\n": types.RemoveAvatarDocument,
     "\n  query ClipStorage {\n    clipStorage {\n      usage {\n        user {\n          ...Person\n        }\n        bytes\n        rendered\n        clips\n        storage\n        limit\n      }\n      publicClips {\n        ...ClipFields\n      }\n      bytes\n      dir\n    }\n  }\n": types.ClipStorageDocument,
@@ -231,6 +255,8 @@ const documents: Documents = {
     "\n  fragment SettingsFields on Settings {\n    network {\n      host\n      port\n      cors\n    }\n    log {\n      level\n    }\n    scan {\n      watch\n      interval\n    }\n    metadata {\n      tmdbApiKey\n      language\n    }\n    transcode {\n      hardware\n      vaapiDevice\n    }\n    clips {\n      enabled\n      path\n      publicLinks\n      concurrency\n      maxStorage\n      fontsDir\n      defaultFont\n    }\n    downloads {\n      path\n      import\n      port\n      upnp\n      dht\n      maxActive\n      downloadLimit\n      uploadLimit\n      slowDownloadLimit\n      slowUploadLimit\n      slowFrom\n      slowTo\n      bindInterface\n      proxy\n      seeding {\n        ...SeedingFields\n      }\n    }\n    automation {\n      defaultMonitor\n      rssInterval\n      retry {\n        every\n        until\n      }\n      renameSuggestions\n    }\n    requests {\n      monitor\n    }\n    sources {\n      name\n      kind\n      url\n      feed\n      apiKey\n      categories\n      enabled\n      downloadPath\n      seeding {\n        ...SeedingFields\n      }\n    }\n    profiles {\n      name\n      resolutions\n      groups\n      require\n      reject\n      minSize\n      maxSize\n      codecs\n      preferDualAudio\n      batches\n      minSeeders\n    }\n    libraries {\n      name\n      path\n      metadataProvider\n      managed\n      profile\n      downloadPath\n      resolvedPath\n      exists\n      error\n      titleCount\n      skippedCount\n    }\n    raw\n    error\n    paths {\n      config\n      data\n      log\n    }\n  }\n": types.SettingsFieldsFragmentDoc,
     "\n  query Libraries {\n    libraries {\n      name\n      showCount\n      movieCount\n    }\n  }\n": types.LibrariesDocument,
     "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": types.SettingsDocument,
+    "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n": types.SchemeFieldsFragmentDoc,
+    "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": types.AppearanceDocument,
     "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n": types.ClipDocument,
     "\n  query Status {\n    server {\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": types.StatusDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": types.PeopleDocument,
@@ -299,6 +325,50 @@ const documents: Documents = {
     "\n  query Wanted {\n    wanted {\n      seriesId\n      title {\n        id\n      }\n      show\n      season\n      episode\n      name\n      airAt\n      aired\n      state\n      attempts\n      searchedAt\n      nextSearch\n    }\n  }\n": types.WantedDocument,
 };
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ColorSchemes {\n    colorSchemes {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').ColorSchemesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AppearanceSettings {\n    appearanceSettings {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n      mediaTint\n    }\n  }\n"): typeof import('./graphql').AppearanceSettingsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ServerAppearance {\n    serverAppearance {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n    }\n  }\n"): typeof import('./graphql').ServerAppearanceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetAppearance($input: AppearanceSettingsInput!) {\n    setAppearance(input: $input) {\n      mode\n    }\n  }\n"): typeof import('./graphql').SetAppearanceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetServerAppearance($input: ServerAppearanceInput!) {\n    setServerAppearance(input: $input) {\n      style\n    }\n  }\n"): typeof import('./graphql').SetServerAppearanceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SaveScheme($id: String, $input: SchemeInput!) {\n    saveScheme(id: $id, input: $input) {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').SaveSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ForkScheme($id: String!) {\n    forkScheme(id: $id) {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').ForkSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ImportScheme($code: String!, $name: String) {\n    importScheme(code: $code, name: $name) {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').ImportSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteScheme($id: String!) {\n    deleteScheme(id: $id)\n  }\n"): typeof import('./graphql').DeleteSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation PublishScheme($id: String!, $published: Boolean!) {\n    publishScheme(id: $id, published: $published) {\n      id\n    }\n  }\n"): typeof import('./graphql').PublishSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query DecodeScheme($code: String!) {\n    decodeScheme(code: $code) {\n      name\n      code\n      palette {\n        tokens {\n          name\n          value\n        }\n        warnings {\n          foreground\n          background\n          ratio\n          minimum\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').DecodeSchemeDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -595,6 +665,14 @@ export function graphql(source: "\n  query Libraries {\n    libraries {\n      n
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n"): typeof import('./graphql').SettingsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n"): typeof import('./graphql').SchemeFieldsFragmentDoc;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').AppearanceDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

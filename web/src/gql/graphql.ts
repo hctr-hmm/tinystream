@@ -4,6 +4,14 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+/** What someone picked for themselves; anything left out follows the server. */
+export type AppearanceSettingsInput = {
+  colors?: SchemeChoiceInput | null | undefined;
+  /** Let the scheme colour what sits over artwork and video, too. */
+  mediaTint: boolean;
+  style?: ComponentStyle | null | undefined;
+};
+
 export type AutomationConfigInput = {
   defaultMonitor: Monitor;
   renameSuggestions: boolean;
@@ -12,6 +20,7 @@ export type AutomationConfigInput = {
 };
 
 export type ChangedList =
+  | 'APPEARANCE'
   | 'DOWNLOADS'
   | 'NOTIFICATIONS'
   | 'RENAME_SUGGESTIONS'
@@ -45,6 +54,11 @@ export type ClipsConfigInput = {
   path?: string | null | undefined;
   publicLinks: boolean;
 };
+
+export type ComponentStyle =
+  | 'FLAT'
+  | 'GLASS'
+  | 'LAYERED';
 
 export type Confidence =
   | 'HIGH'
@@ -323,6 +337,26 @@ export type ScanConfigInput = {
   watch: boolean;
 };
 
+/** Which schemes to use, by id: a built-in's name or a saved scheme's number. */
+export type SchemeChoiceInput = {
+  dark: string;
+  light: string;
+  mode: SchemeMode;
+  single: string;
+};
+
+export type SchemeInput = {
+  name: string;
+  overrides: Array<TokenInput>;
+  /** Every seed, opaque. */
+  seeds: Array<TokenInput>;
+};
+
+export type SchemeMode =
+  | 'SINGLE'
+  /** One scheme for the system's light mode, one for its dark mode. */
+  | 'SYSTEM';
+
 export type SeedAction =
   | 'PAUSE'
   | 'REMOVE';
@@ -343,6 +377,11 @@ export type SeriesPatch = {
   profile?: string | null | undefined;
   seeding?: SeedingInput | null | undefined;
   sources?: Array<string> | null | undefined;
+};
+
+export type ServerAppearanceInput = {
+  colors: SchemeChoiceInput;
+  style: ComponentStyle;
 };
 
 export type SourceInput = {
@@ -370,6 +409,11 @@ export type TitleKind =
   | 'MOVIE'
   | 'SHOW';
 
+export type TokenInput = {
+  name: string;
+  value: string;
+};
+
 export type TorrentStage =
   | 'CHECKING'
   | 'DOWNLOADING'
@@ -394,6 +438,80 @@ export type UserPatch = {
   permissions?: PermissionOverridesInput | null | undefined;
   username?: string | null | undefined;
 };
+
+export type ColorSchemesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ColorSchemesQuery = { colorSchemes: Array<{ id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } }> };
+
+export type AppearanceSettingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AppearanceSettingsQuery = { appearanceSettings: { style: ComponentStyle | null, mediaTint: boolean, colors: { mode: SchemeMode, single: string, light: string, dark: string } | null } };
+
+export type ServerAppearanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ServerAppearanceQuery = { serverAppearance: { style: ComponentStyle, colors: { mode: SchemeMode, single: string, light: string, dark: string } } };
+
+export type SetAppearanceMutationVariables = Exact<{
+  input: AppearanceSettingsInput;
+}>;
+
+
+export type SetAppearanceMutation = { setAppearance: { mode: SchemeMode } };
+
+export type SetServerAppearanceMutationVariables = Exact<{
+  input: ServerAppearanceInput;
+}>;
+
+
+export type SetServerAppearanceMutation = { setServerAppearance: { style: ComponentStyle } };
+
+export type SaveSchemeMutationVariables = Exact<{
+  id?: string | null | undefined;
+  input: SchemeInput;
+}>;
+
+
+export type SaveSchemeMutation = { saveScheme: { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
+
+export type ForkSchemeMutationVariables = Exact<{
+  id: string;
+}>;
+
+
+export type ForkSchemeMutation = { forkScheme: { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
+
+export type ImportSchemeMutationVariables = Exact<{
+  code: string;
+  name?: string | null | undefined;
+}>;
+
+
+export type ImportSchemeMutation = { importScheme: { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
+
+export type DeleteSchemeMutationVariables = Exact<{
+  id: string;
+}>;
+
+
+export type DeleteSchemeMutation = { deleteScheme: string };
+
+export type PublishSchemeMutationVariables = Exact<{
+  id: string;
+  published: boolean;
+}>;
+
+
+export type PublishSchemeMutation = { publishScheme: { id: string } };
+
+export type DecodeSchemeQueryVariables = Exact<{
+  code: string;
+}>;
+
+
+export type DecodeSchemeQuery = { decodeScheme: { name: string | null, code: string, palette: { tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
 
 export type SetAvatarMutationVariables = Exact<{
   image: Blob;
@@ -805,6 +923,13 @@ export type SettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type SettingsQuery = { settings: { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } }, server: { transcoding: { vaapi: string | null, vaapiError: string | null, softwareH264: boolean } } };
+
+export type SchemeFieldsFragment = { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } };
+
+export type AppearanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AppearanceQuery = { appearance: { mode: SchemeMode, style: ComponentStyle, mediaTint: boolean, light: { id: string, palette: { tokens: Array<{ name: string, value: string }> } }, dark: { id: string, palette: { tokens: Array<{ name: string, value: string }> } } } };
 
 export type ClipQueryVariables = Exact<{
   id: number;
@@ -1936,6 +2061,41 @@ export const SettingsFieldsFragmentDoc = new TypedDocumentString(`
   idle
   then
 }`, {"fragmentName":"SettingsFields"}) as unknown as TypedDocumentString<SettingsFieldsFragment, unknown>;
+export const SchemeFieldsFragmentDoc = new TypedDocumentString(`
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}
+    `, {"fragmentName":"SchemeFields"}) as unknown as TypedDocumentString<SchemeFieldsFragment, unknown>;
 export const NotificationFieldsFragmentDoc = new TypedDocumentString(`
     fragment NotificationFields on Notification {
   id
@@ -1984,6 +2144,235 @@ fragment NotificationFields on Notification {
   expiresAt
   readAt
 }`, {"fragmentName":"InboxFields"}) as unknown as TypedDocumentString<InboxFieldsFragment, unknown>;
+export const ColorSchemesDocument = new TypedDocumentString(`
+    query ColorSchemes {
+  colorSchemes {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<ColorSchemesQuery, ColorSchemesQueryVariables>;
+export const AppearanceSettingsDocument = new TypedDocumentString(`
+    query AppearanceSettings {
+  appearanceSettings {
+    colors {
+      mode
+      single
+      light
+      dark
+    }
+    style
+    mediaTint
+  }
+}
+    `) as unknown as TypedDocumentString<AppearanceSettingsQuery, AppearanceSettingsQueryVariables>;
+export const ServerAppearanceDocument = new TypedDocumentString(`
+    query ServerAppearance {
+  serverAppearance {
+    colors {
+      mode
+      single
+      light
+      dark
+    }
+    style
+  }
+}
+    `) as unknown as TypedDocumentString<ServerAppearanceQuery, ServerAppearanceQueryVariables>;
+export const SetAppearanceDocument = new TypedDocumentString(`
+    mutation SetAppearance($input: AppearanceSettingsInput!) {
+  setAppearance(input: $input) {
+    mode
+  }
+}
+    `) as unknown as TypedDocumentString<SetAppearanceMutation, SetAppearanceMutationVariables>;
+export const SetServerAppearanceDocument = new TypedDocumentString(`
+    mutation SetServerAppearance($input: ServerAppearanceInput!) {
+  setServerAppearance(input: $input) {
+    style
+  }
+}
+    `) as unknown as TypedDocumentString<SetServerAppearanceMutation, SetServerAppearanceMutationVariables>;
+export const SaveSchemeDocument = new TypedDocumentString(`
+    mutation SaveScheme($id: String, $input: SchemeInput!) {
+  saveScheme(id: $id, input: $input) {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<SaveSchemeMutation, SaveSchemeMutationVariables>;
+export const ForkSchemeDocument = new TypedDocumentString(`
+    mutation ForkScheme($id: String!) {
+  forkScheme(id: $id) {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<ForkSchemeMutation, ForkSchemeMutationVariables>;
+export const ImportSchemeDocument = new TypedDocumentString(`
+    mutation ImportScheme($code: String!, $name: String) {
+  importScheme(code: $code, name: $name) {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<ImportSchemeMutation, ImportSchemeMutationVariables>;
+export const DeleteSchemeDocument = new TypedDocumentString(`
+    mutation DeleteScheme($id: String!) {
+  deleteScheme(id: $id)
+}
+    `) as unknown as TypedDocumentString<DeleteSchemeMutation, DeleteSchemeMutationVariables>;
+export const PublishSchemeDocument = new TypedDocumentString(`
+    mutation PublishScheme($id: String!, $published: Boolean!) {
+  publishScheme(id: $id, published: $published) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<PublishSchemeMutation, PublishSchemeMutationVariables>;
+export const DecodeSchemeDocument = new TypedDocumentString(`
+    query DecodeScheme($code: String!) {
+  decodeScheme(code: $code) {
+    name
+    code
+    palette {
+      tokens {
+        name
+        value
+      }
+      warnings {
+        foreground
+        background
+        ratio
+        minimum
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<DecodeSchemeQuery, DecodeSchemeQueryVariables>;
 export const SetAvatarDocument = new TypedDocumentString(`
     mutation SetAvatar($image: Upload!, $userId: Int) {
   setAvatar(image: $image, userId: $userId) {
@@ -2954,6 +3343,33 @@ fragment SettingsFields on Settings {
     log
   }
 }`) as unknown as TypedDocumentString<SettingsQuery, SettingsQueryVariables>;
+export const AppearanceDocument = new TypedDocumentString(`
+    query Appearance {
+  appearance {
+    mode
+    style
+    mediaTint
+    light {
+      id
+      palette {
+        tokens {
+          name
+          value
+        }
+      }
+    }
+    dark {
+      id
+      palette {
+        tokens {
+          name
+          value
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AppearanceQuery, AppearanceQueryVariables>;
 export const ClipDocument = new TypedDocumentString(`
     query Clip($id: Int!) {
   clip(id: $id) {
