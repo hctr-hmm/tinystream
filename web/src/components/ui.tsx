@@ -80,7 +80,7 @@ export function Panel({ className = '', children, radius = 14 }: { className?: s
 
 /**
  * Click-to-open menu anchored to a trigger. Closes on outside click or Escape.
- * `portal` renders it into the body at a fixed position, for triggers inside a
+ * `portal` renders it into the body, pinned to the page, for triggers inside a
  * masked box (like a Squircle) that would otherwise clip it.
  */
 export function Popover({
@@ -160,10 +160,10 @@ export function Popover({
         createPortal(
           <div
             ref={menu}
-            className={`fixed z-50 ${anim}`}
+            className={`absolute z-50 ${align === 'end' ? '-translate-x-full' : ''} ${side === 'top' ? '-translate-y-full' : ''} ${anim}`}
             style={{
-              ...(align === 'end' ? { right: window.innerWidth - rect.right } : { left: rect.left }),
-              ...(side === 'top' ? { bottom: window.innerHeight - rect.top + 8 } : { top: rect.bottom + 8 }),
+              left: (align === 'end' ? rect.right : rect.left) + window.scrollX,
+              top: (side === 'top' ? rect.top - 8 : rect.bottom + 8) + window.scrollY,
             }}
           >
             {children(close)}
@@ -489,12 +489,12 @@ export function Select<T extends string>({
         rect &&
         createPortal(
           <div
-            className={`fixed z-[60] ${up ? 'origin-bottom' : 'origin-top'} animate-[pop_120ms_ease-out]`}
+            className={`absolute z-[60] ${up ? 'origin-bottom -translate-y-full' : 'origin-top'} animate-[pop_120ms_ease-out]`}
             style={{
-              left: Math.max(margin, Math.min(rect.left, window.innerWidth - margin - rect.width)),
+              left: Math.max(margin, Math.min(rect.left, window.innerWidth - margin - rect.width)) + window.scrollX,
+              top: (up ? rect.top - 6 : rect.bottom + 6) + window.scrollY,
               minWidth: rect.width,
               maxWidth: `calc(100vw - ${margin * 2}px)`,
-              ...(up ? { bottom: window.innerHeight - rect.top + 6 } : { top: rect.bottom + 6 }),
             }}
           >
             <Panel radius={12}>
