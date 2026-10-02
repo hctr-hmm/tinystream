@@ -68,6 +68,7 @@ pub struct Matcher {
 pub struct Match {
     pub episodes: Vec<(u32, u32)>,
     pub batch: bool,
+    pub nonstandard: bool,
 }
 
 impl Matcher {
@@ -192,7 +193,7 @@ impl Matcher {
     pub fn matches_file(&self, file_name: &str) -> Option<Match> {
         self.matches(file_name).or_else(|| {
             if let Some(ep) = crate::library::parse::episode_number(file_name) {
-                return Some(Match { episodes: vec![(ep.season, ep.episode)], batch: false });
+                return Some(Match { episodes: vec![(ep.season, ep.episode)], batch: false, nonstandard: false });
             }
             let numbers = release::numbers(&release::normalized_name(file_name))?;
             self.map(None, numbers)
@@ -238,7 +239,11 @@ impl Matcher {
         let Some((first, last)) = n.episodes else {
             if let Some(p) = part.filter(|p| p.offset > 0 || n.part.is_some()) {
                 let count = p.episodes?;
-                return Some(Match { episodes: (1..=count).map(|e| (p.season, p.offset + e)).collect(), batch: true });
+                return Some(Match {
+                    episodes: (1..=count).map(|e| (p.season, p.offset + e)).collect(),
+                    batch: true,
+                    nonstandard: n.nonstandard,
+                });
             }
 
             if n.part.is_some_and(|k| k > 1) {
@@ -247,7 +252,11 @@ impl Matcher {
 
             let s = season.or_else(|| (self.seasons.range(1..).count() <= 1).then_some(1))?;
             let count = self.count(s)?;
-            return Some(Match { episodes: (1..=count).map(|e| (s, e)).collect(), batch: true });
+            return Some(Match {
+                episodes: (1..=count).map(|e| (s, e)).collect(),
+                batch: true,
+                nonstandard: n.nonstandard,
+            });
         };
         let mut episodes = Vec::new();
         for e in first..=last {
@@ -256,7 +265,7 @@ impl Matcher {
                 _ => self.one(season, e, n.season.is_some())?,
             });
         }
-        Some(Match { episodes, batch: n.batch })
+        Some(Match { episodes, batch: n.batch, nonstandard: n.nonstandard })
     }
 
     fn one(&self, season: Option<u32>, e: u32, explicit: bool) -> Option<(u32, u32)> {
@@ -414,6 +423,21 @@ mod tests {
         let m = rezero();
         assert_eq!(m.matches_file("S04E05 - The Title.mkv").unwrap().episodes, vec![(4, 5)]);
         assert_eq!(m.matches_file("05 - The Title.mkv").unwrap().episodes, vec![(1, 5)]);
+        let hit = m.matches_file("4th_18.mkv").unwrap();
+        assert_eq!(hit.episodes, vec![(4, 18)]);
+        assert!(hit.nonstandard);
+        assert!(m.matches_file("4th_unknown_18.mkv").is_none());
+    }
+
+    #[test]
+    fn ordinal_seasons_keep_their_season() {
+        let mut m = rezero();
+        for numbering in [Numbering::Auto, Numbering::Seasonal, Numbering::Absolute] {
+            m.numbering = numbering;
+            let hit = m.matches("[G] Re Zero kara Hajimeru Isekai Seikatsu 4th_18 [1080p]").unwrap();
+            assert_eq!(hit.episodes, vec![(4, 18)]);
+            assert!(hit.nonstandard);
+        }
     }
 
     #[test]

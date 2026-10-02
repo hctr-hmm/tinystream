@@ -502,6 +502,7 @@ graphql(`
       score
       rejections
       warnings
+      nonstandard
     }
   }
 `)

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Check, CheckCheck, CircleCheck, Play, RefreshCw, RotateCcw, Search, Wand2 } from 'lucide-react'
+import { Check, CheckCheck, CircleCheck, Play, RefreshCw, RotateCcw, Search, Undo2, Wand2 } from 'lucide-react'
 import { DiscoverShelf } from '../components/DiscoverCard'
 import { ReleaseDialog, StateBadge, useLookForAgain } from '../components/downloads'
 import { NextEpisode, SeriesPanel, useItemSeries } from '../components/SeriesPanel'
@@ -170,7 +170,7 @@ function TitlePage() {
           ...before,
           seasons: before.seasons.map((s) => ({
             ...s,
-            episodes: s.episodes.map((e) => (ids.includes(e.id) ? { ...e, finished: watched, position: watched ? null : e.position } : e)),
+            episodes: s.episodes.map((e) => (ids.includes(e.id) ? { ...e, finished: watched, position: null } : e)),
           })),
         })
       return { before }
@@ -204,6 +204,12 @@ function TitlePage() {
   if (!item) return <TitleSkeleton />
 
   const all = item.seasons.flatMap((s) => s.episodes)
+  const watchedFrom = (episode: Episode) => all
+    .filter((e) => e.finished && (
+      (e.season ?? 0) > (episode.season ?? 0) ||
+      ((e.season ?? 0) === (episode.season ?? 0) && (e.episode ?? 0) >= (episode.episode ?? 0))
+    ))
+    .map((e) => e.id)
   const allWatched = all.length > 0 && all.every((e) => e.finished)
   const current = item.seasons.find((s) => s.number === season)
   // Episodes the schedule knows about but the library doesn't have (yet).
@@ -413,6 +419,23 @@ function TitlePage() {
                           }
                         : undefined
                     }
+                    onUnwatchedFrom={
+                      watchedFrom(e).length > 0
+                        ? () => {
+                            const ids = watchedFrom(e)
+                            setEpisodes.mutate(
+                              { ids, watched: false },
+                              {
+                                onSuccess: () =>
+                                  toast({
+                                    title: `Marked ${ids.length} episode${ids.length === 1 ? '' : 's'} not watched`,
+                                    action: { label: 'Undo', run: () => setEpisodes.mutate({ ids, watched: true }) },
+                                  }),
+                              },
+                            )
+                          }
+                        : undefined
+                    }
                   />
                 ) })),
                 ...ghosts
@@ -575,6 +598,7 @@ function EpisodeRow({
   scrollTo,
   onWatched,
   onWatchedUpTo,
+  onUnwatchedFrom,
 }: {
   e: Episode
   order: number
@@ -582,6 +606,7 @@ function EpisodeRow({
   scrollTo: boolean
   onWatched: (w: boolean) => void
   onWatchedUpTo?: () => void
+  onUnwatchedFrom?: () => void
 }) {
   const [broken, setBroken] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -622,7 +647,7 @@ function EpisodeRow({
               </div>
             )}
           </Squircle>
-          <div className="min-w-0 flex-1 py-0.5 pr-20">
+          <div className="min-w-0 flex-1 py-0.5 pr-28">
             <p className="flex items-baseline gap-2.5">
               <span className="shrink-0 text-xs text-ink-3 tabular">{e.label}</span>
               <span className={`truncate text-[15px] font-medium ${e.finished ? 'text-ink-2' : ''}`}>
@@ -649,6 +674,15 @@ function EpisodeRow({
             className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
           >
             <CheckCheck className="size-4.5" />
+          </IconButton>
+        )}
+        {onUnwatchedFrom && (
+          <IconButton
+            label="Mark not watched from here, including later seasons"
+            onClick={onUnwatchedFrom}
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+          >
+            <Undo2 className="size-4.5" />
           </IconButton>
         )}
         <IconButton

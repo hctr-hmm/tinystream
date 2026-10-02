@@ -30,6 +30,7 @@ pub struct Verdict {
     pub rejections: Vec<String>,
 
     pub warnings: Vec<String>,
+    pub nonstandard: bool,
 }
 
 const EPISODE_WARNING: u64 = 3 << 30;
@@ -152,7 +153,7 @@ impl Rules {
             None => {},
         }
 
-        Verdict { accepted: rejections.is_empty(), score, rejections, warnings }
+        Verdict { accepted: rejections.is_empty(), score, rejections, warnings, nonstandard: false }
     }
 }
 

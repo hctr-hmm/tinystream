@@ -33,6 +33,7 @@ pub struct Numbers {
     pub episodes: Option<(u32, u32)>,
 
     pub batch: bool,
+    pub nonstandard: bool,
 }
 
 macro_rules! re {
@@ -242,6 +243,22 @@ pub fn numbers(rest: &str) -> Option<Numbers> {
             i += 2;
             continue;
         }
+        if let Some(c) = ORDINAL.captures(t) {
+            let episode = next.is_some_and(|t| {
+                number(t).is_some_and(|e| e > 0 && !is_year(e))
+                    || EXX.is_match(t)
+                    || (matches!(t, "ep" | "episode" | "e")
+                        && tokens.get(i + 2).and_then(|t| number(t)).is_some_and(|e| e > 0))
+            });
+            let season = c[1].parse().ok()?;
+            if !episode || n.season.is_some_and(|s| s != season) {
+                return None;
+            }
+            n.season = Some(season);
+            n.nonstandard = true;
+            i += 1;
+            continue;
+        }
         if matches!(t, "part" | "cour")
             && let Some(p) = next.and_then(number).filter(|p| (1..10).contains(p))
         {
@@ -333,7 +350,7 @@ mod tests {
     #[test]
     fn fansub_single() {
         let n = after("[SubsPlease] Sousou no Frieren - 05 (1080p) [A1B2C3D4].mkv", "Sousou no Frieren").unwrap();
-        assert_eq!(n, Numbers { season: None, part: None, episodes: Some((5, 5)), batch: false });
+        assert_eq!(n, Numbers { episodes: Some((5, 5)), ..Numbers::default() });
         let a = attributes("[SubsPlease] Sousou no Frieren - 05 (1080p) [A1B2C3D4].mkv");
         assert_eq!(a.group.as_deref(), Some("SubsPlease"));
         assert_eq!(a.resolution, Some(1080));
@@ -355,6 +372,19 @@ mod tests {
         assert_eq!((n.season, n.episodes), (Some(2), Some((7, 7))));
         let a = attributes("Show.S02E05.1080p.WEB.h264-GROUP");
         assert_eq!((a.group.as_deref(), a.codec, a.source), (Some("GROUP"), Some("h264"), Some("web")));
+    }
+
+    #[test]
+    fn ordinal_season_without_label() {
+        for suffix in ["4th_18", "4th 18", "4TH-18", "4th.E18", "4th Episode 18"] {
+            let n = after(&format!("Show {suffix}"), "Show").unwrap();
+            assert_eq!((n.season, n.episodes), (Some(4), Some((18, 18))), "{suffix}");
+            assert!(n.nonstandard);
+        }
+        assert!(!after("Show 4th Season 18", "Show").unwrap().nonstandard);
+        for suffix in ["4th", "4th unknown 18", "4th 1080p", "4th 2024", "S2 4th 18"] {
+            assert!(after(&format!("Show {suffix}"), "Show").is_none(), "{suffix}");
+        }
     }
 
     #[test]
