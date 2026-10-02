@@ -3,8 +3,10 @@
 // (src/media/clip.rs): fitted into a 16:9 box, at the source's own frame rate
 // or half of it, under a bitrate ceiling.
 
+import { useQuery } from '@tanstack/react-query'
 import { graphql } from '../gql'
 import { type Clip, type ClipAllowance, type Playback, type SubtitleTrack, request } from './api'
+import { useClipsOn } from './hooks'
 
 /** A list of clips, and what you may do with them. */
 export type ClipList = { clips: Clip[]; you: ClipAllowance }
@@ -108,6 +110,25 @@ const ClipQuery = graphql(`
 `)
 
 export const fetchClip = async (id: number) => (await request(ClipQuery, { id })).clip
+
+const RenderingQuery = graphql(`
+  query RenderingClips {
+    clips(scope: RENDERING) {
+      ...ClipFields
+    }
+  }
+`)
+
+/** Your clips still on their way out, oldest first. Kept under ['clips'] so progress ticks reach it. */
+export function useRendering(): Clip[] {
+  const on = useClipsOn()
+  const { data } = useQuery({
+    queryKey: ['clips', 'rendering'],
+    queryFn: async (): Promise<Pick<ClipList, 'clips'>> => ({ clips: (await request(RenderingQuery)).clips }),
+    enabled: on,
+  })
+  return on ? (data?.clips ?? []) : []
+}
 
 /** A clip space limit (in MB, as permissions keep it), in the GB people set it in. */
 export const space = (mb: number) => `${Math.round((mb / 1024) * 10) / 10} GB`

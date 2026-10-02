@@ -105,6 +105,7 @@ type Documents = {
     "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n": typeof types.SchemeFieldsFragmentDoc,
     "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": typeof types.AppearanceDocument,
     "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n": typeof types.ClipDocument,
+    "\n  query RenderingClips {\n    clips(scope: RENDERING) {\n      ...ClipFields\n    }\n  }\n": typeof types.RenderingClipsDocument,
     "\n  query Status {\n    server {\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": typeof types.StatusDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": typeof types.PeopleDocument,
     "\n  fragment InboxFields on Inbox {\n    items {\n      ...NotificationFields\n    }\n    unread\n  }\n": typeof types.InboxFieldsFragmentDoc,
@@ -262,6 +263,7 @@ const documents: Documents = {
     "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n": types.SchemeFieldsFragmentDoc,
     "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": types.AppearanceDocument,
     "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n": types.ClipDocument,
+    "\n  query RenderingClips {\n    clips(scope: RENDERING) {\n      ...ClipFields\n    }\n  }\n": types.RenderingClipsDocument,
     "\n  query Status {\n    server {\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": types.StatusDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": types.PeopleDocument,
     "\n  fragment InboxFields on Inbox {\n    items {\n      ...NotificationFields\n    }\n    unread\n  }\n": types.InboxFieldsFragmentDoc,
@@ -689,6 +691,10 @@ export function graphql(source: "\n  query Appearance {\n    appearance {\n     
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n"): typeof import('./graphql').ClipDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query RenderingClips {\n    clips(scope: RENDERING) {\n      ...ClipFields\n    }\n  }\n"): typeof import('./graphql').RenderingClipsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

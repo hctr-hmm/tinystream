@@ -36,6 +36,7 @@ export type ClipPatch = {
 export type ClipScope =
   | 'MINE'
   | 'RECEIVED'
+  | 'RENDERING'
   | 'SENT';
 
 export type ClipState =
@@ -960,6 +961,11 @@ export type ClipQueryVariables = Exact<{
 
 
 export type ClipQuery = { clip: { id: number, screenshot: boolean, name: string, mine: boolean, canManage: boolean, start: number, end: number, audio: number | null, subtitles: string | null, state: ClipState, progress: number | null, error: string | null, bytes: number | null, width: number | null, height: number | null, fps: number | null, renderedAt: number | null, createdAt: number, sharedAt: number | null, public: boolean, link: string | null, linkLive: boolean, file: string, poster: string | null, owner: { id: number, username: string, avatar: string | null }, source: { name: string, kind: TitleKind, label: string | null, year: number | null, status: SourceStatus, video: { id: number } | null, title: { id: number } | null }, quality: { height: number, halfRate: boolean }, recipients: Array<{ sharedAt: number, hidden: boolean, user: { id: number, username: string, avatar: string | null } }> } | null };
+
+export type RenderingClipsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RenderingClipsQuery = { clips: Array<{ id: number, screenshot: boolean, name: string, mine: boolean, canManage: boolean, start: number, end: number, audio: number | null, subtitles: string | null, state: ClipState, progress: number | null, error: string | null, bytes: number | null, width: number | null, height: number | null, fps: number | null, renderedAt: number | null, createdAt: number, sharedAt: number | null, public: boolean, link: string | null, linkLive: boolean, file: string, poster: string | null, owner: { id: number, username: string, avatar: string | null }, source: { name: string, kind: TitleKind, label: string | null, year: number | null, status: SourceStatus, video: { id: number } | null, title: { id: number } | null }, quality: { height: number, halfRate: boolean }, recipients: Array<{ sharedAt: number, hidden: boolean, user: { id: number, username: string, avatar: string | null } }> }> };
 
 export type StatusQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3481,6 +3487,70 @@ fragment ClipFields on Clip {
   file
   poster
 }`) as unknown as TypedDocumentString<ClipQuery, ClipQueryVariables>;
+export const RenderingClipsDocument = new TypedDocumentString(`
+    query RenderingClips {
+  clips(scope: RENDERING) {
+    ...ClipFields
+  }
+}
+    fragment Person on User {
+  id
+  username
+  avatar
+}
+fragment ClipFields on Clip {
+  id
+  screenshot
+  name
+  mine
+  canManage
+  owner {
+    ...Person
+  }
+  source {
+    video {
+      id
+    }
+    title {
+      id
+    }
+    name
+    kind
+    label
+    year
+    status
+  }
+  start
+  end
+  audio
+  subtitles
+  quality {
+    height
+    halfRate
+  }
+  state
+  progress
+  error
+  bytes
+  width
+  height
+  fps
+  renderedAt
+  createdAt
+  sharedAt
+  public
+  link
+  linkLive
+  recipients {
+    user {
+      ...Person
+    }
+    sharedAt
+    hidden
+  }
+  file
+  poster
+}`) as unknown as TypedDocumentString<RenderingClipsQuery, RenderingClipsQueryVariables>;
 export const StatusDocument = new TypedDocumentString(`
     query Status {
   server {

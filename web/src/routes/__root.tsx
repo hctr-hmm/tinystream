@@ -169,14 +169,15 @@ function useLiveUpdates(enabled: boolean) {
           case 'ClipChanged': {
             // Progress ticks in several times a second: patch it in place rather than refetch.
             if (e.state === 'RENDERING' && e.progress != null) {
+              // Only caches that have it get written to: writing marks a cache fresh, and one left
+              // stale while nothing showed it must still refetch when it's back on screen.
+              const has = (c: Clip | null | undefined) => c?.id === e.clipId && c.state === 'RENDERING'
+              const tick = (c: Clip) => (has(c) ? { ...c, progress: e.progress } : c)
               let found = false
-              const tick = (c: Clip) => {
-                if (c.id !== e.clipId || c.state !== 'RENDERING') return c
-                found = true
-                return { ...c, progress: e.progress }
-              }
-              qc.setQueryData<Clip | null>(['clip', e.clipId], (c) => c && tick(c))
-              qc.setQueriesData<ClipList>({ queryKey: ['clips'] }, (l) => l && { ...l, clips: l.clips.map(tick) })
+              qc.setQueryData<Clip | null>(['clip', e.clipId], (c) => (has(c) ? ((found = true), tick(c!)) : undefined))
+              qc.setQueriesData<ClipList>({ queryKey: ['clips'] }, (l) =>
+                l?.clips.some(has) ? ((found = true), { ...l, clips: l.clips.map(tick) }) : undefined,
+              )
               if (found) break
             }
             invalidate(['clips'], ['clip', e.clipId])

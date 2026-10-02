@@ -344,6 +344,8 @@ pub enum ClipScope {
     Received,
 
     Sent,
+
+    Rendering,
 }
 
 #[derive(SimpleObject)]
@@ -426,6 +428,9 @@ impl ClipQuery {
                 "WHERE c.owner_id = ?1 AND EXISTS (SELECT 1 FROM clip_shares WHERE clip_id = c.id) ORDER BY c.created_at DESC"
             },
             ClipScope::Mine => "WHERE c.owner_id = ?1 ORDER BY c.created_at DESC",
+            ClipScope::Rendering => {
+                "WHERE c.owner_id = ?1 AND c.screenshot = 0 AND c.state IN ('queued', 'rendering') ORDER BY c.created_at"
+            },
         };
         let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} {filter} LIMIT 500")))
             .bind(user.id)
@@ -718,6 +723,7 @@ impl ClipMutation {
         if !input.recipients.is_empty() {
             share_with(state, user, id, &input.recipients).await?;
         }
+        clips::changed(state, id).await;
         clip(state, user, id).await
     }
 

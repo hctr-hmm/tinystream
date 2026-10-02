@@ -4,6 +4,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { Bell, BellOff, CircleCheck, CirclePlay, CircleX, Inbox as InboxIcon, Radio, Scissors, Send, Users, X } from 'lucide-react'
 import { type CSSProperties, type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
+import type { Clip } from '../lib/api'
+import { clipName, useRendering } from '../lib/clips'
 import { relative, useNow } from '../lib/downloads'
 import { type Notice, type NoticeKind, onArrival, pillNotices, useInbox, useMarkRead, useRemove } from '../lib/notifications'
 import { Avatar } from './Avatar'
@@ -72,6 +74,7 @@ function Thumb({ n, size = 36 }: { n: Notice; size?: number }) {
 /** The bell, and everything that's happened. */
 export function NotificationsMenu({ align = 'end' }: { align?: 'start' | 'end' }) {
   const { data } = useInbox()
+  const renders = useRendering()
   const open = useSyncExternalStore(subscribeInbox, () => inboxOpen, () => false)
   const unread = data?.unread ?? 0
   return (
@@ -91,7 +94,7 @@ export function NotificationsMenu({ align = 'end' }: { align?: 'start' | 'end' }
         </IconButton>
       )}
     >
-      {(close) => <InboxPanel items={data?.items ?? []} unread={unread} onClose={close} />}
+      {(close) => <InboxPanel items={data?.items ?? []} renders={renders} unread={unread} onClose={close} />}
     </Popover>
   )
 }
@@ -101,7 +104,8 @@ const FOLD = 520
 /** Rows past this many in a cascade all go at once. */
 const CASCADE = 8
 
-function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: number; onClose: () => void }) {
+function InboxPanel({ items, renders, unread, onClose }: { items: Notice[]; renders: Clip[]; unread: number; onClose: () => void }) {
+  const navigate = useNavigate()
   const read = useMarkRead()
   const remove = useRemove()
   const follow = useFollow()
@@ -110,6 +114,7 @@ function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: numbe
   const [cleared, setCleared] = useState(false)
   const fresh = items.filter((n) => n.readAt == null)
   const earlier = items.filter((n) => n.readAt != null)
+  const headed = [renders, fresh, earlier].filter((l) => l.length > 0).length > 1
   const clearing = gone === 'all'
   const leaving = (id: number) => clearing || gone.has(id)
   const later = (fn: () => void, ms: number) =>
@@ -141,7 +146,15 @@ function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: numbe
         )}
       </div>
       <div className="max-h-[min(34rem,70dvh)] overflow-y-auto overscroll-contain p-1.5">
-        {items.length === 0 ? (
+        {renders.length > 0 && (
+          <>
+            {headed && <Heading>Rendering</Heading>}
+            {renders.map((c) => (
+              <RenderRow key={c.id} c={c} onOpen={() => (onClose(), void navigate({ to: '/clips', search: { clip: c.id } }))} />
+            ))}
+          </>
+        )}
+        {items.length === 0 && renders.length === 0 ? (
           <div className={cleared ? 'unfold' : ''}>
             <div>
               <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
@@ -152,7 +165,7 @@ function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: numbe
           </div>
         ) : (
           <>
-            {fresh.length > 0 && earlier.length > 0 && (
+            {fresh.length > 0 && headed && (
               <Fold gone={clearing} i={order()}>
                 <Heading>New</Heading>
               </Fold>
@@ -162,7 +175,7 @@ function InboxPanel({ items, unread, onClose }: { items: Notice[]; unread: numbe
                 <Row n={n} now={now} onOpen={() => (onClose(), follow(n))} onRemove={() => drop(n.id)} />
               </Fold>
             ))}
-            {earlier.length > 0 && fresh.length > 0 && (
+            {earlier.length > 0 && headed && (
               <Fold gone={clearing} i={order()}>
                 <Heading>Earlier</Heading>
               </Fold>
@@ -239,6 +252,9 @@ export function PriorityPill() {
   const { data } = useInbox()
   const now = useNow(30_000)
   const notices = pillNotices(data, now / 1000)
+  const [hidden, setHidden] = useState<Set<number>>(new Set())
+  const renders = useRendering().filter((c) => !hidden.has(c.id))
+  const navigate = useNavigate()
   const read = useMarkRead()
   const follow = useFollow()
   const [fresh, setFresh] = useState(false)
@@ -247,11 +263,13 @@ export function PriorityPill() {
   const root = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
-  // Keeps showing the last notices while the pill leaves.
-  const last = useRef<Notice[]>([])
-  if (notices.length) last.current = notices
-  const shown = notices.length ? notices : last.current
-  const visible = notices.length > 0
+  // Keeps showing the last of it while the pill leaves.
+  const last = useRef<{ notices: Notice[]; renders: Clip[] }>({ notices: [], renders: [] })
+  const visible = notices.length + renders.length > 0
+  if (visible) last.current = { notices, renders }
+  const shown = visible ? notices : last.current.notices
+  const busy = visible ? renders : last.current.renders
+  const count = shown.length + busy.length
   const open = visible && (fresh || hover || tapped)
 
   useEffect(
@@ -295,7 +313,10 @@ export function PriorityPill() {
 
   if (typeof document === 'undefined') return null
   const top = shown[0]
+  const rendering = busy[0]
   const dismiss = (n: Notice) => read.mutate([n.id])
+  const hide = (c: Clip) => setHidden((h) => new Set(h).add(c.id))
+  const watch = (c: Clip) => void navigate({ to: '/clips', search: { clip: c.id } })
 
   return createPortal(
     <div
@@ -316,23 +337,31 @@ export function PriorityPill() {
           style={size ? { width: size.w, height: size.h, borderRadius: open ? 22 : size.h / 2 } : { borderRadius: 20 }}
         >
           <div ref={inner} className="w-max">
-            {top &&
+            {count > 0 &&
               (open ? (
                 <div key="open" className="w-[min(25rem,calc(100vw-1.5rem))] animate-[fade_240ms_ease-out] p-1.5">
-                  {shown.slice(0, STACK).map((n, i) => (
-                    <PillRow key={n.id} n={n} first={i === 0} now={now} onOpen={() => follow(n)} onDismiss={() => dismiss(n)} />
+                  {busy.slice(0, STACK).map((c, i) => (
+                    <PillRenderRow key={c.id} c={c} first={i === 0} onOpen={() => watch(c)} onDismiss={() => hide(c)} />
                   ))}
-                  {shown.length > STACK && (
+                  {shown.slice(0, Math.max(0, STACK - busy.length)).map((n, i) => (
+                    <PillRow key={n.id} n={n} first={i === 0 && busy.length === 0} now={now} onOpen={() => follow(n)} onDismiss={() => dismiss(n)} />
+                  ))}
+                  {count > STACK && (
                     <button
                       onClick={() => setInboxOpen(true)}
                       className="mt-0.5 w-full rounded-[14px] px-3 py-2 text-left text-xs text-ink-3 transition-colors hover:bg-hover hover:text-ink-2"
                     >
-                      {shown.length - STACK} more in notifications
+                      {count - STACK} more in notifications
                     </button>
                   )}
-                  {shown.length > 1 && (
+                  {count > 1 && (
                     <div className="flex justify-end px-1.5 pt-0.5 pb-0.5">
-                      <Button size="sm" variant="plain" className="!h-6 !text-2xs" onClick={() => read.mutate(shown.map((n) => n.id))}>
+                      <Button
+                        size="sm"
+                        variant="plain"
+                        className="!h-6 !text-2xs"
+                        onClick={() => (busy.forEach(hide), shown.length > 0 && read.mutate(shown.map((n) => n.id)))}
+                      >
                         Dismiss all
                       </Button>
                     </div>
@@ -343,16 +372,26 @@ export function PriorityPill() {
                   key="closed"
                   onClick={(e) => {
                     // A tap opens it first; with a mouse it's already open.
-                    if ((e.nativeEvent as PointerEvent).pointerType === 'mouse') follow(top)
+                    if ((e.nativeEvent as PointerEvent).pointerType === 'mouse') rendering ? watch(rendering) : follow(top)
                     else setTapped(true)
                   }}
                   className="flex h-10 max-w-[calc(100vw-1.5rem)] animate-[fade_240ms_ease-out] items-center gap-2.5 pr-4 pl-1.5 text-left outline-none"
                 >
-                  <PillThumb n={top} />
-                  <span className="max-w-[15rem] truncate text-[13px] font-medium md:max-w-[22rem]">{top.title}</span>
-                  {shown.length > 1 && (
+                  {rendering ? (
+                    <>
+                      <Ring c={rendering} />
+                      <span className="max-w-[13rem] truncate text-[13px] font-medium md:max-w-[20rem]">{renderTitle(rendering)}</span>
+                      {rendering.state === 'RENDERING' && <span className="w-9 shrink-0 text-[13px] text-ink-2 tabular">{percent(rendering)}</span>}
+                    </>
+                  ) : (
+                    <>
+                      <PillThumb n={top} />
+                      <span className="max-w-[15rem] truncate text-[13px] font-medium md:max-w-[22rem]">{top.title}</span>
+                    </>
+                  )}
+                  {count > 1 && (
                     <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-press px-1.5 text-2xs text-ink-2 tabular">
-                      +{shown.length - 1}
+                      +{count - 1}
                     </span>
                   )}
                 </button>
@@ -422,6 +461,104 @@ function PillRow({ n, first, now, onOpen, onDismiss }: { n: Notice; first: boole
           <X className="size-3.5" />
         </button>
       )}
+    </div>
+  )
+}
+
+const percent = (c: Clip) => `${Math.floor((c.progress ?? 0) * 100)}%`
+
+const renderTitle = (c: Clip) => (c.state === 'RENDERING' ? 'Rendering your clip' : 'Your clip is waiting its turn')
+
+/**
+ * How far along a clip is, drawn around the scissors (just the track while it
+ * waits). It steps with each tick instead of easing between them: anything
+ * animating inside the pill repaints its blur and shadow every frame.
+ */
+function Ring({ c, size = 28 }: { c: Clip; size?: number }) {
+  const r = size / 2 - 2
+  const around = 2 * Math.PI * r
+  const waiting = c.state !== 'RENDERING'
+  return (
+    <span className="relative grid shrink-0 place-items-center text-highlight" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={2.5} className="stroke-press" />
+        {!waiting && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            stroke="currentColor"
+            strokeDasharray={around}
+            strokeDashoffset={around * (1 - Math.max(0.02, c.progress ?? 0))}
+          />
+        )}
+      </svg>
+      <Scissors style={{ width: size * 0.42, height: size * 0.42 }} />
+    </span>
+  )
+}
+
+/** The bar and how much of it is done. It eases by scaling, which the compositor does without repainting. */
+function RenderProgress({ c }: { c: Clip }) {
+  const rendering = c.state === 'RENDERING'
+  return (
+    <div className="mt-1.5 flex items-center gap-2">
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-press">
+        <div
+          className="h-full origin-left bg-ink transition-transform duration-300 ease-linear will-change-transform"
+          style={{ transform: `scaleX(${rendering ? Math.min(1, c.progress ?? 0) : 0})` }}
+        />
+      </div>
+      {rendering && <span className="w-8 text-right text-2xs text-ink-3 tabular">{percent(c)}</span>}
+    </div>
+  )
+}
+
+function RenderRow({ c, onOpen }: { c: Clip; onOpen: () => void }) {
+  return (
+    <Squircle
+      radius={10}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen())}
+      className="flex cursor-pointer gap-3 px-2.5 py-2.5 outline-none hover:bg-hover focus-visible:bg-hover"
+    >
+      <Ring c={c} size={36} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] leading-snug font-medium text-ink">{renderTitle(c)}</p>
+        <p className="mt-0.5 truncate text-xs text-ink-3">{clipName(c)}</p>
+        <RenderProgress c={c} />
+      </div>
+    </Squircle>
+  )
+}
+
+function PillRenderRow({ c, first, onOpen, onDismiss }: { c: Clip; first: boolean; onOpen: () => void; onDismiss: () => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className={`group relative flex cursor-pointer items-center gap-3 rounded-[16px] p-2 outline-none transition-colors hover:bg-hover focus-visible:bg-hover ${first ? '' : 'mt-0.5'}`}
+      onClick={onOpen}
+      onKeyDown={(e) => e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen())}
+    >
+      <Ring c={c} size={first ? 40 : 30} />
+      <div className="min-w-0 flex-1">
+        <p className={`leading-snug font-medium ${first ? 'text-sm' : 'text-[13px]'}`}>{renderTitle(c)}</p>
+        <p className="mt-0.5 truncate text-xs text-ink-2">{clipName(c)}</p>
+        <RenderProgress c={c} />
+      </div>
+      <button
+        aria-label="Hide"
+        onClick={(e) => (e.stopPropagation(), onDismiss())}
+        className="grid size-7 shrink-0 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-press hover:text-ink"
+      >
+        <X className="size-3.5" />
+      </button>
     </div>
   )
 }
