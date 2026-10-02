@@ -15,6 +15,17 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  query ColorSchemes {\n    colorSchemes {\n      ...SchemeFields\n    }\n  }\n": typeof types.ColorSchemesDocument,
+    "\n  query AppearanceSettings {\n    appearanceSettings {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n      mediaTint\n    }\n  }\n": typeof types.AppearanceSettingsDocument,
+    "\n  query ServerAppearance {\n    serverAppearance {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n    }\n  }\n": typeof types.ServerAppearanceDocument,
+    "\n  mutation SetAppearance($input: AppearanceSettingsInput!) {\n    setAppearance(input: $input) {\n      mode\n    }\n  }\n": typeof types.SetAppearanceDocument,
+    "\n  mutation SetServerAppearance($input: ServerAppearanceInput!) {\n    setServerAppearance(input: $input) {\n      style\n    }\n  }\n": typeof types.SetServerAppearanceDocument,
+    "\n  mutation SaveScheme($id: String, $input: SchemeInput!) {\n    saveScheme(id: $id, input: $input) {\n      ...SchemeFields\n    }\n  }\n": typeof types.SaveSchemeDocument,
+    "\n  mutation ForkScheme($id: String!) {\n    forkScheme(id: $id) {\n      ...SchemeFields\n    }\n  }\n": typeof types.ForkSchemeDocument,
+    "\n  mutation ImportScheme($code: String!, $name: String) {\n    importScheme(code: $code, name: $name) {\n      ...SchemeFields\n    }\n  }\n": typeof types.ImportSchemeDocument,
+    "\n  mutation DeleteScheme($id: String!) {\n    deleteScheme(id: $id)\n  }\n": typeof types.DeleteSchemeDocument,
+    "\n  mutation PublishScheme($id: String!, $published: Boolean!) {\n    publishScheme(id: $id, published: $published) {\n      id\n    }\n  }\n": typeof types.PublishSchemeDocument,
+    "\n  query DecodeScheme($code: String!) {\n    decodeScheme(code: $code) {\n      name\n      code\n      palette {\n        tokens {\n          name\n          value\n        }\n        warnings {\n          foreground\n          background\n          ratio\n          minimum\n        }\n      }\n    }\n  }\n": typeof types.DecodeSchemeDocument,
     "\n  mutation SetAvatar($image: Upload!, $userId: Int) {\n    setAvatar(image: $image, userId: $userId) {\n      id\n      avatar\n    }\n  }\n": typeof types.SetAvatarDocument,
     "\n  mutation RemoveAvatar($userId: Int) {\n    removeAvatar(userId: $userId) {\n      id\n      avatar\n    }\n  }\n": typeof types.RemoveAvatarDocument,
     "\n  query ClipStorage {\n    clipStorage {\n      usage {\n        user {\n          ...Person\n        }\n        bytes\n        rendered\n        clips\n        storage\n        limit\n      }\n      publicClips {\n        ...ClipFields\n      }\n      bytes\n      dir\n    }\n  }\n": typeof types.ClipStorageDocument,
@@ -23,6 +34,7 @@ type Documents = {
     "\n  mutation UnpublishClip($id: Int!) {\n    updateClip(id: $id, input: { public: false }) {\n      id\n    }\n  }\n": typeof types.UnpublishClipDocument,
     "\n  mutation AdminDeleteClip($id: Int!) {\n    deleteClip(id: $id)\n  }\n": typeof types.AdminDeleteClipDocument,
     "\n  mutation AddSeries($input: NewSeries!) {\n    addSeries(input: $input) {\n      id\n    }\n  }\n": typeof types.AddSeriesDocument,
+    "\n  query AiredEpisodes($provider: Provider!, $id: String!) {\n    airedEpisodes(provider: $provider, id: $id)\n  }\n": typeof types.AiredEpisodesDocument,
     "\n  mutation CreateRequest($input: NewRequest!) {\n    createRequest(input: $input) {\n      id\n    }\n  }\n": typeof types.CreateRequestDocument,
     "\n  mutation SaveSection($patch: ConfigPatch!) {\n    updateSettings(patch: $patch) {\n      raw\n    }\n  }\n": typeof types.SaveSectionDocument,
     "\n  query SettingsEngine {\n    downloadEngine {\n      downloadPath\n      killSwitch\n    }\n  }\n": typeof types.SettingsEngineDocument,
@@ -59,11 +71,14 @@ type Documents = {
     "\n  query Transfers {\n    downloadEngine {\n      ...EngineFields\n    }\n    downloads {\n      ...DownloadFields\n    }\n  }\n": typeof types.TransfersDocument,
     "\n  mutation SignOut {\n    signOut\n  }\n": typeof types.SignOutDocument,
     "\n  query Search($query: String!) {\n    search(query: $query) {\n      titles {\n        ...Card\n      }\n      videos {\n        id\n        label\n        name\n        title {\n          name\n        }\n      }\n    }\n  }\n": typeof types.SearchDocument,
+    "\n  query RecentTitles($ids: [Int!]!) {\n    titles(ids: $ids) {\n      id\n    }\n  }\n": typeof types.RecentTitlesDocument,
     "\n  query DownloadStates {\n    downloads {\n      id\n      state\n    }\n  }\n": typeof types.DownloadStatesDocument,
     "\n  mutation PauseDownloads($ids: [Int!]!) {\n    pauseDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.PauseDownloadsDocument,
     "\n  mutation ResumeDownloads($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.ResumeDownloadsDocument,
     "\n  query Releases($seriesId: Int!, $season: Int!, $episodes: [Int!]!, $query: String) {\n    series(id: $seriesId) {\n      releases(season: $season, episodes: $episodes, query: $query) {\n        ...ReleaseCandidateFields\n      }\n    }\n  }\n": typeof types.ReleasesDocument,
     "\n  mutation GrabRelease($release: ReleaseInput!, $seriesId: Int, $episodes: [EpisodeNumberInput!]!) {\n    grabRelease(release: $release, seriesId: $seriesId, episodes: $episodes) {\n      id\n    }\n  }\n": typeof types.GrabReleaseDocument,
+    "\n  mutation DeleteDownloaded($seriesId: Int!, $season: Int) {\n    deleteDownloaded(seriesId: $seriesId, season: $season) {\n      undone\n      problems\n    }\n  }\n": typeof types.DeleteDownloadedDocument,
+    "\n  mutation LookForAgain($seriesId: Int!, $season: Int, $episode: Int) {\n    lookForAgain(seriesId: $seriesId, season: $season, episode: $episode)\n  }\n": typeof types.LookForAgainDocument,
     "\n  fragment Person on User {\n    id\n    username\n    avatar\n  }\n": typeof types.PersonFragmentDoc,
     "\n  fragment PermissionsFields on Permissions {\n    allLibraries\n    libraries\n    request\n    autoApprove\n    requestLimit\n    manageRequests\n    manageShows\n    downloads\n    editMetadata\n    watchTogether\n    shareLinks\n    clip\n    clipMaxLength\n    clipLimit\n    clipStorage\n    clipLinks\n  }\n": typeof types.PermissionsFieldsFragmentDoc,
     "\n  fragment Viewer on User {\n    ...Person\n    isAdmin\n    permissions {\n      ...PermissionsFields\n    }\n  }\n": typeof types.ViewerFragmentDoc,
@@ -80,12 +95,14 @@ type Documents = {
     "\n  fragment EngineFields on DownloadEngine {\n    version\n    downloadRate\n    uploadRate\n    active\n    killSwitch\n    listening\n    listenError\n    slowHours\n    downloadPath\n  }\n": typeof types.EngineFieldsFragmentDoc,
     "\n  fragment SeriesEpisodeFields on SeriesEpisode {\n    season\n    episode\n    absolute\n    name\n    airAt\n    aired\n    state\n    attempts\n    searchedAt\n    nextSearch\n    downloadId\n    video {\n      id\n    }\n  }\n": typeof types.SeriesEpisodeFieldsFragmentDoc,
     "\n  fragment SeedingFields on Seeding {\n    ratio\n    time\n    idle\n    then\n  }\n": typeof types.SeedingFieldsFragmentDoc,
-    "\n  fragment SeriesFields on Series {\n    id\n    monitor\n    status\n    next {\n      ...SeriesEpisodeFields\n    }\n    title {\n      id\n    }\n    library\n    managed\n    path\n    name\n    year\n    poster\n    overview\n    provider\n    providerId\n    profile\n    effectiveProfile\n    sources\n    groups\n    aliases\n    knownAs\n    numbering\n    naming\n    style {\n      file\n      folder\n      agreement\n      samples\n    }\n    seeding {\n      ...SeedingFields\n    }\n    scheduleAt\n    addedAt\n    counts {\n      have\n      wanted\n      missing\n      grabbed\n      total\n      upcoming\n    }\n    episodes {\n      ...SeriesEpisodeFields\n    }\n  }\n": typeof types.SeriesFieldsFragmentDoc,
-    "\n  fragment ReleaseCandidateFields on ReleaseCandidate {\n    release {\n      title\n      source\n      link\n      infoHash\n      size\n      seeders\n      leechers\n      published\n      page\n    }\n    attributes {\n      group\n      resolution\n      codec\n      source\n      dualAudio\n      version\n      proper\n      tenBit\n    }\n    episodes {\n      season\n      episode\n    }\n    batch\n    verdict {\n      accepted\n      score\n      rejections\n      warnings\n    }\n  }\n": typeof types.ReleaseCandidateFieldsFragmentDoc,
+    "\n  fragment SeriesFields on Series {\n    id\n    monitor\n    status\n    next {\n      ...SeriesEpisodeFields\n    }\n    title {\n      id\n    }\n    library\n    managed\n    path\n    name\n    year\n    poster\n    overview\n    provider\n    providerId\n    profile\n    effectiveProfile\n    sources\n    groups\n    aliases\n    knownAs\n    numbering\n    naming\n    style {\n      file\n      folder\n      agreement\n      samples\n    }\n    seeding {\n      ...SeedingFields\n    }\n    scheduleAt\n    addedAt\n    counts {\n      have\n      wanted\n      missing\n      grabbed\n      total\n      upcoming\n      skipped\n    }\n    episodes {\n      ...SeriesEpisodeFields\n    }\n  }\n": typeof types.SeriesFieldsFragmentDoc,
+    "\n  fragment ReleaseCandidateFields on ReleaseCandidate {\n    release {\n      title\n      source\n      link\n      infoHash\n      size\n      seeders\n      leechers\n      published\n      page\n    }\n    attributes {\n      group\n      resolution\n      codec\n      source\n      dualAudio\n      version\n      proper\n      tenBit\n    }\n    episodes {\n      season\n      episode\n    }\n    batch\n    verdict {\n      accepted\n      score\n      rejections\n      warnings\n      nonstandard\n    }\n  }\n": typeof types.ReleaseCandidateFieldsFragmentDoc,
     "\n  fragment CalendarEntryFields on CalendarEntry {\n    seriesId\n    title {\n      id\n    }\n    library\n    show\n    poster\n    backdrop\n    monitor\n    season\n    episode\n    absolute\n    name\n    airAt\n    state\n    video {\n      id\n    }\n    download {\n      stage\n      progress\n      downloadRate\n      eta\n    }\n  }\n": typeof types.CalendarEntryFieldsFragmentDoc,
     "\n  fragment SettingsFields on Settings {\n    network {\n      host\n      port\n      cors\n    }\n    log {\n      level\n    }\n    scan {\n      watch\n      interval\n    }\n    metadata {\n      tmdbApiKey\n      language\n    }\n    transcode {\n      hardware\n      vaapiDevice\n    }\n    clips {\n      enabled\n      path\n      publicLinks\n      concurrency\n      maxStorage\n      fontsDir\n      defaultFont\n    }\n    downloads {\n      path\n      import\n      port\n      upnp\n      dht\n      maxActive\n      downloadLimit\n      uploadLimit\n      slowDownloadLimit\n      slowUploadLimit\n      slowFrom\n      slowTo\n      bindInterface\n      proxy\n      seeding {\n        ...SeedingFields\n      }\n    }\n    automation {\n      defaultMonitor\n      rssInterval\n      retry {\n        every\n        until\n      }\n      renameSuggestions\n    }\n    requests {\n      monitor\n    }\n    sources {\n      name\n      kind\n      url\n      feed\n      apiKey\n      categories\n      enabled\n      downloadPath\n      seeding {\n        ...SeedingFields\n      }\n    }\n    profiles {\n      name\n      resolutions\n      groups\n      require\n      reject\n      minSize\n      maxSize\n      codecs\n      preferDualAudio\n      batches\n      minSeeders\n    }\n    libraries {\n      name\n      path\n      metadataProvider\n      managed\n      profile\n      downloadPath\n      resolvedPath\n      exists\n      error\n      titleCount\n      skippedCount\n    }\n    raw\n    error\n    paths {\n      config\n      data\n      log\n    }\n  }\n": typeof types.SettingsFieldsFragmentDoc,
     "\n  query Libraries {\n    libraries {\n      name\n      showCount\n      movieCount\n    }\n  }\n": typeof types.LibrariesDocument,
     "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": typeof types.SettingsDocument,
+    "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n": typeof types.SchemeFieldsFragmentDoc,
+    "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": typeof types.AppearanceDocument,
     "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n": typeof types.ClipDocument,
     "\n  query Status {\n    server {\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": typeof types.StatusDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": typeof types.PeopleDocument,
@@ -122,7 +139,7 @@ type Documents = {
     "\n  mutation DownloadsResume($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.DownloadsResumeDocument,
     "\n  mutation DownloadsRecheck($ids: [Int!]!) {\n    recheckDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.DownloadsRecheckDocument,
     "\n  mutation ImportDownload($id: Int!) {\n    importDownload(id: $id) {\n      id\n    }\n  }\n": typeof types.ImportDownloadDocument,
-    "\n  mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {\n    removeDownload(id: $id, deleteFiles: $deleteFiles)\n  }\n": typeof types.RemoveDownloadDocument,
+    "\n  mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {\n    removeDownloads(ids: $ids, deleteFiles: $deleteFiles)\n  }\n": typeof types.RemoveDownloadsDocument,
     "\n  query Home {\n    home {\n      continueWatching {\n        position\n        upNext\n        newEpisode\n        watchedAt\n        video {\n          id\n          label\n          name\n          still\n          duration\n          title {\n            id\n            name\n            poster\n            backdrop\n          }\n        }\n      }\n      recentlyAdded {\n        library\n        titles {\n          ...Card\n        }\n      }\n      popularHere {\n        people\n        title {\n          ...Card\n        }\n      }\n    }\n  }\n": typeof types.HomeDocument,
     "\n  query ComingUp($from: Int!, $to: Int!) {\n    calendar(from: $from, to: $to) {\n      ...CalendarEntryFields\n    }\n  }\n": typeof types.ComingUpDocument,
     "\n  query Library($name: String!) {\n    library(name: $name) {\n      titles {\n        ...Card\n      }\n    }\n  }\n": typeof types.LibraryDocument,
@@ -154,6 +171,17 @@ type Documents = {
     "\n  query Wanted {\n    wanted {\n      seriesId\n      title {\n        id\n      }\n      show\n      season\n      episode\n      name\n      airAt\n      aired\n      state\n      attempts\n      searchedAt\n      nextSearch\n    }\n  }\n": typeof types.WantedDocument,
 };
 const documents: Documents = {
+    "\n  query ColorSchemes {\n    colorSchemes {\n      ...SchemeFields\n    }\n  }\n": types.ColorSchemesDocument,
+    "\n  query AppearanceSettings {\n    appearanceSettings {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n      mediaTint\n    }\n  }\n": types.AppearanceSettingsDocument,
+    "\n  query ServerAppearance {\n    serverAppearance {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n    }\n  }\n": types.ServerAppearanceDocument,
+    "\n  mutation SetAppearance($input: AppearanceSettingsInput!) {\n    setAppearance(input: $input) {\n      mode\n    }\n  }\n": types.SetAppearanceDocument,
+    "\n  mutation SetServerAppearance($input: ServerAppearanceInput!) {\n    setServerAppearance(input: $input) {\n      style\n    }\n  }\n": types.SetServerAppearanceDocument,
+    "\n  mutation SaveScheme($id: String, $input: SchemeInput!) {\n    saveScheme(id: $id, input: $input) {\n      ...SchemeFields\n    }\n  }\n": types.SaveSchemeDocument,
+    "\n  mutation ForkScheme($id: String!) {\n    forkScheme(id: $id) {\n      ...SchemeFields\n    }\n  }\n": types.ForkSchemeDocument,
+    "\n  mutation ImportScheme($code: String!, $name: String) {\n    importScheme(code: $code, name: $name) {\n      ...SchemeFields\n    }\n  }\n": types.ImportSchemeDocument,
+    "\n  mutation DeleteScheme($id: String!) {\n    deleteScheme(id: $id)\n  }\n": types.DeleteSchemeDocument,
+    "\n  mutation PublishScheme($id: String!, $published: Boolean!) {\n    publishScheme(id: $id, published: $published) {\n      id\n    }\n  }\n": types.PublishSchemeDocument,
+    "\n  query DecodeScheme($code: String!) {\n    decodeScheme(code: $code) {\n      name\n      code\n      palette {\n        tokens {\n          name\n          value\n        }\n        warnings {\n          foreground\n          background\n          ratio\n          minimum\n        }\n      }\n    }\n  }\n": types.DecodeSchemeDocument,
     "\n  mutation SetAvatar($image: Upload!, $userId: Int) {\n    setAvatar(image: $image, userId: $userId) {\n      id\n      avatar\n    }\n  }\n": types.SetAvatarDocument,
     "\n  mutation RemoveAvatar($userId: Int) {\n    removeAvatar(userId: $userId) {\n      id\n      avatar\n    }\n  }\n": types.RemoveAvatarDocument,
     "\n  query ClipStorage {\n    clipStorage {\n      usage {\n        user {\n          ...Person\n        }\n        bytes\n        rendered\n        clips\n        storage\n        limit\n      }\n      publicClips {\n        ...ClipFields\n      }\n      bytes\n      dir\n    }\n  }\n": types.ClipStorageDocument,
@@ -162,6 +190,7 @@ const documents: Documents = {
     "\n  mutation UnpublishClip($id: Int!) {\n    updateClip(id: $id, input: { public: false }) {\n      id\n    }\n  }\n": types.UnpublishClipDocument,
     "\n  mutation AdminDeleteClip($id: Int!) {\n    deleteClip(id: $id)\n  }\n": types.AdminDeleteClipDocument,
     "\n  mutation AddSeries($input: NewSeries!) {\n    addSeries(input: $input) {\n      id\n    }\n  }\n": types.AddSeriesDocument,
+    "\n  query AiredEpisodes($provider: Provider!, $id: String!) {\n    airedEpisodes(provider: $provider, id: $id)\n  }\n": types.AiredEpisodesDocument,
     "\n  mutation CreateRequest($input: NewRequest!) {\n    createRequest(input: $input) {\n      id\n    }\n  }\n": types.CreateRequestDocument,
     "\n  mutation SaveSection($patch: ConfigPatch!) {\n    updateSettings(patch: $patch) {\n      raw\n    }\n  }\n": types.SaveSectionDocument,
     "\n  query SettingsEngine {\n    downloadEngine {\n      downloadPath\n      killSwitch\n    }\n  }\n": types.SettingsEngineDocument,
@@ -198,11 +227,14 @@ const documents: Documents = {
     "\n  query Transfers {\n    downloadEngine {\n      ...EngineFields\n    }\n    downloads {\n      ...DownloadFields\n    }\n  }\n": types.TransfersDocument,
     "\n  mutation SignOut {\n    signOut\n  }\n": types.SignOutDocument,
     "\n  query Search($query: String!) {\n    search(query: $query) {\n      titles {\n        ...Card\n      }\n      videos {\n        id\n        label\n        name\n        title {\n          name\n        }\n      }\n    }\n  }\n": types.SearchDocument,
+    "\n  query RecentTitles($ids: [Int!]!) {\n    titles(ids: $ids) {\n      id\n    }\n  }\n": types.RecentTitlesDocument,
     "\n  query DownloadStates {\n    downloads {\n      id\n      state\n    }\n  }\n": types.DownloadStatesDocument,
     "\n  mutation PauseDownloads($ids: [Int!]!) {\n    pauseDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.PauseDownloadsDocument,
     "\n  mutation ResumeDownloads($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.ResumeDownloadsDocument,
     "\n  query Releases($seriesId: Int!, $season: Int!, $episodes: [Int!]!, $query: String) {\n    series(id: $seriesId) {\n      releases(season: $season, episodes: $episodes, query: $query) {\n        ...ReleaseCandidateFields\n      }\n    }\n  }\n": types.ReleasesDocument,
     "\n  mutation GrabRelease($release: ReleaseInput!, $seriesId: Int, $episodes: [EpisodeNumberInput!]!) {\n    grabRelease(release: $release, seriesId: $seriesId, episodes: $episodes) {\n      id\n    }\n  }\n": types.GrabReleaseDocument,
+    "\n  mutation DeleteDownloaded($seriesId: Int!, $season: Int) {\n    deleteDownloaded(seriesId: $seriesId, season: $season) {\n      undone\n      problems\n    }\n  }\n": types.DeleteDownloadedDocument,
+    "\n  mutation LookForAgain($seriesId: Int!, $season: Int, $episode: Int) {\n    lookForAgain(seriesId: $seriesId, season: $season, episode: $episode)\n  }\n": types.LookForAgainDocument,
     "\n  fragment Person on User {\n    id\n    username\n    avatar\n  }\n": types.PersonFragmentDoc,
     "\n  fragment PermissionsFields on Permissions {\n    allLibraries\n    libraries\n    request\n    autoApprove\n    requestLimit\n    manageRequests\n    manageShows\n    downloads\n    editMetadata\n    watchTogether\n    shareLinks\n    clip\n    clipMaxLength\n    clipLimit\n    clipStorage\n    clipLinks\n  }\n": types.PermissionsFieldsFragmentDoc,
     "\n  fragment Viewer on User {\n    ...Person\n    isAdmin\n    permissions {\n      ...PermissionsFields\n    }\n  }\n": types.ViewerFragmentDoc,
@@ -219,12 +251,14 @@ const documents: Documents = {
     "\n  fragment EngineFields on DownloadEngine {\n    version\n    downloadRate\n    uploadRate\n    active\n    killSwitch\n    listening\n    listenError\n    slowHours\n    downloadPath\n  }\n": types.EngineFieldsFragmentDoc,
     "\n  fragment SeriesEpisodeFields on SeriesEpisode {\n    season\n    episode\n    absolute\n    name\n    airAt\n    aired\n    state\n    attempts\n    searchedAt\n    nextSearch\n    downloadId\n    video {\n      id\n    }\n  }\n": types.SeriesEpisodeFieldsFragmentDoc,
     "\n  fragment SeedingFields on Seeding {\n    ratio\n    time\n    idle\n    then\n  }\n": types.SeedingFieldsFragmentDoc,
-    "\n  fragment SeriesFields on Series {\n    id\n    monitor\n    status\n    next {\n      ...SeriesEpisodeFields\n    }\n    title {\n      id\n    }\n    library\n    managed\n    path\n    name\n    year\n    poster\n    overview\n    provider\n    providerId\n    profile\n    effectiveProfile\n    sources\n    groups\n    aliases\n    knownAs\n    numbering\n    naming\n    style {\n      file\n      folder\n      agreement\n      samples\n    }\n    seeding {\n      ...SeedingFields\n    }\n    scheduleAt\n    addedAt\n    counts {\n      have\n      wanted\n      missing\n      grabbed\n      total\n      upcoming\n    }\n    episodes {\n      ...SeriesEpisodeFields\n    }\n  }\n": types.SeriesFieldsFragmentDoc,
-    "\n  fragment ReleaseCandidateFields on ReleaseCandidate {\n    release {\n      title\n      source\n      link\n      infoHash\n      size\n      seeders\n      leechers\n      published\n      page\n    }\n    attributes {\n      group\n      resolution\n      codec\n      source\n      dualAudio\n      version\n      proper\n      tenBit\n    }\n    episodes {\n      season\n      episode\n    }\n    batch\n    verdict {\n      accepted\n      score\n      rejections\n      warnings\n    }\n  }\n": types.ReleaseCandidateFieldsFragmentDoc,
+    "\n  fragment SeriesFields on Series {\n    id\n    monitor\n    status\n    next {\n      ...SeriesEpisodeFields\n    }\n    title {\n      id\n    }\n    library\n    managed\n    path\n    name\n    year\n    poster\n    overview\n    provider\n    providerId\n    profile\n    effectiveProfile\n    sources\n    groups\n    aliases\n    knownAs\n    numbering\n    naming\n    style {\n      file\n      folder\n      agreement\n      samples\n    }\n    seeding {\n      ...SeedingFields\n    }\n    scheduleAt\n    addedAt\n    counts {\n      have\n      wanted\n      missing\n      grabbed\n      total\n      upcoming\n      skipped\n    }\n    episodes {\n      ...SeriesEpisodeFields\n    }\n  }\n": types.SeriesFieldsFragmentDoc,
+    "\n  fragment ReleaseCandidateFields on ReleaseCandidate {\n    release {\n      title\n      source\n      link\n      infoHash\n      size\n      seeders\n      leechers\n      published\n      page\n    }\n    attributes {\n      group\n      resolution\n      codec\n      source\n      dualAudio\n      version\n      proper\n      tenBit\n    }\n    episodes {\n      season\n      episode\n    }\n    batch\n    verdict {\n      accepted\n      score\n      rejections\n      warnings\n      nonstandard\n    }\n  }\n": types.ReleaseCandidateFieldsFragmentDoc,
     "\n  fragment CalendarEntryFields on CalendarEntry {\n    seriesId\n    title {\n      id\n    }\n    library\n    show\n    poster\n    backdrop\n    monitor\n    season\n    episode\n    absolute\n    name\n    airAt\n    state\n    video {\n      id\n    }\n    download {\n      stage\n      progress\n      downloadRate\n      eta\n    }\n  }\n": types.CalendarEntryFieldsFragmentDoc,
     "\n  fragment SettingsFields on Settings {\n    network {\n      host\n      port\n      cors\n    }\n    log {\n      level\n    }\n    scan {\n      watch\n      interval\n    }\n    metadata {\n      tmdbApiKey\n      language\n    }\n    transcode {\n      hardware\n      vaapiDevice\n    }\n    clips {\n      enabled\n      path\n      publicLinks\n      concurrency\n      maxStorage\n      fontsDir\n      defaultFont\n    }\n    downloads {\n      path\n      import\n      port\n      upnp\n      dht\n      maxActive\n      downloadLimit\n      uploadLimit\n      slowDownloadLimit\n      slowUploadLimit\n      slowFrom\n      slowTo\n      bindInterface\n      proxy\n      seeding {\n        ...SeedingFields\n      }\n    }\n    automation {\n      defaultMonitor\n      rssInterval\n      retry {\n        every\n        until\n      }\n      renameSuggestions\n    }\n    requests {\n      monitor\n    }\n    sources {\n      name\n      kind\n      url\n      feed\n      apiKey\n      categories\n      enabled\n      downloadPath\n      seeding {\n        ...SeedingFields\n      }\n    }\n    profiles {\n      name\n      resolutions\n      groups\n      require\n      reject\n      minSize\n      maxSize\n      codecs\n      preferDualAudio\n      batches\n      minSeeders\n    }\n    libraries {\n      name\n      path\n      metadataProvider\n      managed\n      profile\n      downloadPath\n      resolvedPath\n      exists\n      error\n      titleCount\n      skippedCount\n    }\n    raw\n    error\n    paths {\n      config\n      data\n      log\n    }\n  }\n": types.SettingsFieldsFragmentDoc,
     "\n  query Libraries {\n    libraries {\n      name\n      showCount\n      movieCount\n    }\n  }\n": types.LibrariesDocument,
     "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": types.SettingsDocument,
+    "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n": types.SchemeFieldsFragmentDoc,
+    "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": types.AppearanceDocument,
     "\n  query Clip($id: Int!) {\n    clip(id: $id) {\n      ...ClipFields\n    }\n  }\n": types.ClipDocument,
     "\n  query Status {\n    server {\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": types.StatusDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": types.PeopleDocument,
@@ -261,7 +295,7 @@ const documents: Documents = {
     "\n  mutation DownloadsResume($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.DownloadsResumeDocument,
     "\n  mutation DownloadsRecheck($ids: [Int!]!) {\n    recheckDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.DownloadsRecheckDocument,
     "\n  mutation ImportDownload($id: Int!) {\n    importDownload(id: $id) {\n      id\n    }\n  }\n": types.ImportDownloadDocument,
-    "\n  mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {\n    removeDownload(id: $id, deleteFiles: $deleteFiles)\n  }\n": types.RemoveDownloadDocument,
+    "\n  mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {\n    removeDownloads(ids: $ids, deleteFiles: $deleteFiles)\n  }\n": types.RemoveDownloadsDocument,
     "\n  query Home {\n    home {\n      continueWatching {\n        position\n        upNext\n        newEpisode\n        watchedAt\n        video {\n          id\n          label\n          name\n          still\n          duration\n          title {\n            id\n            name\n            poster\n            backdrop\n          }\n        }\n      }\n      recentlyAdded {\n        library\n        titles {\n          ...Card\n        }\n      }\n      popularHere {\n        people\n        title {\n          ...Card\n        }\n      }\n    }\n  }\n": types.HomeDocument,
     "\n  query ComingUp($from: Int!, $to: Int!) {\n    calendar(from: $from, to: $to) {\n      ...CalendarEntryFields\n    }\n  }\n": types.ComingUpDocument,
     "\n  query Library($name: String!) {\n    library(name: $name) {\n      titles {\n        ...Card\n      }\n    }\n  }\n": types.LibraryDocument,
@@ -296,6 +330,50 @@ const documents: Documents = {
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query ColorSchemes {\n    colorSchemes {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').ColorSchemesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AppearanceSettings {\n    appearanceSettings {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n      mediaTint\n    }\n  }\n"): typeof import('./graphql').AppearanceSettingsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ServerAppearance {\n    serverAppearance {\n      colors {\n        mode\n        single\n        light\n        dark\n      }\n      style\n    }\n  }\n"): typeof import('./graphql').ServerAppearanceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetAppearance($input: AppearanceSettingsInput!) {\n    setAppearance(input: $input) {\n      mode\n    }\n  }\n"): typeof import('./graphql').SetAppearanceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetServerAppearance($input: ServerAppearanceInput!) {\n    setServerAppearance(input: $input) {\n      style\n    }\n  }\n"): typeof import('./graphql').SetServerAppearanceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SaveScheme($id: String, $input: SchemeInput!) {\n    saveScheme(id: $id, input: $input) {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').SaveSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ForkScheme($id: String!) {\n    forkScheme(id: $id) {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').ForkSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ImportScheme($code: String!, $name: String) {\n    importScheme(code: $code, name: $name) {\n      ...SchemeFields\n    }\n  }\n"): typeof import('./graphql').ImportSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteScheme($id: String!) {\n    deleteScheme(id: $id)\n  }\n"): typeof import('./graphql').DeleteSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation PublishScheme($id: String!, $published: Boolean!) {\n    publishScheme(id: $id, published: $published) {\n      id\n    }\n  }\n"): typeof import('./graphql').PublishSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query DecodeScheme($code: String!) {\n    decodeScheme(code: $code) {\n      name\n      code\n      palette {\n        tokens {\n          name\n          value\n        }\n        warnings {\n          foreground\n          background\n          ratio\n          minimum\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').DecodeSchemeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation SetAvatar($image: Upload!, $userId: Int) {\n    setAvatar(image: $image, userId: $userId) {\n      id\n      avatar\n    }\n  }\n"): typeof import('./graphql').SetAvatarDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -325,6 +403,10 @@ export function graphql(source: "\n  mutation AdminDeleteClip($id: Int!) {\n    
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AddSeries($input: NewSeries!) {\n    addSeries(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AddSeriesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AiredEpisodes($provider: Provider!, $id: String!) {\n    airedEpisodes(provider: $provider, id: $id)\n  }\n"): typeof import('./graphql').AiredEpisodesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -472,6 +554,10 @@ export function graphql(source: "\n  query Search($query: String!) {\n    search
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query RecentTitles($ids: [Int!]!) {\n    titles(ids: $ids) {\n      id\n    }\n  }\n"): typeof import('./graphql').RecentTitlesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query DownloadStates {\n    downloads {\n      id\n      state\n    }\n  }\n"): typeof import('./graphql').DownloadStatesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -489,6 +575,14 @@ export function graphql(source: "\n  query Releases($seriesId: Int!, $season: In
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation GrabRelease($release: ReleaseInput!, $seriesId: Int, $episodes: [EpisodeNumberInput!]!) {\n    grabRelease(release: $release, seriesId: $seriesId, episodes: $episodes) {\n      id\n    }\n  }\n"): typeof import('./graphql').GrabReleaseDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteDownloaded($seriesId: Int!, $season: Int) {\n    deleteDownloaded(seriesId: $seriesId, season: $season) {\n      undone\n      problems\n    }\n  }\n"): typeof import('./graphql').DeleteDownloadedDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation LookForAgain($seriesId: Int!, $season: Int, $episode: Int) {\n    lookForAgain(seriesId: $seriesId, season: $season, episode: $episode)\n  }\n"): typeof import('./graphql').LookForAgainDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -556,11 +650,11 @@ export function graphql(source: "\n  fragment SeedingFields on Seeding {\n    ra
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment SeriesFields on Series {\n    id\n    monitor\n    status\n    next {\n      ...SeriesEpisodeFields\n    }\n    title {\n      id\n    }\n    library\n    managed\n    path\n    name\n    year\n    poster\n    overview\n    provider\n    providerId\n    profile\n    effectiveProfile\n    sources\n    groups\n    aliases\n    knownAs\n    numbering\n    naming\n    style {\n      file\n      folder\n      agreement\n      samples\n    }\n    seeding {\n      ...SeedingFields\n    }\n    scheduleAt\n    addedAt\n    counts {\n      have\n      wanted\n      missing\n      grabbed\n      total\n      upcoming\n    }\n    episodes {\n      ...SeriesEpisodeFields\n    }\n  }\n"): typeof import('./graphql').SeriesFieldsFragmentDoc;
+export function graphql(source: "\n  fragment SeriesFields on Series {\n    id\n    monitor\n    status\n    next {\n      ...SeriesEpisodeFields\n    }\n    title {\n      id\n    }\n    library\n    managed\n    path\n    name\n    year\n    poster\n    overview\n    provider\n    providerId\n    profile\n    effectiveProfile\n    sources\n    groups\n    aliases\n    knownAs\n    numbering\n    naming\n    style {\n      file\n      folder\n      agreement\n      samples\n    }\n    seeding {\n      ...SeedingFields\n    }\n    scheduleAt\n    addedAt\n    counts {\n      have\n      wanted\n      missing\n      grabbed\n      total\n      upcoming\n      skipped\n    }\n    episodes {\n      ...SeriesEpisodeFields\n    }\n  }\n"): typeof import('./graphql').SeriesFieldsFragmentDoc;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ReleaseCandidateFields on ReleaseCandidate {\n    release {\n      title\n      source\n      link\n      infoHash\n      size\n      seeders\n      leechers\n      published\n      page\n    }\n    attributes {\n      group\n      resolution\n      codec\n      source\n      dualAudio\n      version\n      proper\n      tenBit\n    }\n    episodes {\n      season\n      episode\n    }\n    batch\n    verdict {\n      accepted\n      score\n      rejections\n      warnings\n    }\n  }\n"): typeof import('./graphql').ReleaseCandidateFieldsFragmentDoc;
+export function graphql(source: "\n  fragment ReleaseCandidateFields on ReleaseCandidate {\n    release {\n      title\n      source\n      link\n      infoHash\n      size\n      seeders\n      leechers\n      published\n      page\n    }\n    attributes {\n      group\n      resolution\n      codec\n      source\n      dualAudio\n      version\n      proper\n      tenBit\n    }\n    episodes {\n      season\n      episode\n    }\n    batch\n    verdict {\n      accepted\n      score\n      rejections\n      warnings\n      nonstandard\n    }\n  }\n"): typeof import('./graphql').ReleaseCandidateFieldsFragmentDoc;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -577,6 +671,14 @@ export function graphql(source: "\n  query Libraries {\n    libraries {\n      n
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n"): typeof import('./graphql').SettingsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment SchemeFields on ColorScheme {\n    id\n    name\n    builtIn\n    published\n    editable\n    code\n    shareCode\n    forkedFrom {\n      id\n      name\n    }\n    palette {\n      seeds {\n        name\n        value\n      }\n      overrides {\n        name\n        value\n      }\n      tokens {\n        name\n        value\n      }\n      warnings {\n        foreground\n        background\n        ratio\n        minimum\n      }\n    }\n  }\n"): typeof import('./graphql').SchemeFieldsFragmentDoc;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').AppearanceDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -724,7 +826,7 @@ export function graphql(source: "\n  mutation ImportDownload($id: Int!) {\n    i
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {\n    removeDownload(id: $id, deleteFiles: $deleteFiles)\n  }\n"): typeof import('./graphql').RemoveDownloadDocument;
+export function graphql(source: "\n  mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {\n    removeDownloads(ids: $ids, deleteFiles: $deleteFiles)\n  }\n"): typeof import('./graphql').RemoveDownloadsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -15,6 +15,12 @@ const AddSeries = graphql(`
   }
 `)
 
+const AiredEpisodes = graphql(`
+  query AiredEpisodes($provider: Provider!, $id: String!) {
+    airedEpisodes(provider: $provider, id: $id)
+  }
+`)
+
 const CreateRequest = graphql(`
   mutation CreateRequest($input: NewRequest!) {
     createRequest(input: $input) {
@@ -80,7 +86,7 @@ export function ResultCard({
             )}
           </div>
           {status && (
-            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-2xs font-medium text-white backdrop-blur-md">
+            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-media-shade/65 px-1.5 py-0.5 text-2xs font-medium text-media-ink backdrop-blur-md">
               {status.icon} {status.label}
             </span>
           )}
@@ -182,6 +188,9 @@ function Heading({ r }: { r: DiscoverResult }) {
   )
 }
 
+/** Past this many aired episodes, adding with Missing queues a lot of disk. */
+const MANY_EPISODES = 100
+
 export function AddDialog({ r, onClose }: { r: DiscoverResult; onClose: () => void }) {
   const qc = useQueryClient()
   const navigate = useNavigate()
@@ -192,6 +201,11 @@ export function AddDialog({ r, onClose }: { r: DiscoverResult; onClose: () => vo
   const lib = settings?.libraries.find((l) => l.name === library)
   // Settings → Automation decides what's picked to begin with.
   const chosen: Monitor = monitor ?? settings?.automation.defaultMonitor ?? 'NONE'
+  const { data: aired } = useQuery({
+    queryKey: ['airedEpisodes', r.provider, r.id],
+    queryFn: async () => (await request(AiredEpisodes, { provider: r.provider, id: r.id })).airedEpisodes,
+    staleTime: Infinity,
+  })
   const add = useMutation({
     mutationFn: () =>
       request(AddSeries, {
@@ -231,7 +245,7 @@ export function AddDialog({ r, onClose }: { r: DiscoverResult; onClose: () => vo
           />
         </Field>
         {lib && !lib.managed && (
-          <p className="text-xs leading-relaxed text-amber-300">
+          <p className="text-xs leading-relaxed text-warn">
             {lib.name} isn't managed; can't download into it.
           </p>
         )}
@@ -239,6 +253,11 @@ export function AddDialog({ r, onClose }: { r: DiscoverResult; onClose: () => vo
           <p className="mb-1.5 text-[13px] text-ink-2">Download</p>
           <MonitorPicker value={chosen} onChange={setMonitor} />
         </div>
+        {chosen === 'MISSING' && aired !== undefined && aired >= MANY_EPISODES && (
+          <p className="text-xs leading-relaxed text-warn">
+            {r.name} has {aired} aired episodes, and all of them will be downloaded. Pick Future to only get new ones.
+          </p>
+        )}
         {settings && settings.profiles.length > 0 && (
           <Field label="Quality">
             <Select

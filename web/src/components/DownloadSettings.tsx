@@ -897,7 +897,7 @@ export function RenamesSettings() {
           <div key={lib} className="mb-4">
             <p className="mb-1 text-xs font-medium text-ink-3">{lib}</p>
             {visible.some((s) => s.library === lib && !s.managed) && (
-              <p className="mb-2 text-xs text-amber-300">Not managed; can't rename.</p>
+              <p className="mb-2 text-xs text-warn">Not managed; can't rename.</p>
             )}
             <div className="-mx-2 space-y-0.5">
               {visible

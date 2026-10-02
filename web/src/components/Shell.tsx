@@ -30,12 +30,13 @@ import { type Library, type User, librariesQuery, request } from '../lib/api'
 import { disconnect } from '../lib/graphql'
 import { speed, useFeatures } from '../lib/downloads'
 import { useClipsOn } from '../lib/hooks'
-import { recents } from '../lib/recents'
+import { prune, recents } from '../lib/recents'
 import { Avatar } from './Avatar'
 import { Feedback, toast, toastError } from './feedback'
 import { NotificationsMenu, PriorityPill, setInboxOpen } from './Notifications'
 import { Squircle } from './Squircle'
 import { Ticker } from './Ticker'
+import { cssColor } from '../lib/theme'
 import { Dialog, Panel, Popover } from './ui'
 
 function NavLink({ to, params, icon, children, count }: {
@@ -129,6 +130,14 @@ const SearchQuery = graphql(`
   }
 `)
 
+const RecentTitles = graphql(`
+  query RecentTitles($ids: [Int!]!) {
+    titles(ids: $ids) {
+      id
+    }
+  }
+`)
+
 const DownloadStates = graphql(`
   query DownloadStates {
     downloads {
@@ -202,17 +211,19 @@ function useTabProgress(progress: number | null, rate: number) {
       const ctx = canvas.getContext('2d')!
       ctx.drawImage(icon.current!, 0, 0, 64, 64)
       // A badge in the corner with the ring inside it.
-      ctx.fillStyle = '#191919'
+      ctx.fillStyle = cssColor('canvas')
       ctx.beginPath()
       ctx.arc(46, 46, 18, 0, Math.PI * 2)
       ctx.fill()
       ctx.lineWidth = 6
       ctx.lineCap = 'round'
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)'
+      ctx.strokeStyle = cssColor('glow')
+      ctx.globalAlpha = 0.2
       ctx.beginPath()
       ctx.arc(46, 46, 11, 0, Math.PI * 2)
       ctx.stroke()
-      ctx.strokeStyle = '#7dd3fc'
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = cssColor('info')
       ctx.beginPath()
       ctx.arc(46, 46, 11, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, pct))
       ctx.stroke()
@@ -357,7 +368,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
 
       <div className="min-w-0 flex-1 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
         {/* Small screens: a slim top bar, and tabs along the bottom. */}
-        <header className="sticky top-0 z-30 flex h-12 items-center gap-1 border-b border-line bg-canvas/85 px-3 backdrop-blur-xl [view-transition-name:chrome-top] md:hidden">
+        <header className="sticky top-0 z-30 flex h-12 items-center gap-1 material-bar border-b border-line bg-canvas/85 px-3 backdrop-blur-xl [view-transition-name:chrome-top] md:hidden">
           <Link to="/" className="flex items-center gap-2 px-1.5 text-sm font-semibold">
             <img src="/favicon.svg" alt="" className="size-5" /> tinystream
           </Link>
@@ -394,7 +405,7 @@ function TransferCount({ transfers }: { transfers: Transfers }) {
   if (engine?.killSwitch) return <span className="text-danger">VPN down</span>
   if (!engine || engine.downloadRate <= 0) return null
   return (
-    <span className="flex items-center gap-1.5 text-sky-300">
+    <span className="flex items-center gap-1.5 text-info">
       <Ticker value={speed(engine.downloadRate)} />
       {progress !== null && <Ring value={progress} size={13} />}
     </span>
@@ -517,7 +528,7 @@ function Tab({ to, icon, label, badge }: { to: string; icon: ReactNode; label: s
 function TabBar({ user, transfers, onMore }: { user: User; transfers: Transfers; onMore: () => void }) {
   const features = useFeatures()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-canvas/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl [view-transition-name:chrome-bottom] md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex material-bar border-t border-line bg-canvas/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl [view-transition-name:chrome-bottom] md:hidden">
       <Tab to="/" icon={<House />} label="Home" />
       {features && <Tab to="/calendar" icon={<CalendarDays />} label="Calendar" />}
       {features && (user.permissions.request || user.permissions.manageShows) && (
@@ -532,7 +543,7 @@ function TabBar({ user, transfers, onMore }: { user: User; transfers: Transfers;
             <>
               <FinishedPulse n={transfers.finished} />
               {transfers.progress !== null && (
-                <span className="absolute -top-1 -right-2 text-sky-300">
+                <span className="absolute -top-1 -right-2 text-info">
                   <Ring value={transfers.progress} size={12} />
                 </span>
               )}
@@ -568,8 +579,8 @@ function MoreSheet({
   }, [pathname, onClose])
   const item = 'flex h-11 items-center gap-3 px-3 text-[15px] text-ink-2 active:bg-press [&>svg]:size-4.5 [&>svg]:text-ink-3'
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/50 animate-[fade_120ms_ease-out] md:hidden" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] animate-[sheet_220ms_cubic-bezier(.2,.8,.2,1)] overflow-y-auto rounded-t-[22px] border-t border-line-strong bg-float px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+    <div className="fixed inset-0 z-50 bg-shade/50 animate-[fade_120ms_ease-out] md:hidden" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] animate-[sheet_220ms_cubic-bezier(.2,.8,.2,1)] overflow-y-auto material rounded-t-[22px] border-t border-line-strong bg-float px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-line-strong" />
         {libraries.length > 0 && <p className="px-3 pt-2 pb-1 text-xs text-ink-3">Libraries</p>}
         {libraries.map((l) => (
@@ -644,6 +655,13 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
     queryFn: async () => (await request(SearchQuery, { query: debounced })).search,
     enabled: debounced.trim().length > 0,
     placeholderData: (prev) => prev,
+  })
+  const [stored] = useState(recents)
+  const { data: recent } = useQuery({
+    queryKey: ['recents', stored.map((r) => r.id)],
+    queryFn: async () => prune(new Set((await request(RecentTitles, { ids: stored.map((r) => r.id) })).titles.map((t) => t.id))),
+    enabled: stored.length > 0,
+    gcTime: 0,
   })
 
   const commands = useMemo(() => {
@@ -738,7 +756,7 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
           : []),
       ]
     : [
-        ...recents().map((r) => ({
+        ...(recent ?? []).map((r) => ({
           key: `r${r.id}`,
           group: 'Recent',
           title: r.title,
@@ -758,11 +776,11 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[12vh] animate-[fade_120ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-shade/50 px-4 pt-[12vh] animate-[fade_120ms_ease-out]"
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="lift w-full max-w-xl animate-[pop_140ms_ease-out]">
-        <Squircle radius={18} edge className="bg-float">
+        <Squircle radius={18} edge className="material bg-float">
           <div className="flex items-center gap-3 border-b border-line px-4">
             <Search className="size-4.5 text-ink-3" />
             <input

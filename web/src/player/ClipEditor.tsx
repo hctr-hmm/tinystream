@@ -58,6 +58,7 @@ import { type Preset, burnable, copyLink, fetchClip, length, presets, space, sta
 import { bytes } from '../lib/downloads'
 import { language } from '../lib/format'
 import { onArrival, useMarkRead } from '../lib/notifications'
+import { ClipPlayer } from './ClipPlayer'
 import { StreamEngine, plan } from './engine'
 import { SubtitleRenderer } from './subtitles'
 
@@ -93,7 +94,7 @@ export function ClipEditor(props: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [props])
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-[#101010] text-ink animate-[fade_160ms_ease-out]" onClick={(e) => e.stopPropagation()}>
+    <div className="absolute inset-0 z-20 flex flex-col bg-media-canvas text-ink animate-[fade_160ms_ease-out]" onClick={(e) => e.stopPropagation()}>
       {!you ? (
         <div className="grid flex-1 place-items-center text-ink-2">
           <Spinner className="size-8" />
@@ -281,12 +282,12 @@ function Editor({ pb, mediaBase, room, at, audio: startAudio, subtitle: startSub
     <>
       {/* In a room, the room's own video sits in the top corner. */}
       <header className={`flex items-center gap-3 px-5 pt-4 pb-3 ${room ? 'md:pr-[22rem]' : ''}`}>
-        <IconButton label="Close (Esc)" onClick={onClose} className="text-white/80">
+        <IconButton label="Close (Esc)" onClick={onClose} className="text-media-ink/80">
           <X className="size-5" />
         </IconButton>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 text-[15px] font-medium">
-            <Scissors className="size-4 text-pink-300" />
+            <Scissors className="size-4 text-highlight" />
             {editing ? 'Edit clip' : 'New clip'}
           </p>
           <p className="truncate text-[13px] text-ink-3">{source}</p>
@@ -295,7 +296,7 @@ function Editor({ pb, mediaBase, room, at, audio: startAudio, subtitle: startSub
       </header>
 
       <div className="relative min-h-0 flex-1 px-5">
-        <div className="relative size-full overflow-hidden rounded-2xl bg-black">
+        <div className="relative size-full overflow-hidden rounded-2xl bg-media-shade">
           <video
             ref={video}
             playsInline
@@ -319,7 +320,7 @@ function Editor({ pb, mediaBase, room, at, audio: startAudio, subtitle: startSub
           />
           {bitmap && !playing && <BurnedStill pb={pb} mediaBase={mediaBase} room={room} track={subtitle!} at={time} />}
           {loading && !error && (
-            <div className="pointer-events-none absolute inset-0 grid place-items-center text-white/70">
+            <div className="pointer-events-none absolute inset-0 grid place-items-center text-media-ink/70">
               <Spinner className="size-8" />
             </div>
           )}
@@ -329,7 +330,7 @@ function Editor({ pb, mediaBase, room, at, audio: startAudio, subtitle: startSub
             </div>
           )}
           {bitmap && playing && (
-            <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs text-white/60">
+            <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs text-media-ink/60">
               Image subtitles show when the preview is paused; they’ll be in the clip either way.
             </p>
           )}
@@ -409,10 +410,10 @@ function Editor({ pb, mediaBase, room, at, audio: startAudio, subtitle: startSub
         </div>
 
         {cjk && (
-          <p className="flex items-start gap-2 text-xs leading-relaxed text-amber-200/90">
+          <p className="flex items-start gap-2 text-xs leading-relaxed text-warn-soft/90">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
             {language(track!.language)} text may come out as empty boxes: this server has no font for it set up for clips. An
-            admin can set <code className="text-amber-100">[clips] default-font</code> to one that has it.
+            admin can set <code className="text-warn-soft">[clips] default-font</code> to one that has it.
           </p>
         )}
 
@@ -567,7 +568,7 @@ function RangeStrip({
     <div className="select-none">
       {/* The whole video: where the view and the range are. */}
       <div
-        className="relative mb-2 h-2 cursor-pointer rounded-full bg-white/8"
+        className="relative mb-2 h-2 cursor-pointer rounded-full bg-media-ink/8"
         onPointerDown={(e) => {
           const r = e.currentTarget.getBoundingClientRect()
           const t = ((e.clientX - r.left) / r.width) * duration
@@ -576,11 +577,11 @@ function RangeStrip({
         }}
       >
         <div
-          className="absolute inset-y-0 rounded-full bg-white/15"
+          className="absolute inset-y-0 rounded-full bg-media-ink/15"
           style={{ left: `${(view[0] / duration) * 100}%`, width: `${(span / duration) * 100}%` }}
         />
         <div
-          className="absolute inset-y-0 min-w-1 rounded-full bg-pink-300"
+          className="absolute inset-y-0 min-w-1 rounded-full bg-highlight"
           style={{ left: `${(start / duration) * 100}%`, width: `${(len / duration) * 100}%` }}
         />
       </div>
@@ -615,17 +616,17 @@ function RangeStrip({
           })}
         </Squircle>
         {/* Outside the range goes dark. */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 rounded-l-[10px] bg-black/55" style={{ width: x(start) }} />
-        <div className="pointer-events-none absolute inset-y-0 right-0 rounded-r-[10px] bg-black/55" style={{ left: x(end) }} />
+        <div className="pointer-events-none absolute inset-y-0 left-0 rounded-l-[10px] bg-media-shade/55" style={{ width: x(start) }} />
+        <div className="pointer-events-none absolute inset-y-0 right-0 rounded-r-[10px] bg-media-shade/55" style={{ left: x(end) }} />
         <div
-          className="absolute inset-y-0 cursor-grab rounded-md shadow-[inset_0_0_0_2px_var(--color-pink-300)] active:cursor-grabbing"
+          className="absolute inset-y-0 cursor-grab rounded-md shadow-[inset_0_0_0_2px_var(--color-highlight)] active:cursor-grabbing"
           style={{ left: x(start), width: `${(len / span) * 100}%` }}
           onPointerDown={grab('both')}
         />
         <Handle at={x(start)} side="start" label="Start of the clip" onPointerDown={grab('start')} onKeyDown={nudge('start')} />
         <Handle at={x(end)} side="end" label="End of the clip" onPointerDown={grab('end')} onKeyDown={nudge('end')} />
         {time >= view[0] && time <= view[1] && (
-          <div className="pointer-events-none absolute -inset-y-1 w-0.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_6px_rgb(0_0_0/0.6)]" style={{ left: x(time) }} />
+          <div className="pointer-events-none absolute -inset-y-1 w-0.5 -translate-x-1/2 rounded-full bg-media-ink shadow-[0_0_6px_color-mix(in_srgb,var(--color-media-shade)_60%,transparent)]" style={{ left: x(time) }} />
         )}
       </div>
       <div className="mt-1 flex justify-between text-2xs text-ink-3 tabular">
@@ -654,10 +655,10 @@ function Handle({
       aria-label={`${label}: arrow keys move it a frame, with Shift a second`}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
-      className={`absolute -inset-y-1 z-10 w-3.5 cursor-ew-resize rounded-[5px] bg-pink-300 outline-none focus-visible:ring-2 focus-visible:ring-white ${side === 'start' ? '-translate-x-full' : ''}`}
+      className={`absolute -inset-y-1 z-10 w-3.5 cursor-ew-resize rounded-[5px] bg-highlight outline-none focus-visible:ring-2 focus-visible:ring-media-ink ${side === 'start' ? '-translate-x-full' : ''}`}
       style={{ left: at }}
     >
-      <span className="absolute inset-y-4 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-black/40" />
+      <span className="absolute inset-y-4 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-media-shade/40" />
     </button>
   )
 }
@@ -694,7 +695,7 @@ export function SendTo({ value, onChange }: { value: Person[]; onChange: (p: Per
       </Popover>
       <div className="flex min-w-0 -space-x-1.5">
         {value.slice(0, 6).map((p) => (
-          <span key={p.id} className="rounded-full ring-2 ring-[#101010]" title={p.username}>
+          <span key={p.id} className="rounded-full ring-2 ring-media-canvas" title={p.username}>
             <Avatar user={p} size={24} />
           </span>
         ))}
@@ -723,9 +724,9 @@ function Rendering({ id, onClose }: { id: number; onClose: () => void }) {
       <div className="w-full max-w-md text-center">
         <Squircle radius={18} className="relative mx-auto mb-6 aspect-video w-full overflow-hidden bg-raised">
           {done && clip.poster ? (
-            <video src={clip.file} poster={clip.poster} controls autoPlay muted playsInline className="size-full object-contain" />
+            <ClipPlayer src={clip.file} poster={clip.poster} muted />
           ) : (
-            <div className="grid size-full place-items-center text-pink-300">
+            <div className="grid size-full place-items-center text-highlight">
               {clip.state === 'FAILED' ? <TriangleAlert className="size-8 text-danger" /> : <Scissors className="size-8 animate-pulse" />}
             </div>
           )}

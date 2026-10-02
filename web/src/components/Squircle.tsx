@@ -10,6 +10,7 @@ import {
   useId,
 } from 'react'
 import { squirclePath } from '../lib/squircle'
+import { useCorners } from '../lib/theme'
 
 const svgUrl = (attrs: string, path: string) =>
   `url("data:image/svg+xml,${encodeURIComponent(
@@ -64,8 +65,8 @@ type Props<T extends ElementType> = {
  */
 export function Squircle<T extends ElementType = 'div'>({
   as,
-  radius = 12,
-  smoothing = 0.6,
+  radius: baseRadius = 12,
+  smoothing: baseSmoothing,
   edge = false,
   dashed = false,
   style,
@@ -76,6 +77,10 @@ export function Squircle<T extends ElementType = 'div'>({
   const ref = useRef<HTMLElement>(null)
   const [size, setSize] = useState<[number, number] | null>(null)
   const id = 'sq' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  // The component style decides how round and how smooth corners are.
+  const corners = useCorners()
+  const radius = Math.round(baseRadius * corners.scale)
+  const smoothing = baseSmoothing ?? corners.smoothing
 
   useLayoutEffect(() => {
     const el = ref.current
@@ -115,9 +120,9 @@ export function Squircle<T extends ElementType = 'div'>({
         >
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#fff" stopOpacity="0.14" />
-              <stop offset="0.35" stopColor="#fff" stopOpacity="0.07" />
-              <stop offset="1" stopColor="#fff" stopOpacity="0.045" />
+              <stop offset="0" style={{ stopColor: 'var(--color-glow)', stopOpacity: 'var(--edge-top)' }} />
+              <stop offset="0.35" style={{ stopColor: 'var(--color-glow)', stopOpacity: 'var(--edge-middle)' }} />
+              <stop offset="1" style={{ stopColor: 'var(--color-glow)', stopOpacity: 'var(--edge-bottom)' }} />
             </linearGradient>
           </defs>
           {/* Twice the width, half of it clipped away: a crisp 1px inner edge. */}

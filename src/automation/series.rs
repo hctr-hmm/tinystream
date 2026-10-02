@@ -384,6 +384,7 @@ pub struct Counts {
     pub total: i64,
 
     pub upcoming: i64,
+    pub skipped: i64,
 }
 
 pub async fn style(state: &AppState, row: &Row) -> anyhow::Result<Style> {
@@ -402,10 +403,10 @@ pub async fn view(state: &AppState, row: Row) -> anyhow::Result<View> {
     let item_id = item_id(state, &row.path).await?;
     let library = config.library(&row.library);
 
-    let counts: (i64, i64, i64, i64, i64, i64) = sqlx::query_as(
+    let counts: (i64, i64, i64, i64, i64, i64, i64) = sqlx::query_as(
         "SELECT COALESCE(SUM(state = 'done'), 0), COALESCE(SUM(state = 'wanted' AND aired), 0), COALESCE(SUM(state = 'missing'), 0),
                 COALESCE(SUM(state = 'grabbed'), 0), COALESCE(SUM(aired OR state IN ('done', 'grabbed')), 0),
-                COALESCE(SUM(state = 'wanted' AND NOT aired), 0)
+                COALESCE(SUM(state = 'wanted' AND NOT aired), 0), COALESCE(SUM(state = 'skipped'), 0)
          FROM (SELECT state, (aired = 1 OR COALESCE(air_at <= ?, 0)) AS aired FROM episodes WHERE series_id = ? AND season > 0)",
     )
     .bind(now())
@@ -462,6 +463,7 @@ pub async fn view(state: &AppState, row: Row) -> anyhow::Result<View> {
             grabbed: counts.3,
             total: counts.4,
             upcoming: counts.5,
+            skipped: counts.6,
         },
         next,
     })

@@ -54,6 +54,8 @@ pub enum ChangedList {
     Users,
 
     Notifications,
+
+    Appearance,
 }
 
 #[derive(SimpleObject)]
@@ -136,6 +138,9 @@ fn translate(event: Event, me: i64, libraries: &[String]) -> Option<ServerEvent>
         Event::NotificationsChanged { user_id } => {
             (user_id == me).then_some(ServerEvent::ListChanged(ListChanged { list: ChangedList::Notifications }))
         },
+        Event::AppearanceChanged { user_id } => user_id
+            .is_none_or(|u| u == me)
+            .then_some(ServerEvent::ListChanged(ListChanged { list: ChangedList::Appearance })),
         Event::ClipChanged { clip_id, users, state, progress } => users
             .contains(&me)
             .then(|| ServerEvent::ClipChanged(ClipChanged { clip_id, state: ClipState::parse(&state), progress })),

@@ -1,3 +1,41 @@
+"""
+How tinystream looks for whoever's asking.
+"""
+type Appearance {
+	mode: SchemeMode!
+	"""
+	The scheme for the system's light mode; the only one in single mode.
+	"""
+	light: ColorScheme!
+	dark: ColorScheme!
+	style: ComponentStyle!
+	mediaTint: Boolean!
+}
+
+"""
+What someone picked for themselves; anything left out follows the server.
+"""
+type AppearanceSettings {
+	colors: SchemeChoice
+	style: ComponentStyle
+	"""
+	Let the scheme colour what sits over artwork and video, too.
+	"""
+	mediaTint: Boolean!
+}
+
+"""
+What someone picked for themselves; anything left out follows the server.
+"""
+input AppearanceSettingsInput {
+	colors: SchemeChoiceInput
+	style: ComponentStyle
+	"""
+	Let the scheme colour what sits over artwork and video, too.
+	"""
+	mediaTint: Boolean!
+}
+
 type AppliedRenames {
 	batch: String!
 	renamed: Int!
@@ -15,50 +53,21 @@ type AudioTrack {
 }
 
 type AutomationConfig {
-	"""
-	How shows you add are monitored, unless you pick something else.
-	"""
 	defaultMonitor: Monitor!
-	"""
-	How often every source's feed is checked for new releases.
-	"""
 	rssInterval: Duration!
-	"""
-	Searches after an episode airs. After the last step it's "missing"
-	(feeds are still watched for it).
-	"""
 	retry: [RetryStep!]!
-	"""
-	Suggest fixes for badly named files in every library.
-	"""
 	renameSuggestions: Boolean!
 }
 
 input AutomationConfigInput {
-	"""
-	How shows you add are monitored, unless you pick something else.
-	"""
 	defaultMonitor: Monitor!
-	"""
-	How often every source's feed is checked for new releases.
-	"""
 	rssInterval: Duration!
-	"""
-	Searches after an episode airs. After the last step it's "missing"
-	(feeds are still watched for it).
-	"""
 	retry: [RetryStepInput!]!
-	"""
-	Suggest fixes for badly named files in every library.
-	"""
 	renameSuggestions: Boolean!
 }
 
 type CalendarEntry {
 	seriesId: Int!
-	"""
-	The show in the library, once it's there.
-	"""
 	title: Title
 	library: String!
 	show: String!
@@ -68,34 +77,20 @@ type CalendarEntry {
 	season: Int!
 	episode: Int!
 	absolute: Int
-	"""
-	The episode's title.
-	"""
 	name: String
 	airAt: Int!
 	state: EpisodeState!
-	"""
-	The episode in the library, when it's there.
-	"""
 	video: Video
 	download: EpisodeDownload
 }
 
 enum ChangedList {
-	"""
-	A download was added, finished, imported or removed.
-	"""
 	DOWNLOADS
 	RENAME_SUGGESTIONS
 	REQUESTS
-	"""
-	Someone's account, picture or permissions changed (or the defaults did).
-	"""
 	USERS
-	"""
-	Your notifications were read, cleared or withdrawn.
-	"""
 	NOTIFICATIONS
+	APPEARANCE
 }
 
 type Chapter {
@@ -106,188 +101,78 @@ type Chapter {
 
 type Clip {
 	id: Int!
-	"""
-	One frame, as a PNG; `start` is the moment and `end` the same.
-	"""
 	screenshot: Boolean!
-	"""
-	What its owner called it; may be empty.
-	"""
 	name: String!
 	mine: Boolean!
-	"""
-	Whether you may change or delete it.
-	"""
 	canManage: Boolean!
 	owner: User!
 	source: ClipSource!
-	"""
-	Seconds into the video.
-	"""
 	start: Float!
 	end: Float!
-	"""
-	The audio track's index.
-	"""
 	audio: Int
-	"""
-	The subtitle track burned in.
-	"""
 	subtitles: String
 	quality: ClipQuality!
 	state: ClipState!
-	"""
-	0 to 1, while it renders.
-	"""
 	progress: Float
 	error: String
-	"""
-	The render's size, while there is one.
-	"""
 	bytes: Int
-	"""
-	The render's width in pixels.
-	"""
 	width: Int
 	height: Int
 	fps: Float
 	renderedAt: Int
 	createdAt: Int!
-	"""
-	When it was sent to you.
-	"""
 	sharedAt: Int
-	"""
-	Whether it has a link anyone can open.
-	"""
 	public: Boolean!
-	"""
-	The public page, for its owner (and admins).
-	"""
 	link: String
-	"""
-	Whether that link works right now: it only does while the owner may
-	still share links.
-	"""
 	linkLive: Boolean!
-	"""
-	Who it was sent to; only for whoever may manage it.
-	"""
 	recipients: [ClipRecipient!]!
-	"""
-	The video (or a screenshot's picture); add `?download=1` to save it.
-	"""
 	file: String!
 	poster: String
 }
 
-"""
-What you may do with clips, and how much of your space is used.
-"""
 type ClipAllowance {
 	canClip: Boolean!
 	canLink: Boolean!
-	"""
-	Seconds; 0 is no limit.
-	"""
 	maxLength: Int!
-	"""
-	What your renders take now.
-	"""
 	bytes: Int!
-	"""
-	Rendered clips you keep now (screenshots aside).
-	"""
 	rendered: Int!
-	"""
-	MB; 0 is no limit.
-	"""
 	storage: Int!
-	"""
-	Rendered clips you can keep; 0 is no limit.
-	"""
 	limit: Int!
-	"""
-	Whether the server has its own font for subtitles without one.
-	"""
 	customDefaultFont: Boolean!
 }
 
-"""
-One of your clips (or one sent to you) was queued, rendered, dropped or
-deleted.
-"""
 type ClipChanged {
 	clipId: Int!
-	"""
-	Null once it's gone from your lists.
-	"""
 	state: ClipState
-	"""
-	0 to 1, while it renders.
-	"""
 	progress: Float
 }
 
-"""
-Changes to a clip; what's left out stays as it is.
-"""
 input ClipPatch {
 	name: String
 	public: Boolean
-	"""
-	A new range, tracks or quality: renders again.
-	"""
 	recipe: RecipeInput
 }
 
 type ClipQuality {
-	"""
-	The box it's fitted into: 1080, 720 or 480.
-	"""
 	height: Int!
-	"""
-	Half the source's frame rate.
-	"""
 	halfRate: Boolean!
 }
 
 type ClipRecipient {
 	user: User!
 	sharedAt: Int!
-	"""
-	They took it off their list.
-	"""
 	hidden: Boolean!
 }
 
 enum ClipScope {
-	"""
-	Yours.
-	"""
 	MINE
-	"""
-	Sent to you.
-	"""
 	RECEIVED
-	"""
-	Yours that you've sent to people.
-	"""
 	SENT
 }
 
 type ClipSource {
-	"""
-	The video, when you can still open it.
-	"""
 	video: Video
-	"""
-	Its title, when you can see it.
-	"""
 	title: Title
-	"""
-	The show's (or movie's) name, as it was when clipped.
-	"""
 	name: String!
 	kind: TitleKind!
 	label: String
@@ -300,31 +185,13 @@ enum ClipState {
 	RENDERING
 	READY
 	FAILED
-	"""
-	Its render was dropped to make room; it renders again when opened.
-	"""
 	EVICTED
 }
 
-"""
-Clips across the server. Admins only.
-"""
 type ClipStorage {
-	"""
-	Per person, most space first.
-	"""
 	usage: [ClipUsage!]!
-	"""
-	Every clip with a public link.
-	"""
 	publicClips: [Clip!]!
-	"""
-	What every render takes together.
-	"""
 	bytes: Int!
-	"""
-	Where renders are kept.
-	"""
 	dir: String
 }
 
@@ -333,79 +200,55 @@ type ClipUsage {
 	bytes: Int!
 	rendered: Int!
 	clips: Int!
-	"""
-	Their space, in MB; 0 is no limit.
-	"""
 	storage: Int!
 	limit: Int!
 }
 
-"""
-Clipping. How long clips can be and how much room each person gets are
-permissions (Settings → People); these are the server-wide parts.
-"""
 type ClipsConfig {
 	enabled: Boolean!
-	"""
-	Where rendered clips are kept. Defaults to `clips` in the data directory.
-	"""
 	path: String
-	"""
-	Whether clips can have links anyone can open, without an account.
-	"""
 	publicLinks: Boolean!
-	"""
-	Clips rendered at the same time; the rest wait their turn.
-	"""
 	concurrency: Int!
-	"""
-	Space all rendered clips together may take, in MB; 0 is no limit.
-	Least recently watched renders go first.
-	"""
 	maxStorage: Int!
-	"""
-	Extra fonts for burned-in subtitles (CJK, Arabic, ...), found by name.
-	"""
 	fontsDir: String
-	"""
-	The font for subtitles whose font isn't available. Defaults to a
-	built-in Noto Sans, which has no CJK.
-	"""
 	defaultFont: String
 }
 
-"""
-Clipping. How long clips can be and how much room each person gets are
-permissions (Settings → People); these are the server-wide parts.
-"""
 input ClipsConfigInput {
 	enabled: Boolean!
-	"""
-	Where rendered clips are kept. Defaults to `clips` in the data directory.
-	"""
 	path: String
-	"""
-	Whether clips can have links anyone can open, without an account.
-	"""
 	publicLinks: Boolean!
-	"""
-	Clips rendered at the same time; the rest wait their turn.
-	"""
 	concurrency: Int!
-	"""
-	Space all rendered clips together may take, in MB; 0 is no limit.
-	Least recently watched renders go first.
-	"""
 	maxStorage: Int!
-	"""
-	Extra fonts for burned-in subtitles (CJK, Arabic, ...), found by name.
-	"""
 	fontsDir: String
-	"""
-	The font for subtitles whose font isn't available. Defaults to a
-	built-in Noto Sans, which has no CJK.
-	"""
 	defaultFont: String
+}
+
+type ColorScheme {
+	id: String!
+	name: String!
+	builtIn: Boolean!
+	"""
+	Everyone on this server can pick it.
+	"""
+	published: Boolean!
+	editable: Boolean!
+	forkedFrom: SchemeOrigin
+	"""
+	`ts1.<payload>`: the scheme itself. Two schemes with the same code are the same scheme.
+	"""
+	code: String!
+	"""
+	The code with the name attached, for sharing.
+	"""
+	shareCode: String!
+	palette: Palette!
+}
+
+enum ComponentStyle {
+	LAYERED
+	FLAT
+	GLASS
 }
 
 enum Confidence {
@@ -413,19 +256,10 @@ enum Confidence {
 	LOW
 }
 
-"""
-config.toml changed on disk or from the UI.
-"""
 type ConfigChanged {
-	"""
-	Why the new version wasn't applied; null when it was.
-	"""
 	error: String
 }
 
-"""
-Sections of config.toml to replace; the rest stay as they are.
-"""
 input ConfigPatch {
 	network: NetworkConfigInput
 	log: LogConfigInput
@@ -440,56 +274,39 @@ input ConfigPatch {
 
 type ConfiguredLibrary {
 	name: String!
-	"""
-	As written in config.toml.
-	"""
 	path: String!
 	metadataProvider: Provider
-	"""
-	Whether tinystream may write here: import downloads, rename files.
-	"""
 	managed: Boolean!
 	profile: String
 	downloadPath: String
-	"""
-	`path`, worked out.
-	"""
 	resolvedPath: String
 	exists: Boolean!
-	"""
-	Why `path` can't be worked out.
-	"""
 	error: String
 	titleCount: Int!
-	"""
-	Files the scanner couldn't make sense of.
-	"""
 	skippedCount: Int!
 }
 
 type ContinueEntry {
 	video: Video!
-	"""
-	Where to start, in seconds.
-	"""
 	position: Float!
-	"""
-	The next episode, rather than one in progress.
-	"""
 	upNext: Boolean!
-	"""
-	The next episode arrived after this was last watched.
-	"""
 	newEpisode: Boolean!
-	"""
-	When this title was last watched.
-	"""
 	watchedAt: Int
 }
 
-"""
-The result of pointing tinystream at a URL.
-"""
+type ContrastWarning {
+	foreground: String!
+	background: String!
+	ratio: Float!
+	minimum: Float!
+}
+
+type DecodedScheme {
+	name: String
+	code: String!
+	palette: Palette!
+}
+
 type DetectedSource {
 	kind: SourceKind!
 	url: String!
@@ -499,47 +316,23 @@ type DetectedSource {
 	sample: [Release!]!
 }
 
-"""
-A show from the provider, and where it stands here.
-"""
 type DiscoverResult {
 	provider: Provider!
 	id: String!
 	name: String!
-	"""
-	The romaji title, when it isn't the one in `name`.
-	"""
 	romaji: String
 	year: Int
 	poster: String
 	overview: String
-	"""
-	The library it would go in.
-	"""
 	library: String!
-	"""
-	The title, when it's already in the library.
-	"""
 	titleId: Int
-	"""
-	The managed show, when it's already being followed.
-	"""
 	seriesId: Int
 	monitor: Monitor
-	"""
-	Where someone's request for it stands.
-	"""
 	requestState: RequestState
-	"""
-	The show of yours that led here, in "For you".
-	"""
 	because: String
 }
 
 type Discovery {
-	"""
-	The library these are for.
-	"""
 	library: String!
 	results: [DiscoverResult!]!
 }
@@ -549,70 +342,34 @@ type Download {
 	name: String!
 	seriesId: Int
 	seriesName: String
-	"""
-	The show in the library, once it's there.
-	"""
 	title: Title
-	"""
-	The library's artwork when the show is there, else the provider's.
-	"""
 	poster: String
 	episodes: [EpisodeNumber!]!
-	"""
-	The source it came from.
-	"""
 	source: String
 	size: Int
 	savePath: String!
 	state: DownloadState!
 	importState: ImportState!
 	importError: String
-	"""
-	How it got into the library: hardlink, copy or move.
-	"""
 	importMode: String
 	error: String
 	addedAt: Int!
 	finishedAt: Int
 	importedAt: Int
 	requestedBy: User
-	"""
-	While the engine has it.
-	"""
 	live: TorrentStatus
-	"""
-	What seeding is working towards.
-	"""
 	seedGoal: SeedGoal!
 	files: [TorrentFile!]!
 }
 
-"""
-The torrent engine, as a whole.
-"""
 type DownloadEngine {
-	"""
-	libtorrent's version.
-	"""
 	version: String!
 	downloadRate: Int!
 	uploadRate: Int!
-	"""
-	Torrents doing something.
-	"""
 	active: Int!
-	"""
-	Why every torrent is paused: the bound interface is down.
-	"""
 	killSwitch: String
-	"""
-	Where peers can reach us.
-	"""
 	listening: String
 	listenError: String
-	"""
-	Whether the slower speed limits apply right now.
-	"""
 	slowHours: Boolean!
 	downloadPath: String!
 }
@@ -627,88 +384,41 @@ enum DownloadState {
 }
 
 type DownloadsConfig {
-	"""
-	Where torrents download to. Defaults to `downloads` in the data folder.
-	"""
 	path: String
 	import: ImportMode!
-	"""
-	The port other peers connect to; 0 picks one at random.
-	"""
 	port: Int!
 	upnp: Boolean!
 	dht: Boolean!
-	"""
-	Torrents downloading at once; the rest wait their turn.
-	"""
 	maxActive: Int!
-	"""
-	KiB/s; 0 is unlimited.
-	"""
 	downloadLimit: Int!
 	uploadLimit: Int!
-	"""
-	Slower limits for part of the day, e.g. "08:00" to "23:00".
-	"""
 	slowDownloadLimit: Int!
 	slowUploadLimit: Int!
 	slowFrom: String
 	slowTo: String
-	"""
-	A network interface (a VPN like "wg0") all torrent traffic must use.
-	When it goes down, every torrent pauses until it's back.
-	"""
 	bindInterface: String
-	"""
-	socks5://user:pass@host:1080 or http://host:8080
-	"""
 	proxy: String
 	seeding: Seeding!
 }
 
 input DownloadsConfigInput {
-	"""
-	Where torrents download to. Defaults to `downloads` in the data folder.
-	"""
 	path: String
 	import: ImportMode!
-	"""
-	The port other peers connect to; 0 picks one at random.
-	"""
 	port: Int!
 	upnp: Boolean!
 	dht: Boolean!
-	"""
-	Torrents downloading at once; the rest wait their turn.
-	"""
 	maxActive: Int!
-	"""
-	KiB/s; 0 is unlimited.
-	"""
 	downloadLimit: Int!
 	uploadLimit: Int!
-	"""
-	Slower limits for part of the day, e.g. "08:00" to "23:00".
-	"""
 	slowDownloadLimit: Int!
 	slowUploadLimit: Int!
 	slowFrom: String
 	slowTo: String
-	"""
-	A network interface (a VPN like "wg0") all torrent traffic must use.
-	When it goes down, every torrent pauses until it's back.
-	"""
 	bindInterface: String
-	"""
-	socks5://user:pass@host:1080 or http://host:8080
-	"""
 	proxy: String
 	seeding: SeedingInput!
 }
 
-"""
-A length of time, written like "15m" or "1h 30m".
-"""
 scalar Duration
 
 type EpisodeCounts {
@@ -716,19 +426,11 @@ type EpisodeCounts {
 	wanted: Int!
 	missing: Int!
 	grabbed: Int!
-	"""
-	Aired episodes, plus any already had or downloading before airing.
-	"""
 	total: Int!
-	"""
-	Monitored episodes that haven't aired yet.
-	"""
 	upcoming: Int!
+	skipped: Int!
 }
 
-"""
-An episode's download, as it goes.
-"""
 type EpisodeDownload {
 	stage: TorrentStage!
 	progress: Float!
@@ -736,45 +438,25 @@ type EpisodeDownload {
 	eta: Int
 }
 
-"""
-A season and episode number.
-"""
 type EpisodeNumber {
 	season: Int!
 	episode: Int!
 }
 
-"""
-A season and episode number.
-"""
 input EpisodeNumberInput {
 	season: Int!
 	episode: Int!
 }
 
 enum EpisodeState {
-	"""
-	Not monitored.
-	"""
 	IDLE
-	"""
-	Being searched for.
-	"""
 	WANTED
 	GRABBED
-	"""
-	Searched for until the retry schedule ran out.
-	"""
 	MISSING
-	"""
-	In the library.
-	"""
 	DONE
+	SKIPPED
 }
 
-"""
-Episodes of a show landed in its library.
-"""
 type EpisodesImported {
 	library: String!
 	show: String!
@@ -785,9 +467,6 @@ type EpisodesImported {
 union Event = ConfigChanged | ScanStarted | ScanFinished | LibraryChanged | MetadataChanged | ListChanged | SeriesChanged | EpisodesImported | NotificationReceived | ClipChanged
 
 type FileOperation {
-	"""
-	rename, hardlink, copy, move…
-	"""
 	kind: String!
 	src: String
 	dst: String!
@@ -801,13 +480,7 @@ type Folder {
 type FolderListing {
 	path: String!
 	parent: String
-	"""
-	$HOME, to jump to.
-	"""
 	home: String
-	"""
-	The folders in it (hidden ones left out).
-	"""
 	folders: [Folder!]!
 }
 
@@ -817,69 +490,38 @@ type Font {
 }
 
 type ForYou {
-	"""
-	The library these are for.
-	"""
 	library: String!
 	shelves: [ForYouShelf!]!
 }
 
 type ForYouShelf {
-	"""
-	Stays the same while the shelf does, for keys.
-	"""
 	key: String!
 	name: String!
 	results: [DiscoverResult!]!
 }
 
 enum Hardware {
-	"""
-	Use VA-API when it works, software otherwise.
-	"""
 	AUTO
 	VAAPI
 	SOFTWARE
 }
 
-"""
-Changes tinystream made to libraries together, undone together.
-"""
 type HistoryBatch {
 	batch: String!
 	label: String!
 	at: Int!
 	count: Int!
 	undone: Boolean!
-	"""
-	The first few.
-	"""
 	operations: [FileOperation!]!
 }
 
 type Home {
-	"""
-	One entry per title, most recent first.
-	"""
 	continueWatching: [ContinueEntry!]!
-	"""
-	The newest titles in each library.
-	"""
 	recentlyAdded: [Shelf!]!
-	"""
-	What the people here have been watching lately that you haven't started.
-	"""
 	popularHere: [PopularTitle!]!
 }
 
-"""
-How finished downloads get into a library.
-"""
 enum ImportMode {
-	"""
-	Hardlink when possible (no extra space, seeding keeps working), else
-	copy while seeding, else move once nothing needs the download anymore.
-	"""
 	AUTO
 	HARDLINK
 	COPY
@@ -894,9 +536,6 @@ enum ImportState {
 }
 
 type Inbox {
-	"""
-	Newest first.
-	"""
 	items: [Notification!]!
 	unread: Int!
 }
@@ -910,15 +549,9 @@ type Library {
 	name: String!
 	showCount: Int!
 	movieCount: Int!
-	"""
-	Everything in it, by title.
-	"""
 	titles: [Title!]!
 }
 
-"""
-Titles in a library were added, changed or removed.
-"""
 type LibraryChanged {
 	library: String!
 }
@@ -932,9 +565,6 @@ input LibraryInput {
 	downloadPath: String
 }
 
-"""
-Something worth fetching again.
-"""
 type ListChanged {
 	list: ChangedList!
 }
@@ -949,29 +579,14 @@ input LogConfigInput {
 
 type MatchCandidates {
 	provider: Provider!
-	"""
-	What was searched for.
-	"""
 	query: String!
 	results: [ProviderTitle!]!
 }
 
-"""
-How a title's details were found.
-"""
 enum MatchState {
-	"""
-	Waiting its turn to be looked up.
-	"""
 	PENDING
 	MATCHED
-	"""
-	Nothing fit; it keeps its folder name.
-	"""
 	UNMATCHED
-	"""
-	Someone picked the match by hand.
-	"""
 	MANUAL
 }
 
@@ -991,283 +606,122 @@ type MetadataChanged {
 
 type MetadataConfig {
 	tmdbApiKey: String
-	"""
-	Preferred language for titles and descriptions (TMDB only).
-	"""
 	language: String!
 }
 
 input MetadataConfigInput {
 	tmdbApiKey: String
-	"""
-	Preferred language for titles and descriptions (TMDB only).
-	"""
 	language: String!
 }
 
 enum MetadataStatus {
-	"""
-	Its details are being fetched; `UPDATED` or `FAILED` follows.
-	"""
 	FETCHING
 	UPDATED
 	FAILED
 }
 
 enum Monitor {
-	"""
-	Nothing is downloaded automatically.
-	"""
 	NONE
-	"""
-	New episodes, as they air.
-	"""
 	FUTURE
-	"""
-	New episodes, and any aired episode the library doesn't have.
-	"""
 	MISSING
 }
 
 type Mutation {
-	"""
-	Creates the very first account, which is always an admin, and signs in.
-	"""
 	setup(username: String!, password: String!): SignedIn!
 	signIn(username: String!, password: String!): SignedIn!
-	"""
-	Ends this session.
-	"""
 	signOut: Boolean!
-	"""
-	The first half of signing in with a passkey.
-	"""
 	startPasskeySignIn(username: String!): PasskeyChallenge!
-	"""
-	The second half: the browser's answer to the challenge.
-	"""
 	finishPasskeySignIn(challenge: String!, credential: JSON!): SignedIn!
 	changePassword(current: String!, new: String!): Boolean!
-	"""
-	The first half of adding a passkey to your account.
-	"""
 	startPasskeyRegistration(name: String): PasskeyChallenge!
-	"""
-	The second half: the new credential. Returns your passkeys.
-	"""
 	finishPasskeyRegistration(challenge: String!, credential: JSON!): [Passkey!]!
-	"""
-	Removes one of your passkeys. Returns your passkeys.
-	"""
 	deletePasskey(id: Int!): [Passkey!]!
 	createUser(input: NewUser!): User!
 	updateUser(id: Int!, input: UserPatch!): User!
-	"""
-	Returns the id of the account that's gone.
-	"""
 	deleteUser(id: Int!): Int!
 	setPermissionDefaults(permissions: PermissionsInput!): Permissions!
-	"""
-	Sets a picture: yours, or (for admins) someone else's. PNG, JPEG,
-	WebP or GIF, up to 512 KB.
-	"""
 	setAvatar(image: Upload!, userId: Int): User!
 	removeAvatar(userId: Int): User!
-	"""
-	Marks videos watched (or not), as if played to the end (or never started).
-	"""
 	setWatched(videoIds: [Int!]!, watched: Boolean!): [Video!]!
-	"""
-	Marks every video of a title watched (or not).
-	"""
 	setTitleWatched(id: Int!, watched: Boolean!): Title!
-	"""
-	Where you are in a video, in seconds. It counts as finished once the
-	credits roll: the last 8%, or the last 30 seconds.
-	"""
 	saveProgress(videoId: Int!, position: Float!, duration: Float!): Video!
-	"""
-	Matches a title to a provider's entry by hand.
-	"""
 	matchTitle(id: Int!, provider: Provider!, providerId: String!): Title!
-	"""
-	Fetches a title's details again (or looks it up again, if it's unmatched).
-	"""
 	refreshTitle(id: Int!): Title!
-	"""
-	Starts watching a video with others.
-	"""
 	startRoom(input: NewRoom!): Room!
-	"""
-	Queues a clip to render.
-	"""
 	createClip(input: NewClip!): Clip!
-	"""
-	Takes a screenshot: it's there to show once this answers.
-	"""
 	takeScreenshot(input: NewScreenshot!): Clip!
 	updateClip(id: Int!, input: ClipPatch!): Clip!
-	"""
-	Returns the id of the clip that's gone.
-	"""
 	deleteClip(id: Int!): Int!
-	"""
-	Renders a clip again: one whose render was dropped (anyone who can
-	watch it), or one that failed (whoever may manage it).
-	"""
 	renderClip(id: Int!): Clip!
-	"""
-	Stops a render.
-	"""
 	cancelClipRender(id: Int!): Clip!
-	"""
-	Sends a clip to people.
-	"""
 	shareClip(id: Int!, users: [Int!]!): Clip!
-	"""
-	Takes a clip back from someone it was sent to.
-	"""
 	unshareClip(id: Int!, userId: Int!): Clip!
-	"""
-	Takes a clip sent to you off your list. Returns its id.
-	"""
 	hideClip(id: Int!): Int!
-	"""
-	Drops every render. The clips stay, and render again when opened.
-	Returns how many were dropped. Admins only.
-	"""
 	dropClipRenders: Int!
-	"""
-	Marks notifications read: just these, or all of them.
-	"""
 	markNotificationsRead(ids: [Int!]): Inbox!
-	"""
-	Deletes one notification, or all of them.
-	"""
 	deleteNotifications(id: Int): Inbox!
-	"""
-	Replaces whole sections of config.toml; the rest stay as they are.
-	"""
 	updateSettings(patch: ConfigPatch!): Settings!
-	"""
-	Replaces config.toml with `text`, if it's valid.
-	"""
 	replaceConfig(text: String!): Settings!
 	addLibrary(input: LibraryInput!): Settings!
-	"""
-	Changes the library called `name`. Renaming it keeps its titles and
-	who may see it.
-	"""
 	updateLibrary(name: String!, input: LibraryInput!): Settings!
-	"""
-	Takes a library out of config.toml. Its files stay where they are.
-	"""
 	removeLibrary(name: String!): Settings!
-	"""
-	Scans a library for changes now, or every library.
-	"""
 	scan(library: String): Boolean!
 	"""
-	Starts downloading a release, for episodes of a managed show (or on its own).
+	Creates a scheme, or changes one you may edit.
 	"""
+	saveScheme(id: String, input: SchemeInput!): ColorScheme!
+	"""
+	An editable copy of any scheme you can see.
+	"""
+	forkScheme(id: String!): ColorScheme!
+	importScheme(code: String!, name: String): ColorScheme!
+	deleteScheme(id: String!): String!
+	"""
+	Shares one of your schemes with everyone here, or takes it back.
+	"""
+	publishScheme(id: String!, published: Boolean!): ColorScheme!
+	setAppearance(input: AppearanceSettingsInput!): Appearance!
+	"""
+	What everyone sees unless they pick something else, signed-out pages included.
+	"""
+	setServerAppearance(input: ServerAppearanceInput!): ServerAppearance!
 	grabRelease(release: ReleaseInput!, seriesId: Int, episodes: [EpisodeNumberInput!]! = []): Download!
 	pauseDownloads(ids: [Int!]!): [Download!]!
 	resumeDownloads(ids: [Int!]!): [Download!]!
-	"""
-	Checks what's on disk against the torrent again.
-	"""
 	recheckDownloads(ids: [Int!]!): [Download!]!
-	"""
-	Imports a finished download into its library again.
-	"""
 	importDownload(id: Int!): Download!
-	"""
-	Removes a download. With `deleteFiles`, its copy in the download
-	folder goes too; the library copy is never touched.
-	"""
-	removeDownload(id: Int!, deleteFiles: Boolean! = false): Int!
-	"""
-	Follows a show that isn't in the library yet.
-	"""
+	removeDownloads(ids: [Int!]!, deleteFiles: Boolean! = false): [Int!]!
+	deleteDownloaded(seriesId: Int!, season: Int): UndoReport!
+	lookForAgain(seriesId: Int!, season: Int, episode: Int): Boolean!
 	addSeries(input: NewSeries!): Series!
-	"""
-	Makes a title in a library a managed show (unmonitored until you say otherwise).
-	"""
 	manageTitle(titleId: Int!): Series!
 	updateSeries(id: Int!, patch: SeriesPatch!): Series!
-	"""
-	Stops managing a show. Its files stay exactly where they are. Returns its id.
-	"""
 	removeSeries(id: Int!): Int!
-	"""
-	Fetches a show's airing schedule again.
-	"""
 	refreshSeriesSchedule(id: Int!): Series!
 	addSource(input: SourceInput!): Settings!
-	"""
-	Changes the source called `name`. Renaming it keeps every show that
-	picked it pointing at it.
-	"""
 	updateSource(name: String!, input: SourceInput!): Settings!
 	removeSource(name: String!): Settings!
 	addProfile(input: ProfileInput!): Settings!
-	"""
-	Changes the profile called `name`; shows using it follow a rename.
-	"""
 	updateProfile(name: String!, input: ProfileInput!): Settings!
 	removeProfile(name: String!): Settings!
-	"""
-	Looks through every library for badly named files again.
-	"""
 	refreshRenameSuggestions: Boolean!
-	"""
-	Carries out rename suggestions (with their subtitles and artwork).
-	"""
 	applyRenames(ids: [Int!]!): AppliedRenames!
 	dismissRenames(ids: [Int!]!): Boolean!
-	"""
-	Reverses a batch of changes to libraries, newest first.
-	"""
 	undoFileChanges(batch: String!): UndoReport!
-	"""
-	Asks for a show to be added (approved right away for some people).
-	"""
 	createRequest(input: NewRequest!): Request!
-	"""
-	Approves a request: its show is added (to `library`, if it didn't say).
-	"""
 	approveRequest(id: Int!, library: String): Request!
-	"""
-	Declines a request, maybe saying why.
-	"""
 	declineRequest(id: Int!, note: String): Request!
-	"""
-	Withdraws a request (yours, while it's waiting), or deletes one if
-	you manage requests. Returns its id.
-	"""
 	deleteRequest(id: Int!): Int!
 }
 
 type NamingPreview {
-	"""
-	Paths as they'd come out, folder included.
-	"""
 	samples: [String!]!
-	"""
-	What's wrong with the template.
-	"""
 	error: String
 }
 
-"""
-A show's (or library's) naming, and how sure we are about it.
-"""
 type NamingStyle {
 	file: String!
 	folder: String!
-	"""
-	Share of files that follow `file` (0..1); None when it's the default.
-	"""
 	agreement: Float
 	samples: Int!
 }
@@ -1275,37 +729,21 @@ type NamingStyle {
 type NetworkConfig {
 	host: String!
 	port: Int!
-	"""
-	Origins allowed to call the API from another site. `["*"]` allows any.
-	"""
 	cors: [String!]!
 }
 
 input NetworkConfigInput {
 	host: String!
 	port: Int!
-	"""
-	Origins allowed to call the API from another site. `["*"]` allows any.
-	"""
 	cors: [String!]!
 }
 
-"""
-A clip: what to cut, and how.
-"""
 input NewClip {
 	videoId: Int!
 	recipe: RecipeInput!
 	name: String! = ""
 	public: Boolean! = false
-	"""
-	People to send it to right away.
-	"""
 	recipients: [Int!]! = []
-	"""
-	Clipping from a watch-together room: what's on there, even from a
-	library you can't browse.
-	"""
 	room: String
 }
 
@@ -1321,27 +759,15 @@ input NewRequest {
 
 input NewRoom {
 	videoId: Int!
-	"""
-	Where to start, in seconds.
-	"""
 	position: Float! = 0.0
 	paused: Boolean! = false
 	tracks: TracksInput! = {audio: null, audioLanguage: null, subtitle: null, subtitleLanguage: null}
-	"""
-	Whether anyone with the link can join, without an account.
-	"""
 	public: Boolean! = false
 }
 
 input NewScreenshot {
 	videoId: Int!
-	"""
-	Seconds into the video.
-	"""
 	at: Float!
-	"""
-	A subtitle track to burn in.
-	"""
 	subtitles: String
 	room: String
 }
@@ -1354,9 +780,6 @@ input NewSeries {
 	year: Int
 	poster: String
 	overview: String
-	"""
-	The server's default when left out.
-	"""
 	monitor: Monitor
 	profile: String
 }
@@ -1370,82 +793,53 @@ input NewUser {
 
 type NextUp {
 	video: Video!
-	"""
-	Picking up where it was left, rather than starting.
-	"""
 	resuming: Boolean!
 }
 
 type Notification {
 	id: Int!
 	kind: NotificationKind!
-	"""
-	Sits in the UI's pill until it's read.
-	"""
 	priority: Boolean!
 	title: String!
 	body: String
 	image: String
-	"""
-	A path in the UI.
-	"""
 	link: String
-	"""
-	Whoever caused it.
-	"""
 	actor: User
 	createdAt: Int!
-	"""
-	When it stops being relevant.
-	"""
 	expiresAt: Int
 	readAt: Int
 }
 
 enum NotificationKind {
-	"""
-	An episode of a show you watch aired.
-	"""
 	AIRED
-	"""
-	New episodes landed in the library.
-	"""
 	READY
-	"""
-	Someone wants to watch with you.
-	"""
 	INVITE
-	"""
-	Someone asked for a show.
-	"""
 	REQUEST
 	REQUEST_APPROVED
 	REQUEST_DECLINED
-	"""
-	Someone sent you a clip or a screenshot.
-	"""
 	CLIP
-	"""
-	A clip of yours finished rendering.
-	"""
 	CLIP_READY
 	OTHER
 }
 
-"""
-Something you should know about.
-"""
 type NotificationReceived {
 	notification: Notification!
 }
 
-"""
-How a show's episodes are numbered in releases.
-"""
 enum Numbering {
 	AUTO
 	SEASONAL
 	ABSOLUTE
+}
+
+type Palette {
+	seeds: [Token!]!
+	overrides: [Token!]!
+	"""
+	Every colour, derived from the seeds with the overrides applied.
+	"""
+	tokens: [Token!]!
+	warnings: [ContrastWarning!]!
 }
 
 type Passkey {
@@ -1455,23 +849,11 @@ type Passkey {
 	lastUsed: Int
 }
 
-"""
-A WebAuthn challenge, for `navigator.credentials`.
-"""
 type PasskeyChallenge {
-	"""
-	Send it back with the credential.
-	"""
 	challenge: String!
-	"""
-	The options to pass to the browser, as they are.
-	"""
 	options: JSON!
 }
 
-"""
-One person's departures from the defaults. `None` follows the default.
-"""
 type PermissionOverrides {
 	allLibraries: Boolean
 	libraries: [String!]
@@ -1491,9 +873,6 @@ type PermissionOverrides {
 	clipLinks: Boolean
 }
 
-"""
-One person's departures from the defaults. `None` follows the default.
-"""
 input PermissionOverridesInput {
 	allLibraries: Boolean
 	libraries: [String!]
@@ -1514,223 +893,72 @@ input PermissionOverridesInput {
 }
 
 type Permissions {
-	"""
-	Every library, including ones added later.
-	"""
 	allLibraries: Boolean!
-	"""
-	The libraries they can see, when not `all_libraries`.
-	"""
 	libraries: [String!]!
-	"""
-	Ask for shows to be added.
-	"""
 	request: Boolean!
-	"""
-	Their requests are approved right away.
-	"""
 	autoApprove: Boolean!
-	"""
-	Requests they can have waiting at once; 0 is no limit.
-	"""
 	requestLimit: Int!
-	"""
-	See everyone's requests, and approve or decline them.
-	"""
 	manageRequests: Boolean!
-	"""
-	Add shows directly, choose what's monitored, search for episodes.
-	"""
 	manageShows: Boolean!
-	"""
-	See and control downloads.
-	"""
 	downloads: Boolean!
-	"""
-	Fix what a title was matched to, and refresh its details.
-	"""
 	editMetadata: Boolean!
-	"""
-	Start watching with others, and invite people on this server.
-	"""
 	watchTogether: Boolean!
-	"""
-	Make links anyone can watch from, without an account.
-	"""
 	shareLinks: Boolean!
-	"""
-	Make clips.
-	"""
 	clip: Boolean!
-	"""
-	The longest clip they can make, in seconds; 0 is no limit.
-	"""
 	clipMaxLength: Int!
-	"""
-	Rendered clips they can keep; 0 is no limit. Past it, the least
-	recently watched render goes (the clip stays, and renders again).
-	"""
 	clipLimit: Int!
-	"""
-	Space their rendered clips can take, in MB; 0 is no limit.
-	"""
 	clipStorage: Int!
-	"""
-	Give clips links anyone can open, without an account.
-	"""
 	clipLinks: Boolean!
 }
 
 input PermissionsInput {
-	"""
-	Every library, including ones added later.
-	"""
 	allLibraries: Boolean!
-	"""
-	The libraries they can see, when not `all_libraries`.
-	"""
 	libraries: [String!]!
-	"""
-	Ask for shows to be added.
-	"""
 	request: Boolean!
-	"""
-	Their requests are approved right away.
-	"""
 	autoApprove: Boolean!
-	"""
-	Requests they can have waiting at once; 0 is no limit.
-	"""
 	requestLimit: Int!
-	"""
-	See everyone's requests, and approve or decline them.
-	"""
 	manageRequests: Boolean!
-	"""
-	Add shows directly, choose what's monitored, search for episodes.
-	"""
 	manageShows: Boolean!
-	"""
-	See and control downloads.
-	"""
 	downloads: Boolean!
-	"""
-	Fix what a title was matched to, and refresh its details.
-	"""
 	editMetadata: Boolean!
-	"""
-	Start watching with others, and invite people on this server.
-	"""
 	watchTogether: Boolean!
-	"""
-	Make links anyone can watch from, without an account.
-	"""
 	shareLinks: Boolean!
-	"""
-	Make clips.
-	"""
 	clip: Boolean!
-	"""
-	The longest clip they can make, in seconds; 0 is no limit.
-	"""
 	clipMaxLength: Int!
-	"""
-	Rendered clips they can keep; 0 is no limit. Past it, the least
-	recently watched render goes (the clip stays, and renders again).
-	"""
 	clipLimit: Int!
-	"""
-	Space their rendered clips can take, in MB; 0 is no limit.
-	"""
 	clipStorage: Int!
-	"""
-	Give clips links anyone can open, without an account.
-	"""
 	clipLinks: Boolean!
 }
 
 type PopularTitle {
 	title: Title!
-	"""
-	How many people here have been watching it.
-	"""
 	people: Int!
 }
 
-"""
-What a good release looks like.
-"""
 type Profile {
 	name: String!
-	"""
-	Allowed resolutions, best first ("2160p", "1080p", "720p", "480p").
-	Empty allows any.
-	"""
 	resolutions: [String!]!
-	"""
-	Release groups, most preferred first.
-	"""
 	groups: [String!]!
-	"""
-	Words (or regular expressions) a release must contain...
-	"""
 	require: [String!]!
-	"""
-	...and must not.
-	"""
 	reject: [String!]!
-	"""
-	Size limits per episode, in MB.
-	"""
 	minSize: Int
 	maxSize: Int
-	"""
-	Codecs, most preferred first ("hevc", "av1", "h264").
-	"""
 	codecs: [String!]!
 	preferDualAudio: Boolean!
-	"""
-	Allow season packs (used to fill in missing episodes).
-	"""
 	batches: Boolean!
 	minSeeders: Int!
 }
 
-"""
-What a good release looks like.
-"""
 input ProfileInput {
 	name: String!
-	"""
-	Allowed resolutions, best first ("2160p", "1080p", "720p", "480p").
-	Empty allows any.
-	"""
 	resolutions: [String!]!
-	"""
-	Release groups, most preferred first.
-	"""
 	groups: [String!]!
-	"""
-	Words (or regular expressions) a release must contain...
-	"""
 	require: [String!]!
-	"""
-	...and must not.
-	"""
 	reject: [String!]!
-	"""
-	Size limits per episode, in MB.
-	"""
 	minSize: Int
 	maxSize: Int
-	"""
-	Codecs, most preferred first ("hevc", "av1", "h264").
-	"""
 	codecs: [String!]!
 	preferDualAudio: Boolean!
-	"""
-	Allow season packs (used to fill in missing episodes).
-	"""
 	batches: Boolean!
 	minSeeders: Int!
 }
@@ -1744,9 +972,6 @@ type ProviderTitle {
 	provider: Provider!
 	id: String!
 	name: String!
-	"""
-	The romaji title, when it isn't the one in `name`.
-	"""
 	romaji: String
 	year: Int
 	poster: String
@@ -1754,229 +979,117 @@ type ProviderTitle {
 }
 
 type Query {
-	"""
-	Whoever is signed in; null when nobody is.
-	"""
 	viewer: User
 	server: Server!
-	"""
-	Everyone on this server, oldest account first.
-	"""
 	users: [User!]!
 	user(id: Int!): User
-	"""
-	What people can do unless they have overrides. Admins only.
-	"""
 	permissionDefaults: Permissions!
-	"""
-	The libraries you can see.
-	"""
 	libraries: [Library!]!
 	library(name: String!): Library
 	title(id: Int!): Title
+	"""
+	The titles among `ids` that still exist and are visible, in the given order.
+	"""
+	titles(ids: [Int!]!): [Title!]!
 	video(id: Int!): Video
 	home: Home!
-	"""
-	Titles and episodes, fuzzily: "rezero" finds "Re:ZERO".
-	"""
 	search(query: String!): SearchResults!
-	"""
-	Shows to add (or request) for a library (the first you can see with a
-	provider, by default): search results, or what's popular with nothing typed.
-	"""
 	discover(library: String, query: String): Discovery!
-	"""
-	Shelves of recommendations: like what you watch, and like what people here watch.
-	"""
+	airedEpisodes(provider: Provider!, id: String!): Int!
 	forYou(library: String): ForYou!
-	"""
-	A room, if you may be in it. Public rooms need no account.
-	"""
 	room(code: String!): Room!
 	clips(scope: ClipScope! = MINE): [Clip!]!
-	"""
-	A clip that's yours, was sent to you, or (for admins) anyone's.
-	"""
 	clip(id: Int!): Clip
 	clipAllowance: ClipAllowance!
 	clipStorage: ClipStorage!
-	"""
-	Your notifications.
-	"""
 	notifications(limit: Int! = 60): Inbox!
 	settings: Settings!
-	"""
-	The folders in `path` (your home folder by default), for picking a
-	library's folder.
-	"""
 	folders(path: String): FolderListing!
-	"""
-	Files the scanner couldn't make sense of, and why.
-	"""
 	skippedFiles: [SkippedFile!]!
 	"""
-	Downloads going on, and the last two weeks' worth.
+	How tinystream should look right now. Works signed out too, with the server's defaults.
 	"""
+	appearance: Appearance!
+	appearanceSettings: AppearanceSettings!
+	serverAppearance: ServerAppearance!
+	"""
+	Built-ins, then published schemes, then your own.
+	"""
+	colorSchemes: [ColorScheme!]!
+	colorScheme(id: String!): ColorScheme
+	"""
+	What a code holds, to look at before importing it.
+	"""
+	decodeScheme(code: String!): DecodedScheme!
 	downloads: [Download!]!
 	download(id: Int!): Download
 	downloadEngine: DownloadEngine!
-	"""
-	Episodes airing between `from` and `to` (Unix seconds; a week back
-	and two ahead by default), in the libraries you can see.
-	"""
 	calendar(from: Int, to: Int): [CalendarEntry!]!
-	"""
-	Episodes being searched for, downloading, or missing.
-	"""
 	wanted: [WantedEpisode!]!
-	"""
-	Every managed show you can see, by title.
-	"""
 	allSeries: [Series!]!
 	series(id: Int!): Series
-	"""
-	What a URL turns out to be as a source: Torznab or RSS, and a sample.
-	"""
 	detectSource(url: String!, apiKey: String): DetectedSource!
-	"""
-	Fixes for badly named files, waiting for a decision.
-	"""
 	renameSuggestions: [RenameSuggestion!]!
-	"""
-	Everything tinystream changed in libraries, newest first, by batch.
-	"""
 	fileHistory: [HistoryBatch!]!
-	"""
-	Requests: everyone's, for people who manage them; otherwise your own.
-	"""
 	requests: [Request!]!
 }
 
-"""
-What a clip is: a range of a video, its tracks, and its quality.
-"""
 input RecipeInput {
-	"""
-	Seconds into the video.
-	"""
 	start: Float!
 	end: Float!
-	"""
-	The audio track's index.
-	"""
 	audio: Int
-	"""
-	A subtitle track to burn in.
-	"""
 	subtitles: String
-	"""
-	1080, 720 or 480.
-	"""
 	height: Int!
 	halfRate: Boolean! = false
 }
 
-"""
-One result from a source.
-"""
 type Release {
 	title: String!
 	source: String!
-	"""
-	A .torrent URL or a magnet link.
-	"""
 	link: String!
 	infoHash: String
 	size: Int
 	seeders: Int
 	leechers: Int
-	"""
-	Unix time.
-	"""
 	published: Int
-	"""
-	The release's page on the source, for people.
-	"""
 	page: String
 }
 
-"""
-What a release says about its quality and origin.
-"""
 type ReleaseAttributes {
 	group: String
-	"""
-	Vertical lines: 480, 720, 1080, 2160.
-	"""
 	resolution: Int
-	"""
-	h264 | hevc | av1
-	"""
 	codec: String
-	"""
-	web | bluray | dvd | tv
-	"""
 	source: String
 	dualAudio: Boolean!
-	"""
-	2 for a "v2" re-release.
-	"""
 	version: Int!
 	proper: Boolean!
 	tenBit: Boolean!
 }
 
-"""
-A release, and what we make of it for one show.
-"""
 type ReleaseCandidate {
 	release: Release!
 	attributes: ReleaseAttributes!
-	"""
-	The episodes it holds, when it's recognizably this show.
-	"""
 	episodes: [EpisodeNumber!]!
-	"""
-	A season pack, or a range of episodes.
-	"""
 	batch: Boolean!
 	verdict: Verdict!
 }
 
-"""
-One result from a source.
-"""
 input ReleaseInput {
 	title: String!
 	source: String!
-	"""
-	A .torrent URL or a magnet link.
-	"""
 	link: String!
 	infoHash: String
 	size: Int
 	seeders: Int
 	leechers: Int
-	"""
-	Unix time.
-	"""
 	published: Int
-	"""
-	The release's page on the source, for people.
-	"""
 	page: String
 }
 
 type RenameSuggestion {
 	id: Int!
 	library: String!
-	"""
-	Whether the library lets tinystream write there.
-	"""
 	managed: Boolean!
-	"""
-	The library's folder, which `src` and `dst` are relative to.
-	"""
 	root: String
 	src: String!
 	dst: String!
@@ -1986,9 +1099,6 @@ type RenameSuggestion {
 
 type Request {
 	id: Int!
-	"""
-	Whoever asked.
-	"""
 	user: User
 	provider: Provider!
 	providerId: String!
@@ -2000,19 +1110,10 @@ type Request {
 	state: RequestState!
 	seriesId: Int
 	title: Title
-	"""
-	Why, from whoever asked (or why not, from whoever declined).
-	"""
 	note: String
 	createdAt: Int!
 	decidedAt: Int
-	"""
-	Aired episodes in the library.
-	"""
 	have: Int
-	"""
-	Aired episodes.
-	"""
 	aired: Int
 }
 
@@ -2023,32 +1124,18 @@ enum RequestState {
 }
 
 type RequestsConfig {
-	"""
-	How approved requests are monitored.
-	"""
 	monitor: Monitor!
 }
 
 input RequestsConfigInput {
-	"""
-	How approved requests are monitored.
-	"""
 	monitor: Monitor!
 }
 
-"""
-One step of the search schedule after an episode airs: search every
-`every` until `until` has passed since it aired.
-"""
 type RetryStep {
 	every: Duration!
 	until: Duration!
 }
 
-"""
-One step of the search schedule after an episode airs: search every
-`every` until `until` has passed since it aired.
-"""
 input RetryStepInput {
 	every: Duration!
 	until: Duration!
@@ -2056,44 +1143,21 @@ input RetryStepInput {
 
 type Room {
 	code: String!
-	"""
-	What's being watched, as the host sees it.
-	"""
 	title: Title!
-	"""
-	A video in the room's title: what's on now, or `id`.
-	"""
 	video(id: Int): Video
 	signedIn: Boolean!
 	isHost: Boolean!
-	"""
-	Whether you may give the room a public link.
-	"""
 	canShare: Boolean!
 	canInvite: Boolean!
 }
 
 type ScanConfig {
-	"""
-	Rescan when files change on disk.
-	"""
 	watch: Boolean!
-	"""
-	Also do a full rescan this often (useful for network mounts where
-	change notifications don't work), e.g. "6h".
-	"""
 	interval: Duration
 }
 
 input ScanConfigInput {
-	"""
-	Rescan when files change on disk.
-	"""
 	watch: Boolean!
-	"""
-	Also do a full rescan this often (useful for network mounts where
-	change notifications don't work), e.g. "6h".
-	"""
 	interval: Duration
 }
 
@@ -2108,23 +1172,59 @@ type ScanStarted {
 	library: String!
 }
 
+"""
+Which schemes to use, by id: a built-in's name or a saved scheme's number.
+"""
+type SchemeChoice {
+	mode: SchemeMode!
+	single: String!
+	light: String!
+	dark: String!
+}
+
+"""
+Which schemes to use, by id: a built-in's name or a saved scheme's number.
+"""
+input SchemeChoiceInput {
+	mode: SchemeMode!
+	single: String!
+	light: String!
+	dark: String!
+}
+
+input SchemeInput {
+	name: String!
+	"""
+	Every seed, opaque.
+	"""
+	seeds: [TokenInput!]!
+	overrides: [TokenInput!]!
+}
+
+enum SchemeMode {
+	SINGLE
+	"""
+	One scheme for the system's light mode, one for its dark mode.
+	"""
+	SYSTEM
+}
+
+type SchemeOrigin {
+	"""
+	Gone when the parent was deleted or you can't see it any more.
+	"""
+	id: String
+	name: String!
+}
+
 type SearchResults {
 	titles: [Title!]!
-	"""
-	Episodes whose own title matches.
-	"""
 	videos: [Video!]!
 }
 
 type Season {
 	number: Int!
-	"""
-	"Season 2", or "Specials".
-	"""
 	name: String!
-	"""
-	Its own title, when it has one.
-	"""
 	title: String
 	overview: String
 	poster: String
@@ -2132,13 +1232,7 @@ type Season {
 }
 
 enum SeedAction {
-	"""
-	Stop the torrent but keep it (and its files) around.
-	"""
 	PAUSE
-	"""
-	Remove the torrent and its copy in the download folder. The library copy stays.
-	"""
 	REMOVE
 }
 
@@ -2147,30 +1241,16 @@ type SeedGoal {
 	seconds: Int
 }
 
-"""
-When to stop seeding. Whichever limit is reached first wins; with none
-set, a torrent seeds forever.
-"""
 type Seeding {
 	ratio: Float
 	time: Duration
-	"""
-	Stop when nobody has downloaded from us for this long.
-	"""
 	idle: Duration
 	then: SeedAction!
 }
 
-"""
-When to stop seeding. Whichever limit is reached first wins; with none
-set, a torrent seeds forever.
-"""
 input SeedingInput {
 	ratio: Float
 	time: Duration
-	"""
-	Stop when nobody has downloaded from us for this long.
-	"""
 	idle: Duration
 	then: SeedAction!
 }
@@ -2178,22 +1258,10 @@ input SeedingInput {
 type Series {
 	id: Int!
 	monitor: Monitor!
-	"""
-	Airing, finished, and so on, as the provider says.
-	"""
 	status: String
-	"""
-	The next episode to air.
-	"""
 	next: SeriesEpisode
-	"""
-	The show in the library, once its folder has been scanned.
-	"""
 	title: Title
 	library: String!
-	"""
-	Whether its library lets tinystream write there.
-	"""
 	managed: Boolean!
 	path: String!
 	name: String!
@@ -2202,65 +1270,24 @@ type Series {
 	overview: String
 	provider: Provider
 	providerId: String
-	"""
-	Its own profile; null follows the library's.
-	"""
 	profile: String
-	"""
-	The profile it actually uses.
-	"""
 	effectiveProfile: String!
-	"""
-	Sources it's searched on, best first; empty is every source.
-	"""
 	sources: [String!]!
-	"""
-	Release groups it prefers, best first.
-	"""
 	groups: [String!]!
-	"""
-	Other names releases use for it, added by hand.
-	"""
 	aliases: [String!]!
-	"""
-	Other names the provider knows it by.
-	"""
 	knownAs: [String!]!
 	numbering: Numbering!
-	"""
-	Its own naming template; null follows its files (or its library's).
-	"""
 	naming: String
-	"""
-	The naming new files get.
-	"""
 	style: NamingStyle!
-	"""
-	Its own seeding rules; null follows the source's or the server's.
-	"""
 	seeding: Seeding
-	"""
-	When its schedule was last fetched.
-	"""
 	scheduleAt: Int
 	addedAt: Int!
 	counts: EpisodeCounts!
 	episodes: [SeriesEpisode!]!
-	"""
-	Releases for episodes of a season (the whole season when `episodes`
-	is empty) on its sources, judged by its profile. `query` searches
-	for that instead.
-	"""
 	releases(season: Int!, episodes: [Int!]! = [], query: String): [ReleaseCandidate!]!
-	"""
-	What a naming template would make of a few of its episodes.
-	"""
 	namingPreview(file: String!, folder: String): NamingPreview!
 }
 
-"""
-A managed show's settings, schedule or episodes changed.
-"""
 type SeriesChanged {
 	seriesId: Int!
 }
@@ -2268,9 +1295,6 @@ type SeriesChanged {
 type SeriesEpisode {
 	season: Int!
 	episode: Int!
-	"""
-	Its number counting from the first episode, for shows numbered that way.
-	"""
 	absolute: Int
 	name: String
 	airAt: Int
@@ -2280,15 +1304,9 @@ type SeriesEpisode {
 	searchedAt: Int
 	nextSearch: Int
 	downloadId: Int
-	"""
-	The file in the library, when there is one.
-	"""
 	video: Video
 }
 
-"""
-Changes to a managed show. Left out stays as it is; null clears it.
-"""
 input SeriesPatch {
 	monitor: Monitor
 	profile: String
@@ -2301,24 +1319,22 @@ input SeriesPatch {
 }
 
 type Server {
-	"""
-	Nobody has an account yet: the first one made is the admin.
-	"""
 	setupRequired: Boolean!
 	version: String!
-	"""
-	Whether clipping is turned on.
-	"""
 	clips: Boolean!
-	"""
-	Whether this build downloads (and manages shows).
-	"""
 	downloads: Boolean!
-	"""
-	Sources that are turned on.
-	"""
 	sources: Int!
 	transcoding: Transcoding!
+}
+
+type ServerAppearance {
+	colors: SchemeChoice!
+	style: ComponentStyle!
+}
+
+input ServerAppearanceInput {
+	colors: SchemeChoiceInput!
+	style: ComponentStyle!
 }
 
 type ServerPaths {
@@ -2340,13 +1356,7 @@ type Settings {
 	sources: [Source!]!
 	profiles: [Profile!]!
 	libraries: [ConfiguredLibrary!]!
-	"""
-	config.toml, as written.
-	"""
 	raw: String!
-	"""
-	Why the last change to config.toml wasn't applied.
-	"""
 	error: String
 	paths: ServerPaths!
 }
@@ -2358,20 +1368,11 @@ type Shelf {
 
 type SignedIn {
 	user: User!
-	"""
-	For clients that don't keep cookies: send it as `Authorization: Bearer <token>`.
-	"""
 	token: String!
 }
 
 type Similar {
-	"""
-	What the provider recommends alongside the title.
-	"""
 	recommendations: [DiscoverResult!]!
-	"""
-	What else the people here who watched it have been watching.
-	"""
 	alsoWatched: [Title!]!
 }
 
@@ -2381,78 +1382,35 @@ type SkippedFile {
 	reason: String!
 }
 
-"""
-Somewhere releases come from. tinystream ships with none.
-"""
 type Source {
 	name: String!
 	kind: SourceKind!
-	"""
-	Torznab: the API endpoint. RSS: the search URL, with `{query}`.
-	"""
 	url: String!
-	"""
-	RSS: the feed of new releases, checked regularly. Defaults to the
-	search URL with an empty query.
-	"""
 	feed: String
 	apiKey: String
-	"""
-	Torznab categories to search, e.g. [5070] for anime.
-	"""
 	categories: [Int!]!
 	enabled: Boolean!
 	downloadPath: String
-	"""
-	Overrides [downloads.seeding] for torrents from here (private
-	trackers usually have their own rules).
-	"""
 	seeding: Seeding
 }
 
-"""
-Somewhere releases come from. tinystream ships with none.
-"""
 input SourceInput {
 	name: String!
 	kind: SourceKind!
-	"""
-	Torznab: the API endpoint. RSS: the search URL, with `{query}`.
-	"""
 	url: String!
-	"""
-	RSS: the feed of new releases, checked regularly. Defaults to the
-	search URL with an empty query.
-	"""
 	feed: String
 	apiKey: String
-	"""
-	Torznab categories to search, e.g. [5070] for anime.
-	"""
 	categories: [Int!]!
 	enabled: Boolean! = true
 	downloadPath: String
-	"""
-	Overrides [downloads.seeding] for torrents from here (private
-	trackers usually have their own rules).
-	"""
 	seeding: SeedingInput
 }
 
 enum SourceKind {
-	"""
-	A Torznab API (many trackers speak it natively).
-	"""
 	TORZNAB
-	"""
-	An RSS feed with a search URL, `{query}` marking where the search goes.
-	"""
 	RSS
 }
 
-"""
-Whether the video a clip was cut from is still there, and still the same.
-"""
 enum SourceStatus {
 	OK
 	CHANGED
@@ -2460,106 +1418,45 @@ enum SourceStatus {
 }
 
 type Subscription {
-	"""
-	Everything that happens on the server that you should hear about.
-	"""
 	events: Event!
 }
 
 type SubtitleTrack {
-	"""
-	`s<stream index>` for embedded tracks, `x<n>` for files next to the video.
-	"""
 	id: String!
 	codec: String!
 	language: String
 	title: String
 	default: Boolean!
 	forced: Boolean!
-	"""
-	Image subtitles (PGS, VobSub) can't be rendered in the browser yet.
-	"""
 	supported: Boolean!
 }
 
 type Title {
 	id: Int!
 	kind: TitleKind!
-	"""
-	The library it's in.
-	"""
 	library: String!
 	name: String!
 	year: Int
-	"""
-	Your own artwork next to the files first, then the provider's.
-	"""
 	poster: String
 	backdrop: String
 	overview: String
 	genres: [String!]!
-	"""
-	Out of 10.
-	"""
 	rating: Float
-	"""
-	Where it is on disk; only admins see this.
-	"""
 	path: String
 	matchState: MatchState!
-	"""
-	Where its details come from.
-	"""
 	provider: Provider
-	"""
-	Its id at the provider.
-	"""
 	providerId: String
-	"""
-	Where its library looks for details.
-	"""
 	libraryProvider: Provider
-	"""
-	Videos (episodes, or 1 for a movie) you've finished.
-	"""
 	watchedCount: Int!
 	videoCount: Int!
-	"""
-	How far (0 to 1) into the video you're in the middle of, if any.
-	"""
 	progress: Float
-	"""
-	Unwatched episodes added in the last few days.
-	"""
 	freshCount: Int!
-	"""
-	Every video, in order: seasons, then specials.
-	"""
 	videos: [Video!]!
-	"""
-	A movie's video.
-	"""
 	movie: Video
 	seasons: [Season!]!
-	"""
-	What Play does: resume the video in progress, start the one after
-	the last finished, or start from the beginning.
-	"""
 	nextUp: NextUp
-	"""
-	What the provider recommends alongside it, and what else the people
-	here who watched it have been watching.
-	"""
 	similar: Similar!
-	"""
-	Search results to match it to: for `query` (its folder name by
-	default), at `provider` (its library's by default).
-	"""
 	matchCandidates(query: String, provider: Provider): MatchCandidates!
-	"""
-	The managed show behind it, if it's one. People who don't manage
-	shows only see what's coming next.
-	"""
 	series: Series
 }
 
@@ -2568,10 +1465,17 @@ enum TitleKind {
 	MOVIE
 }
 
+type Token {
+	name: String!
+	value: String!
+}
+
+input TokenInput {
+	name: String!
+	value: String!
+}
+
 type TorrentFile {
-	"""
-	Relative to the download's folder.
-	"""
 	path: String!
 	size: Int!
 	done: Int!
@@ -2579,32 +1483,17 @@ type TorrentFile {
 
 enum TorrentStage {
 	CHECKING
-	"""
-	Fetching the torrent's metadata from peers.
-	"""
 	METADATA
 	DOWNLOADING
 	SEEDING
 }
 
-"""
-A torrent as the engine has it right now.
-"""
 type TorrentStatus {
 	stage: TorrentStage!
 	paused: Boolean!
-	"""
-	0 to 1.
-	"""
 	progress: Float!
-	"""
-	Bytes a second.
-	"""
 	downloadRate: Int!
 	uploadRate: Int!
-	"""
-	Bytes on disk.
-	"""
 	done: Int!
 	uploaded: Int!
 	ratio: Float!
@@ -2612,21 +1501,12 @@ type TorrentStatus {
 	seeds: Int!
 	seedingSeconds: Int!
 	eta: Int
-	"""
-	The piece map in up to 128 buckets, each 0–255.
-	"""
 	pieces: [Int!]!
 }
 
-"""
-Tracks everyone gets unless they pick their own.
-"""
 input TracksInput {
 	audio: Int
 	audioLanguage: String
-	"""
-	Null is off.
-	"""
 	subtitle: String
 	subtitleLanguage: String
 }
@@ -2641,13 +1521,7 @@ input TranscodeConfigInput {
 	vaapiDevice: String!
 }
 
-"""
-What transcoding can use on this server.
-"""
 type Transcoding {
-	"""
-	e.g. "Mesa Gallium driver 25.1 for AMD Radeon RX 7800 XT"
-	"""
 	vaapi: String
 	vaapiError: String
 	softwareH264: Boolean!
@@ -2663,119 +1537,56 @@ A multipart file upload
 """
 scalar Upload
 
-"""
-Someone on this server. Everyone signed in sees who's here; what they may
-do is only for them and admins.
-"""
 type User {
 	id: Int!
 	username: String!
 	isAdmin: Boolean!
-	"""
-	Their picture; null without one.
-	"""
 	avatar: String
-	"""
-	What they can do, with the defaults and their overrides applied.
-	"""
 	permissions: Permissions!
-	"""
-	Where they depart from the defaults. Admins only.
-	"""
 	overrides: PermissionOverrides!
 	createdAt: Int!
-	"""
-	Their most recent activity on any session. Admins only.
-	"""
 	lastSeen: Int
-	"""
-	Their own passkeys; only they see these.
-	"""
 	passkeys: [Passkey!]!
 }
 
-"""
-Changes to an account; what's left out stays as it is.
-"""
 input UserPatch {
 	username: String
 	isAdmin: Boolean
-	"""
-	Signs them out everywhere (unless it's you).
-	"""
 	password: String
-	"""
-	Replaces all of their overrides.
-	"""
 	permissions: PermissionOverridesInput
 }
 
-"""
-What a profile makes of a release.
-"""
 type Verdict {
 	accepted: Boolean!
 	score: Int!
-	"""
-	Why it was turned down.
-	"""
 	rejections: [String!]!
 	warnings: [String!]!
+	nonstandard: Boolean!
 }
 
 type Video {
 	id: Int!
-	"""
-	The show (or movie) it belongs to.
-	"""
 	title: Title!
 	season: Int
 	episode: Int
-	"""
-	The last episode, for files holding several.
-	"""
 	episodeEnd: Int
-	"""
-	"S01E03", "S01E03–E04" or "Special 2"; nothing for movies.
-	"""
 	label: String
-	"""
-	The episode's title.
-	"""
 	name: String
 	overview: String
-	"""
-	Its own artwork, the provider's, or a frame taken from the video.
-	"""
 	still: String!
 	airDate: String
-	"""
-	Seconds.
-	"""
 	duration: Float
-	"""
-	Where you left off, in seconds. Rooms decide this for themselves.
-	"""
 	position: Float
 	finished: Boolean
-	"""
-	When you last watched it.
-	"""
 	watchedAt: Int
 	previous: Video
 	next: Video
-	"""
-	What's in the file: its tracks, fonts and chapters.
-	"""
 	media: MediaInfo!
 }
 
 type VideoTrack {
 	index: Int!
 	codec: String!
-	"""
-	RFC 6381 string for `isTypeSupported`, when the codec can live in MP4.
-	"""
 	codecString: String
 	width: Int!
 	height: Int!
@@ -2794,9 +1605,6 @@ type WantedEpisode {
 	airAt: Int
 	aired: Boolean!
 	state: EpisodeState!
-	"""
-	Searches so far.
-	"""
 	attempts: Int!
 	searchedAt: Int
 	nextSearch: Int

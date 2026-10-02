@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { DeleteItems, useDeleteDownloaded } from '../components/downloads'
 import { ask, toast, toastError } from '../components/feedback'
 import { Empty, Page, PageTitle, Section } from '../components/Page'
 import { ListSkeleton, useArrived } from '../components/Skeleton'
@@ -79,8 +80,8 @@ const ImportDoc = graphql(`
 `)
 
 const RemoveDoc = graphql(`
-  mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {
-    removeDownload(id: $id, deleteFiles: $deleteFiles)
+  mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {
+    removeDownloads(ids: $ids, deleteFiles: $deleteFiles)
   }
 `)
 
@@ -94,6 +95,7 @@ function run(action: Action, ids: number[]): Promise<unknown> {
   return request(RecheckDoc, { ids })
 }
 import { bytes, clockTime, duration, episodeCode, relative, speed } from '../lib/downloads'
+import { useMe } from '../lib/hooks'
 import { useTitle } from '../lib/title'
 
 export const Route = createFileRoute('/downloads')({ component: DownloadsPage })
@@ -109,7 +111,7 @@ function DownloadsPage() {
   useTitle('Downloads')
   const qc = useQueryClient()
   const { data, dataUpdatedAt } = useQuery({ queryKey: ['downloads'], queryFn: async () => (await request(DownloadsQuery)).downloads, refetchInterval: POLL })
-  const { data: engine, dataUpdatedAt: engineAt } = useQuery({
+  const { data: engine, dataUpdatedAt: engineAt, isPending: enginePending } = useQuery({
     queryKey: ['engine'],
     queryFn: async () => (await request(EngineQuery)).downloadEngine,
     refetchInterval: POLL,
@@ -131,9 +133,9 @@ function DownloadsPage() {
     onError: toastError,
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
-  const arrived = useArrived(!!data)
+  const arrived = useArrived(!!data && !enginePending)
 
-  if (!data) return <ListSkeleton rows={3} />
+  if (!data || enginePending) return <ListSkeleton rows={3} />
 
   return (
     <Page arrive={arrived}>
@@ -165,8 +167,8 @@ function DownloadsPage() {
         </Squircle>
       )}
       {engine?.listenError && (
-        <Squircle radius={14} edge className="mb-6 flex items-start gap-3 bg-amber-400/10 p-4">
-          <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-300" />
+        <Squircle radius={14} edge className="mb-6 flex items-start gap-3 bg-warn-deep/10 p-4">
+          <CircleAlert className="mt-0.5 size-5 shrink-0 text-warn" />
           <p className="text-sm text-ink-2">{engine.listenError}</p>
         </Squircle>
       )}
@@ -213,10 +215,10 @@ function Traffic({ engine, stamp, downloads }: { engine: EngineOverview; stamp: 
   const shared = downloads.reduce((n, d) => n + (d.live?.uploaded ?? 0), 0)
   return (
     <Squircle radius={18} edge className="relative mb-11 overflow-hidden bg-raised">
-      <Sparkline values={down} max={max} className="absolute inset-x-0 bottom-0 h-20 w-full" />
-      <Sparkline values={up} max={max} color="var(--color-ok)" className="absolute inset-x-0 bottom-0 h-20 w-full opacity-80" />
+      <Sparkline values={down} interval={POLL} max={max} className="absolute inset-x-0 bottom-0 h-20 w-full" />
+      <Sparkline values={up} interval={POLL} max={max} color="var(--color-ok)" className="absolute inset-x-0 bottom-0 h-20 w-full opacity-80" />
       <div className="relative flex flex-wrap items-end gap-x-10 gap-y-4 p-5 pb-8">
-        <Stat label="Download" tone="text-sky-300" icon={<ArrowDown className="size-5" />} value={speed(engine.downloadRate)} />
+        <Stat label="Download" tone="text-info" icon={<ArrowDown className="size-5" />} value={speed(engine.downloadRate)} />
         <Stat label="Upload" tone="text-ok" icon={<ArrowUp className="size-5" />} value={speed(engine.uploadRate)} />
         <div className="flex-1" />
         <div className="flex gap-6 pb-1 text-xs text-ink-3 tabular">
@@ -336,6 +338,7 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
     onError: toastError,
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
+  const del = useDeletion(lead, season)
 
   const toggle = () => {
     if (open) opened.delete(key)
@@ -383,12 +386,28 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
                 {running ? <Pause className="size-4" /> : <Play className="size-4" />}
               </IconButton>
             )}
+            {del && (
+              <Popover
+                portal
+                trigger={({ toggle }) => (
+                  <IconButton label="More" onClick={toggle}>
+                    <EllipsisVertical className="size-4" />
+                  </IconButton>
+                )}
+              >
+                {(close) => (
+                  <Panel className="w-60 p-1.5">
+                    <DeleteItems target={del.target} onDelete={del.run} close={close} />
+                  </Panel>
+                )}
+              </Popover>
+            )}
           </div>
           {where === 'active' && (
             <div className="mt-3">
               <div className="relative h-1 overflow-hidden rounded-full bg-press">
                 <div
-                  className="h-full rounded-full bg-sky-300 transition-[width] ease-linear"
+                  className="h-full rounded-full bg-info transition-[width] ease-linear"
                   style={{ width: `${(progress ?? 0) * 100}%`, transitionDuration: `${POLL}ms` }}
                 />
               </div>
@@ -398,7 +417,7 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
                   {bytes(done)} of {bytes(size)}
                 </span>
                 {rate > 0 && (
-                  <span className="flex items-center gap-1 text-sky-300">
+                  <span className="flex items-center gap-1 text-info">
                     <ArrowDown className="size-3" /> <Ticker value={speed(rate)} />
                   </span>
                 )}
@@ -421,6 +440,14 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
       )}
     </div>
   )
+}
+
+/** Deleting `d`'s season or show, for people who may. */
+function useDeletion(d: Download, season: number | null) {
+  const run = useDeleteDownloaded()
+  const can = useMe()?.permissions
+  if (d.seriesId == null || !can?.manageShows || !can.downloads) return null
+  return { target: { seriesId: d.seriesId, show: d.seriesName ?? d.name, season }, run }
 }
 
 function status(d: Download): { text: string; tone: 'quiet' | 'ok' | 'live' | 'warn' | 'danger' } {
@@ -458,11 +485,13 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
   const remove = useMutation({
-    mutationFn: (files: boolean) => request(RemoveDoc, { id: d.id, deleteFiles: files }),
+    mutationFn: (files: boolean) => request(RemoveDoc, { ids: [d.id], deleteFiles: files }),
     onSuccess: (_, files) => toast({ title: files ? 'Download deleted' : 'Download removed', body: d.seriesName ?? d.name, tone: 'ok' }),
     onError: toastError,
     onSettled: () => void qc.invalidateQueries({ queryKey: ['downloads'] }),
   })
+  const seasons = [...new Set(d.episodes.map((e) => e.season))]
+  const del = useDeletion(d, seasons.length === 1 ? seasons[0] : null)
   const l = d.live
   const s = status(d)
   const downloading = d.state === 'DOWNLOADING'
@@ -479,6 +508,8 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
   const paused = d.state === 'PAUSED'
   const live = downloading || d.state === 'SEEDING' || paused
   const seeded = (d.state === 'SEEDING' || (paused && d.finishedAt)) && l
+  const removable = d.state !== 'REMOVED' && d.state !== 'DONE'
+  const importable = !!d.finishedAt && d.importState !== 'DONE' && d.state !== 'REMOVED'
 
   return (
     <div className={`group relative flex gap-3.5 overflow-hidden px-4 py-3.5 ${arrived ? 'animate-[arrive_2.4s_ease-out]' : ''}`}>
@@ -538,22 +569,22 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                 {live && (
                   <MenuItem onClick={() => (close(), act.mutate('recheck'))}>
                     <span className="flex items-center gap-2">
-                      <RefreshCw className="size-3.5" /> Check files again
+                      <RefreshCw className="size-3.5 shrink-0" /> Check files again
                     </span>
                   </MenuItem>
                 )}
-                {d.finishedAt && d.importState !== 'DONE' && d.state !== 'REMOVED' && (
+                {importable && (
                   <MenuItem onClick={() => (close(), act.mutate('import'))}>
                     <span className="flex items-center gap-2">
-                      <FolderInput className="size-3.5" /> Import into the library
+                      <FolderInput className="size-3.5 shrink-0" /> Import into the library
                     </span>
                   </MenuItem>
                 )}
-                {d.state !== 'REMOVED' && d.state !== 'DONE' && (
+                {removable && (
                   <>
                     <MenuItem onClick={() => (close(), remove.mutate(false))}>
                       <span className="flex items-center gap-2">
-                        <Trash2 className="size-3.5" /> Remove, keep its files
+                        <Trash2 className="size-3.5 shrink-0" /> Remove, keep its files
                       </span>
                     </MenuItem>
                     <MenuItem
@@ -569,13 +600,19 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                       }}
                     >
                       <span className="flex items-center gap-2 text-danger">
-                        <Trash2 className="size-3.5" /> Remove and delete download
+                        <Trash2 className="size-3.5 shrink-0" /> Remove and delete download
                       </span>
                     </MenuItem>
                   </>
                 )}
-                {(d.state === 'REMOVED' || d.state === 'DONE') && (
+                {!removable && !importable && !del && (
                   <p className="px-2.5 py-1.5 text-xs text-ink-3">Nothing to do; it's finished.</p>
+                )}
+                {del && (
+                  <>
+                    {(removable || importable) && <div className="my-1 h-px bg-line" />}
+                    <DeleteItems target={del.target} onDelete={del.run} close={close} />
+                  </>
                 )}
               </Panel>
             )}
@@ -586,10 +623,10 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
           <div className="mt-3">
             <div className="relative h-1 overflow-hidden rounded-full bg-press">
               {predicted === null ? (
-                <div className="absolute inset-y-0 w-1/3 animate-[slide_1.2s_ease-in-out_infinite] rounded-full bg-sky-300" />
+                <div className="absolute inset-y-0 w-1/3 animate-[slide_1.2s_ease-in-out_infinite] rounded-full bg-info" />
               ) : (
                 <div
-                  className="h-full rounded-full bg-sky-300 transition-[width] ease-linear"
+                  className="h-full rounded-full bg-info transition-[width] ease-linear"
                   style={{ width: `${predicted * 100}%`, transitionDuration: `${POLL}ms` }}
                 />
               )}
@@ -602,7 +639,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                   {bytes(l?.done)} of {bytes(d.size)}
                 </span>
                 {l && l.downloadRate > 0 && (
-                  <span className="flex items-center gap-1 text-sky-300">
+                  <span className="flex items-center gap-1 text-info">
                     <ArrowDown className="size-3" /> <Ticker value={speed(l.downloadRate)} />
                   </span>
                 )}
@@ -617,7 +654,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
                   </span>
                 )}
               </div>
-              {rates.length > 1 && <Sparkline values={rates} className="hidden h-7 w-32 shrink-0 sm:block" />}
+              {rates.length > 0 && <Sparkline values={rates} interval={POLL} fade className="hidden h-7 w-32 shrink-0 sm:block" />}
             </div>
           </div>
         )}

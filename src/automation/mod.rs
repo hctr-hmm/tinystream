@@ -107,9 +107,7 @@ impl ShowSearch {
         match self.matcher.matches(&release.title) {
             Some(Match { episodes, batch, nonstandard }) => {
                 let mut verdict = self.rules.judge(&release, &attributes, episodes.len() as u32, batch);
-                if nonstandard {
-                    verdict.warnings.push("Best to avoid: nonstandard episode numbering".into());
-                }
+                verdict.nonstandard = nonstandard;
 
                 if self.pinned
                     && let Some(i) = self.sources.iter().position(|s| s.name == release.source)
@@ -130,6 +128,7 @@ impl ShowSearch {
                         "Couldn't resolve this show's season and episode; choose them manually or search again".into(),
                     ],
                     warnings: Vec::new(),
+                    nonstandard: false,
                 },
             },
         }
@@ -211,7 +210,7 @@ pub fn sort(c: &mut [Candidate]) {
         b.verdict
             .accepted
             .cmp(&a.verdict.accepted)
-            .then(a.verdict.warnings.len().cmp(&b.verdict.warnings.len()))
+            .then(a.verdict.nonstandard.cmp(&b.verdict.nonstandard))
             .then(b.verdict.score.cmp(&a.verdict.score))
             .then(b.release.seeders.cmp(&a.release.seeders))
     });
@@ -220,13 +219,16 @@ pub fn sort(c: &mut [Candidate]) {
 pub fn choose(candidates: &[Candidate], wanted: &HashSet<(u32, u32)>) -> Vec<(Candidate, Vec<(u32, u32)>)> {
     let covers =
         |c: &Candidate| -> Vec<(u32, u32)> { c.episodes.iter().filter(|e| wanted.contains(e)).copied().collect() };
-    let ok: Vec<&Candidate> = candidates.iter().filter(|c| c.verdict.accepted && !covers(c).is_empty()).collect();
+    let ok: Vec<&Candidate> = candidates
+        .iter()
+        .filter(|c| c.verdict.accepted && c.verdict.warnings.is_empty() && !covers(c).is_empty())
+        .collect();
     let mut picks: Vec<(Candidate, Vec<(u32, u32)>)> = Vec::new();
     let mut left = wanted.clone();
     if wanted.len() >= 2
         && let Some(pack) = ok
             .iter()
-            .filter(|c| c.batch && c.verdict.warnings.is_empty() && covers(c).len() * 2 >= wanted.len().max(2))
+            .filter(|c| c.batch && !c.verdict.nonstandard && covers(c).len() * 2 >= wanted.len().max(2))
             .max_by_key(|c| (covers(c).len(), c.verdict.score))
     {
         let got = covers(pack);
@@ -244,7 +246,7 @@ pub fn choose(candidates: &[Candidate], wanted: &HashSet<(u32, u32)>) -> Vec<(Ca
         let best = ok
             .iter()
             .filter(|c| c.episodes.contains(&e))
-            .max_by_key(|c| (c.verdict.warnings.is_empty(), !c.batch, c.verdict.score));
+            .max_by_key(|c| (!c.verdict.nonstandard, !c.batch, c.verdict.score));
         if let Some(c) = best {
             picks.push(((*c).clone(), covers(c)));
         }
@@ -402,7 +404,7 @@ mod tests {
         let mut odd = search.judge(release("Show 4th_18 1080p"));
         assert_eq!(odd.episodes, vec![(4, 18)]);
         assert!(odd.verdict.accepted);
-        assert!(!odd.verdict.warnings.is_empty());
+        assert!(odd.verdict.nonstandard);
         odd.verdict.score = i64::MAX;
         let clear = search.judge(release("Show S04E18 720p"));
         let mut candidates = vec![odd, clear];
@@ -421,7 +423,7 @@ mod tests {
             vec![pack.clone(), search.judge(release("Show S04E18 720p")), search.judge(release("Show S04E19 720p"))];
         let picked = choose(&candidates, &wanted);
         assert_eq!(picked.len(), 2);
-        assert!(picked.iter().all(|(c, _)| c.verdict.warnings.is_empty()));
+        assert!(picked.iter().all(|(c, _)| !c.verdict.nonstandard));
         let picked = choose(&[pack], &wanted);
         assert_eq!(picked.len(), 1);
         assert_eq!(picked[0].1, vec![(4, 18), (4, 19)]);

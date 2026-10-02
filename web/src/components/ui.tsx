@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { type ComponentPropsWithoutRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { type CSSProperties, type ComponentPropsWithoutRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { createPortal } from 'react-dom'
+import { useCorners } from '../lib/theme'
 import { Squircle } from './Squircle'
 
 type ButtonProps = ComponentPropsWithoutRef<'button'> & {
@@ -12,7 +13,7 @@ type ButtonProps = ComponentPropsWithoutRef<'button'> & {
 }
 
 const variants = {
-  primary: 'bg-ink text-canvas hover:bg-white active:bg-ink/85',
+  primary: 'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent/85',
   quiet: 'bg-panel text-ink hover:bg-float active:bg-panel',
   plain: 'bg-transparent text-ink-2 hover:bg-hover hover:text-ink active:bg-press',
   danger: 'bg-transparent text-danger hover:bg-danger/10 active:bg-danger/15',
@@ -70,8 +71,8 @@ export function Spinner({ className = 'size-5' }: { className?: string }) {
 /** A floating layer: squircle panel, lit edge, deep shadow. */
 export function Panel({ className = '', children, radius = 14 }: { className?: string; children: ReactNode; radius?: number }) {
   return (
-    <div className="lift">
-      <Squircle radius={radius} edge className={`bg-float ${className}`}>
+    <div className="lift" style={{ '--lift-radius': `${radius}px` } as CSSProperties}>
+      <Squircle radius={radius} edge className={`material bg-float ${className}`}>
         {children}
       </Squircle>
     </div>
@@ -80,7 +81,7 @@ export function Panel({ className = '', children, radius = 14 }: { className?: s
 
 /**
  * Click-to-open menu anchored to a trigger. Closes on outside click or Escape.
- * `portal` renders it into the body at a fixed position, for triggers inside a
+ * `portal` renders it into the body, pinned to the page, for triggers inside a
  * masked box (like a Squircle) that would otherwise clip it.
  */
 export function Popover({
@@ -160,10 +161,10 @@ export function Popover({
         createPortal(
           <div
             ref={menu}
-            className={`fixed z-50 ${anim}`}
+            className={`absolute z-50 ${align === 'end' ? '-translate-x-full' : ''} ${side === 'top' ? '-translate-y-full' : ''} ${anim}`}
             style={{
-              ...(align === 'end' ? { right: window.innerWidth - rect.right } : { left: rect.left }),
-              ...(side === 'top' ? { bottom: window.innerHeight - rect.top + 8 } : { top: rect.bottom + 8 }),
+              left: (align === 'end' ? rect.right : rect.left) + window.scrollX,
+              top: (side === 'top' ? rect.top - 8 : rect.bottom + 8) + window.scrollY,
             }}
           >
             {children(close)}
@@ -319,7 +320,7 @@ function TipBubble({ anchor, children }: { anchor: DOMRect; children: ReactNode 
     <div
       ref={ref}
       role="tooltip"
-      className="pointer-events-none fixed z-[60] max-w-80 rounded-md break-words bg-float px-2 py-1 text-xs text-ink shadow-[0_0_0_1px_var(--color-line-strong),0_6px_16px_rgb(0_0_0/0.45)]"
+      className="pointer-events-none fixed z-[60] max-w-80 material rounded-md break-words bg-float px-2 py-1 text-xs text-ink shadow-(--shadow-tip)"
       style={pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: 'hidden' }}
     >
       <div className={pos ? 'animate-[fade_100ms_ease-out]' : undefined}>{children}</div>
@@ -489,12 +490,12 @@ export function Select<T extends string>({
         rect &&
         createPortal(
           <div
-            className={`fixed z-[60] ${up ? 'origin-bottom' : 'origin-top'} animate-[pop_120ms_ease-out]`}
+            className={`absolute z-[60] ${up ? 'origin-bottom -translate-y-full' : 'origin-top'} animate-[pop_120ms_ease-out]`}
             style={{
-              left: Math.max(margin, Math.min(rect.left, window.innerWidth - margin - rect.width)),
+              left: Math.max(margin, Math.min(rect.left, window.innerWidth - margin - rect.width)) + window.scrollX,
+              top: (up ? rect.top - 6 : rect.bottom + 6) + window.scrollY,
               minWidth: rect.width,
               maxWidth: `calc(100vw - ${margin * 2}px)`,
-              ...(up ? { bottom: window.innerHeight - rect.top + 6 } : { top: rect.bottom + 6 }),
             }}
           >
             <Panel radius={12}>
@@ -538,10 +539,10 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-5 w-8.5 shrink-0 rounded-full transition-colors ${checked ? 'bg-ink' : 'bg-press'}`}
+      className={`relative h-5 w-8.5 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-press'}`}
     >
       <span
-        className={`absolute top-0.5 size-4 rounded-full transition-all ${checked ? 'left-4 bg-canvas' : 'left-0.5 bg-ink-2'}`}
+        className={`absolute top-0.5 size-4 rounded-full transition-all ${checked ? 'left-4 bg-on-accent' : 'left-0.5 bg-ink-2'}`}
       />
     </button>
   )
@@ -552,7 +553,7 @@ export function Checkbox({ className = '', ...rest }: Omit<ComponentPropsWithout
   return (
     <span className={`relative inline-flex size-4 shrink-0 ${className}`}>
       <input type="checkbox" className="peer absolute inset-0 cursor-pointer opacity-0" {...rest} />
-      <span className="pointer-events-none flex size-4 items-center justify-center rounded-[5px] bg-press text-canvas shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors peer-checked:bg-ink peer-hover:bg-float peer-checked:peer-hover:bg-white peer-focus-visible:ring-2 peer-focus-visible:ring-ink/40 peer-disabled:opacity-40 [&>svg]:scale-50 [&>svg]:opacity-0 [&>svg]:transition-all peer-checked:[&>svg]:scale-100 peer-checked:[&>svg]:opacity-100">
+      <span className="pointer-events-none flex size-4 items-center justify-center rounded-[5px] bg-press text-on-accent inset-ring inset-ring-glow/8 transition-colors peer-checked:bg-accent peer-hover:bg-float peer-checked:peer-hover:bg-accent-hover peer-focus-visible:ring-2 peer-focus-visible:ring-ink/40 peer-disabled:opacity-40 [&>svg]:scale-50 [&>svg]:opacity-0 [&>svg]:transition-all peer-checked:[&>svg]:scale-100 peer-checked:[&>svg]:opacity-100">
         <Check className="size-3" strokeWidth={3} />
       </span>
     </span>
@@ -585,7 +586,7 @@ export function Dialog({
   // Portaled, so no masked or blurred ancestor can clip it.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-[8vh] animate-[fade_120ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-shade/50 px-4 py-[8vh] animate-[fade_120ms_ease-out]"
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className={`w-full animate-[pop_140ms_ease-out] ${width}`}>
@@ -598,7 +599,10 @@ export function Dialog({
   )
 }
 
-/** A row of mutually exclusive choices, the chosen one lifted. */
+/**
+ * A row of mutually exclusive choices, the chosen one lifted. The lift slides
+ * over to a new choice, its leading edge first, so it stretches on the way.
+ */
 export function Segmented<T extends string>({
   value,
   options,
@@ -610,18 +614,64 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void
   size?: 'sm' | 'md'
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const index = options.findIndex((o) => o.value === value)
+  const [thumb, setThumb] = useState<{ left: number; right: number; index: number; dir: number } | null>(null)
+  const corners = useCorners()
+
+  useLayoutEffect(() => {
+    const row = ref.current
+    if (!row) return
+    const place = () => {
+      const on = row.children[index + 1] as HTMLElement | undefined
+      if (!on) return setThumb(null)
+      const left = on.offsetLeft
+      const right = row.clientWidth - left - on.offsetWidth
+      // Only a new choice moves it; a label changing width just resizes it.
+      setThumb((t) => (t && t.left === left && t.right === right && t.index === index ? t : { left, right, index, dir: t && t.index !== index ? Math.sign(index - t.index) : 0 }))
+    }
+    place()
+    const ro = new ResizeObserver(place)
+    ro.observe(row)
+    return () => ro.disconnect()
+  }, [index])
+
+  const lead = '340ms cubic-bezier(0.3, 1.35, 0.5, 1)'
+  const trail = '420ms cubic-bezier(0.65, 0, 0.25, 1) 50ms'
+  const transition = !thumb?.dir ? 'none' : thumb.dir > 0 ? `left ${trail}, right ${lead}` : `left ${lead}, right ${trail}`
   return (
     <Squircle radius={11} edge className="inline-flex bg-raised p-0.5">
-      {options.map((o) => (
-        <SegmentedOption key={o.value} on={o.value === value} tip={o.title} size={size} onClick={() => onChange(o.value)}>
-          {o.label}
-        </SegmentedOption>
-      ))}
+      <div ref={ref} className="relative flex">
+        <div
+          aria-hidden
+          className="absolute inset-y-0 bg-float shadow-(--shadow-chip)"
+          style={thumb ? { left: thumb.left, right: thumb.right, borderRadius: Math.round(9 * corners.scale), transition } : { display: 'none' }}
+        />
+        {options.map((o, i) => (
+          <SegmentedOption key={o.value} on={i === index} placed={!!thumb} tip={o.title} size={size} onClick={() => onChange(o.value)}>
+            {o.label}
+          </SegmentedOption>
+        ))}
+      </div>
     </Squircle>
   )
 }
 
-function SegmentedOption({ on, tip: label, size, onClick, children }: { on: boolean; tip?: string; size: 'sm' | 'md'; onClick: () => void; children: ReactNode }) {
+function SegmentedOption({
+  on,
+  placed,
+  tip: label,
+  size,
+  onClick,
+  children,
+}: {
+  on: boolean
+  placed: boolean
+  tip?: string
+  size: 'sm' | 'md'
+  onClick: () => void
+  children: ReactNode
+}) {
   const { props, tip } = useTip(label)
   return (
     <Squircle
@@ -629,7 +679,7 @@ function SegmentedOption({ on, tip: label, size, onClick, children }: { on: bool
       radius={9}
       aria-pressed={on}
       onClick={onClick}
-      className={`flex items-center gap-1.5 whitespace-nowrap transition-colors ${size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-[13px]'} ${on ? 'bg-float text-ink shadow-[0_1px_2px_rgb(0_0_0/0.4)]' : 'text-ink-2 hover:text-ink'}`}
+      className={`flex items-center gap-1.5 whitespace-nowrap transition-[color,scale] duration-200 active:scale-[0.96] ${size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-[13px]'} ${on ? 'text-ink' : 'text-ink-2 hover:text-ink'} ${on && !placed ? 'bg-float shadow-(--shadow-chip)' : ''}`}
       {...props}
     >
       {children}
@@ -638,12 +688,28 @@ function SegmentedOption({ on, tip: label, size, onClick, children }: { on: bool
   )
 }
 
+/**
+ * What a `Segmented` switches between: a new choice slides in from the side
+ * it was picked toward. While `fetching`, the old one stays, faded back.
+ */
+export function Swap<T extends string>({ value, order, fetching = false, children }: { value: T; order: readonly T[]; fetching?: boolean; children: ReactNode }) {
+  const [seen, setSeen] = useState({ value, dir: 0 })
+  if (value !== seen.value) setSeen({ value, dir: Math.sign(order.indexOf(value) - order.indexOf(seen.value)) })
+  return (
+    <div data-fetching={fetching || undefined} className="swap">
+      <div key={value} className={seen.dir ? 'swap-in' : undefined} style={{ '--from': `${seen.dir * 32}px` } as CSSProperties}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 const tones = {
   quiet: 'bg-panel text-ink-2',
   ok: 'bg-ok/12 text-ok',
   danger: 'bg-danger/12 text-danger',
-  live: 'bg-sky-400/12 text-sky-300',
-  warn: 'bg-amber-400/12 text-amber-300',
+  live: 'bg-info-deep/12 text-info',
+  warn: 'bg-warn-deep/12 text-warn',
   strong: 'bg-ink text-canvas',
 }
 
@@ -657,7 +723,7 @@ export function Badge({ tone = 'quiet', children, title }: { tone?: keyof typeof
 
 /** A thin bar; `indeterminate` animates when there's no number yet. */
 export function Progress({ value, tone = 'ink', className = '' }: { value: number | null; tone?: 'ink' | 'ok' | 'live'; className?: string }) {
-  const color = tone === 'ok' ? 'bg-ok' : tone === 'live' ? 'bg-sky-300' : 'bg-ink'
+  const color = tone === 'ok' ? 'bg-ok' : tone === 'live' ? 'bg-info' : 'bg-ink'
   return (
     <div className={`relative h-1 overflow-hidden rounded-full bg-press ${className}`}>
       {value === null ? (

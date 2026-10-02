@@ -461,6 +461,7 @@ graphql(`
       grabbed
       total
       upcoming
+      skipped
     }
     episodes {
       ...SeriesEpisodeFields
@@ -501,6 +502,7 @@ graphql(`
       score
       rejections
       warnings
+      nonstandard
     }
   }
 `)

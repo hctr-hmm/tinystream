@@ -9,12 +9,13 @@ import { ask, toast, toastError } from '../components/feedback'
 import { Empty, Page, PageTitle } from '../components/Page'
 import { Bone, useArrived } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
-import { Badge, Button, Dialog, IconButton, Input, Progress, Segmented, Spinner, Toggle } from '../components/ui'
+import { Badge, Button, Dialog, IconButton, Input, Progress, Segmented, Spinner, Swap, Toggle } from '../components/ui'
 import { graphql } from '../gql'
 import type { ClipScope } from '../gql/graphql'
 import { type Clip, type Person, request } from '../lib/api'
 import type { ClipList } from '../lib/clips'
 import { allowanceQuery } from '../player/ClipEditor'
+import { ClipPlayer } from '../player/ClipPlayer'
 
 const ClipsQuery = graphql(`
   query Clips($scope: ClipScope!) {
@@ -79,6 +80,7 @@ import { useTitle } from '../lib/title'
 import { SendTo } from '../player/ClipEditor'
 
 type Scope = 'mine' | 'received' | 'sent'
+const ORDER: Scope[] = ['mine', 'received', 'sent']
 
 export const Route = createFileRoute('/clips')({
   validateSearch: (s: Record<string, unknown>): { tab?: Scope; clip?: number } => ({
@@ -98,12 +100,14 @@ function ClipsPage() {
   useTitle('Clips')
   const { tab = 'mine', clip: open } = Route.useSearch()
   const navigate = useNavigate()
-  const { data } = useQuery({
+  const { data, isPlaceholderData } = useQuery({
     queryKey: ['clips', tab],
-    queryFn: async (): Promise<ClipList> => {
+    queryFn: async (): Promise<ClipList & { scope: Scope }> => {
       const r = await request(ClipsQuery, { scope: SCOPES[tab] })
-      return { clips: r.clips, you: r.clipAllowance }
+      return { clips: r.clips, you: r.clipAllowance, scope: tab }
     },
+    // The last tab stays up until the next one is ready, so switching slides between them.
+    placeholderData: (p) => p,
   })
   const arrived = useArrived(!!data)
   const go = (search: { tab?: Scope; clip?: number }) => void navigate({ to: '/clips', search: { tab, ...search }, replace: true })
@@ -131,14 +135,18 @@ function ClipsPage() {
             </div>
           ))}
         </Grid>
-      ) : data.clips.length === 0 ? (
-        <Empty title={EMPTY[tab].title} />
       ) : (
-        <Grid>
-          {data.clips.map((c) => (
-            <ClipCard key={c.id} clip={c} scope={tab} onOpen={() => go({ clip: c.id })} />
-          ))}
-        </Grid>
+        <Swap value={data.scope} order={ORDER} fetching={isPlaceholderData}>
+          {data.clips.length === 0 ? (
+            <Empty title={EMPTY[data.scope].title} />
+          ) : (
+            <Grid>
+              {data.clips.map((c) => (
+                <ClipCard key={c.id} clip={c} scope={data.scope} onOpen={() => go({ clip: c.id })} />
+              ))}
+            </Grid>
+          )}
+        </Swap>
       )}
       {open !== undefined && <ClipDialog id={open} onClose={() => go({ clip: undefined })} />}
     </Page>
@@ -168,7 +176,7 @@ function ClipCard({ clip: c, scope, onOpen }: { clip: Clip; scope: Scope; onOpen
     <button onClick={onOpen} className="group min-w-0 text-left outline-none">
       <Squircle radius={14} edge className="relative aspect-video w-full overflow-hidden bg-raised">
         <Cover clip={c} />
-        <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-2xs font-medium text-white tabular backdrop-blur-md">
+        <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-media-shade/65 px-1.5 py-0.5 text-2xs font-medium text-media-ink tabular backdrop-blur-md">
           {c.screenshot ? (
             <>
               <Camera className="size-3" /> {stamp(c.start)}
@@ -178,7 +186,7 @@ function ClipCard({ clip: c, scope, onOpen }: { clip: Clip; scope: Scope; onOpen
           )}
         </span>
         {c.public && c.linkLive && (
-          <span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-black/60 text-white backdrop-blur-md">
+          <span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-media-shade/60 text-media-ink backdrop-blur-md">
             <Link2 className="size-3" />
           </span>
         )}
@@ -213,7 +221,7 @@ function Cover({ clip: c }: { clip: Clip }) {
     <div className="grid size-full place-items-center p-4 text-center">
       {c.state === 'RENDERING' || c.state === 'QUEUED' ? (
         <div className="w-2/3">
-          <Icon className="mx-auto mb-3 size-5 animate-pulse text-pink-300" />
+          <Icon className="mx-auto mb-3 size-5 animate-pulse text-highlight" />
           <Progress value={c.state === 'RENDERING' ? (c.progress ?? 0) : null} />
         </div>
       ) : c.state === 'FAILED' ? (
@@ -275,13 +283,13 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
   return (
     <Dialog onClose={onClose} width="max-w-3xl">
       <div className="-mx-2 -mt-2">
-        <Squircle radius={14} className="relative aspect-video w-full overflow-hidden bg-black">
+        <Squircle radius={14} className="relative aspect-video w-full overflow-hidden bg-media-shade">
           {ready && c.screenshot ? (
             <a href={c.file} target="_blank" rel="noreferrer" className="block size-full">
               <img key={c.renderedAt} src={c.file} alt={clipName(c)} className="size-full object-contain" />
             </a>
           ) : ready ? (
-            <video key={c.renderedAt} src={c.file} poster={c.poster ?? undefined} controls autoPlay playsInline className="size-full object-contain" />
+            <ClipPlayer key={c.renderedAt} src={c.file} poster={c.poster ?? undefined} />
           ) : (
             <div className="grid size-full place-items-center p-6 text-center">
               {c.state === 'FAILED' ? (
@@ -297,9 +305,9 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
               ) : (
                 <div className="w-60">
                   {c.screenshot ? (
-                    <Camera className="mx-auto mb-4 size-6 animate-pulse text-pink-300" />
+                    <Camera className="mx-auto mb-4 size-6 animate-pulse text-highlight" />
                   ) : (
-                    <Scissors className="mx-auto mb-4 size-6 animate-pulse text-pink-300" />
+                    <Scissors className="mx-auto mb-4 size-6 animate-pulse text-highlight" />
                   )}
                   <Progress value={c.state === 'RENDERING' ? (c.progress ?? 0) : null} />
                   <p className="mt-3 text-[13px] text-ink-3">
@@ -344,7 +352,7 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
             {ready && c.bytes ? ` · ${bytes(c.bytes)}` : ''} · {relative(c.createdAt)}
           </p>
           {c.source.status === 'CHANGED' && c.canManage && !c.screenshot && (
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-200/90">
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-warn-soft/90">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
               Source video was replaced; check the range.
             </p>

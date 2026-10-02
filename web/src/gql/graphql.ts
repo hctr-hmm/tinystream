@@ -4,85 +4,66 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+/** What someone picked for themselves; anything left out follows the server. */
+export type AppearanceSettingsInput = {
+  colors?: SchemeChoiceInput | null | undefined;
+  /** Let the scheme colour what sits over artwork and video, too. */
+  mediaTint: boolean;
+  style?: ComponentStyle | null | undefined;
+};
+
 export type AutomationConfigInput = {
-  /** How shows you add are monitored, unless you pick something else. */
   defaultMonitor: Monitor;
-  /** Suggest fixes for badly named files in every library. */
   renameSuggestions: boolean;
-  /**
-   * Searches after an episode airs. After the last step it's "missing"
-   * (feeds are still watched for it).
-   */
   retry: Array<RetryStepInput>;
-  /** How often every source's feed is checked for new releases. */
   rssInterval: string;
 };
 
 export type ChangedList =
-  /** A download was added, finished, imported or removed. */
+  | 'APPEARANCE'
   | 'DOWNLOADS'
-  /** Your notifications were read, cleared or withdrawn. */
   | 'NOTIFICATIONS'
   | 'RENAME_SUGGESTIONS'
   | 'REQUESTS'
-  /** Someone's account, picture or permissions changed (or the defaults did). */
   | 'USERS';
 
-/** Changes to a clip; what's left out stays as it is. */
 export type ClipPatch = {
   name?: string | null | undefined;
   public?: boolean | null | undefined;
-  /** A new range, tracks or quality: renders again. */
   recipe?: RecipeInput | null | undefined;
 };
 
 export type ClipScope =
-  /** Yours. */
   | 'MINE'
-  /** Sent to you. */
   | 'RECEIVED'
-  /** Yours that you've sent to people. */
   | 'SENT';
 
 export type ClipState =
-  /** Its render was dropped to make room; it renders again when opened. */
   | 'EVICTED'
   | 'FAILED'
   | 'QUEUED'
   | 'READY'
   | 'RENDERING';
 
-/**
- * Clipping. How long clips can be and how much room each person gets are
- * permissions (Settings → People); these are the server-wide parts.
- */
 export type ClipsConfigInput = {
-  /** Clips rendered at the same time; the rest wait their turn. */
   concurrency: number;
-  /**
-   * The font for subtitles whose font isn't available. Defaults to a
-   * built-in Noto Sans, which has no CJK.
-   */
   defaultFont?: string | null | undefined;
   enabled: boolean;
-  /** Extra fonts for burned-in subtitles (CJK, Arabic, ...), found by name. */
   fontsDir?: string | null | undefined;
-  /**
-   * Space all rendered clips together may take, in MB; 0 is no limit.
-   * Least recently watched renders go first.
-   */
   maxStorage: number;
-  /** Where rendered clips are kept. Defaults to `clips` in the data directory. */
   path?: string | null | undefined;
-  /** Whether clips can have links anyone can open, without an account. */
   publicLinks: boolean;
 };
+
+export type ComponentStyle =
+  | 'FLAT'
+  | 'GLASS'
+  | 'LAYERED';
 
 export type Confidence =
   | 'HIGH'
   | 'LOW';
 
-/** Sections of config.toml to replace; the rest stay as they are. */
 export type ConfigPatch = {
   automation?: AutomationConfigInput | null | undefined;
   clips?: ClipsConfigInput | null | undefined;
@@ -104,25 +85,15 @@ export type DownloadState =
   | 'SEEDING';
 
 export type DownloadsConfigInput = {
-  /**
-   * A network interface (a VPN like "wg0") all torrent traffic must use.
-   * When it goes down, every torrent pauses until it's back.
-   */
   bindInterface?: string | null | undefined;
   dht: boolean;
-  /** KiB/s; 0 is unlimited. */
   downloadLimit: number;
   import: ImportMode;
-  /** Torrents downloading at once; the rest wait their turn. */
   maxActive: number;
-  /** Where torrents download to. Defaults to `downloads` in the data folder. */
   path?: string | null | undefined;
-  /** The port other peers connect to; 0 picks one at random. */
   port: number;
-  /** socks5://user:pass@host:1080 or http://host:8080 */
   proxy?: string | null | undefined;
   seeding: SeedingInput;
-  /** Slower limits for part of the day, e.g. "08:00" to "23:00". */
   slowDownloadLimit: number;
   slowFrom?: string | null | undefined;
   slowTo?: string | null | undefined;
@@ -131,35 +102,25 @@ export type DownloadsConfigInput = {
   upnp: boolean;
 };
 
-/** A season and episode number. */
 export type EpisodeNumberInput = {
   episode: number;
   season: number;
 };
 
 export type EpisodeState =
-  /** In the library. */
   | 'DONE'
   | 'GRABBED'
-  /** Not monitored. */
   | 'IDLE'
-  /** Searched for until the retry schedule ran out. */
   | 'MISSING'
-  /** Being searched for. */
+  | 'SKIPPED'
   | 'WANTED';
 
 export type Hardware =
-  /** Use VA-API when it works, software otherwise. */
   | 'AUTO'
   | 'SOFTWARE'
   | 'VAAPI';
 
-/** How finished downloads get into a library. */
 export type ImportMode =
-  /**
-   * Hardlink when possible (no extra space, seeding keeps working), else
-   * copy while seeding, else move once nothing needs the download anymore.
-   */
   | 'AUTO'
   | 'COPY'
   | 'HARDLINK'
@@ -184,54 +145,38 @@ export type LogConfigInput = {
   level: string;
 };
 
-/** How a title's details were found. */
 export type MatchState =
-  /** Someone picked the match by hand. */
   | 'MANUAL'
   | 'MATCHED'
-  /** Waiting its turn to be looked up. */
   | 'PENDING'
-  /** Nothing fit; it keeps its folder name. */
   | 'UNMATCHED';
 
 export type MetadataConfigInput = {
-  /** Preferred language for titles and descriptions (TMDB only). */
   language: string;
   tmdbApiKey?: string | null | undefined;
 };
 
 export type MetadataStatus =
   | 'FAILED'
-  /** Its details are being fetched; `UPDATED` or `FAILED` follows. */
   | 'FETCHING'
   | 'UPDATED';
 
 export type Monitor =
-  /** New episodes, as they air. */
   | 'FUTURE'
-  /** New episodes, and any aired episode the library doesn't have. */
   | 'MISSING'
-  /** Nothing is downloaded automatically. */
   | 'NONE';
 
 export type NetworkConfigInput = {
-  /** Origins allowed to call the API from another site. `["*"]` allows any. */
   cors: Array<string>;
   host: string;
   port: number;
 };
 
-/** A clip: what to cut, and how. */
 export type NewClip = {
   name?: string;
   public?: boolean;
   recipe: RecipeInput;
-  /** People to send it to right away. */
   recipients?: Array<number>;
-  /**
-   * Clipping from a watch-together room: what's on there, even from a
-   * library you can't browse.
-   */
   room?: string | null | undefined;
   videoId: number;
 };
@@ -248,26 +193,21 @@ export type NewRequest = {
 
 export type NewRoom = {
   paused?: boolean;
-  /** Where to start, in seconds. */
   position?: number;
-  /** Whether anyone with the link can join, without an account. */
   public?: boolean;
   tracks?: TracksInput;
   videoId: number;
 };
 
 export type NewScreenshot = {
-  /** Seconds into the video. */
   at: number;
   room?: string | null | undefined;
-  /** A subtitle track to burn in. */
   subtitles?: string | null | undefined;
   videoId: number;
 };
 
 export type NewSeries = {
   library: string;
-  /** The server's default when left out. */
   monitor?: Monitor | null | undefined;
   name: string;
   overview?: string | null | undefined;
@@ -286,29 +226,21 @@ export type NewUser = {
 };
 
 export type NotificationKind =
-  /** An episode of a show you watch aired. */
   | 'AIRED'
-  /** Someone sent you a clip or a screenshot. */
   | 'CLIP'
-  /** A clip of yours finished rendering. */
   | 'CLIP_READY'
-  /** Someone wants to watch with you. */
   | 'INVITE'
   | 'OTHER'
-  /** New episodes landed in the library. */
   | 'READY'
-  /** Someone asked for a show. */
   | 'REQUEST'
   | 'REQUEST_APPROVED'
   | 'REQUEST_DECLINED';
 
-/** How a show's episodes are numbered in releases. */
 export type Numbering =
   | 'ABSOLUTE'
   | 'AUTO'
   | 'SEASONAL';
 
-/** One person's departures from the defaults. `None` follows the default. */
 export type PermissionOverridesInput = {
   allLibraries?: boolean | null | undefined;
   autoApprove?: boolean | null | undefined;
@@ -329,65 +261,35 @@ export type PermissionOverridesInput = {
 };
 
 export type PermissionsInput = {
-  /** Every library, including ones added later. */
   allLibraries: boolean;
-  /** Their requests are approved right away. */
   autoApprove: boolean;
-  /** Make clips. */
   clip: boolean;
-  /**
-   * Rendered clips they can keep; 0 is no limit. Past it, the least
-   * recently watched render goes (the clip stays, and renders again).
-   */
   clipLimit: number;
-  /** Give clips links anyone can open, without an account. */
   clipLinks: boolean;
-  /** The longest clip they can make, in seconds; 0 is no limit. */
   clipMaxLength: number;
-  /** Space their rendered clips can take, in MB; 0 is no limit. */
   clipStorage: number;
-  /** See and control downloads. */
   downloads: boolean;
-  /** Fix what a title was matched to, and refresh its details. */
   editMetadata: boolean;
-  /** The libraries they can see, when not `all_libraries`. */
   libraries: Array<string>;
-  /** See everyone's requests, and approve or decline them. */
   manageRequests: boolean;
-  /** Add shows directly, choose what's monitored, search for episodes. */
   manageShows: boolean;
-  /** Ask for shows to be added. */
   request: boolean;
-  /** Requests they can have waiting at once; 0 is no limit. */
   requestLimit: number;
-  /** Make links anyone can watch from, without an account. */
   shareLinks: boolean;
-  /** Start watching with others, and invite people on this server. */
   watchTogether: boolean;
 };
 
-/** What a good release looks like. */
 export type ProfileInput = {
-  /** Allow season packs (used to fill in missing episodes). */
   batches: boolean;
-  /** Codecs, most preferred first ("hevc", "av1", "h264"). */
   codecs: Array<string>;
-  /** Release groups, most preferred first. */
   groups: Array<string>;
   maxSize?: number | null | undefined;
   minSeeders: number;
-  /** Size limits per episode, in MB. */
   minSize?: number | null | undefined;
   name: string;
   preferDualAudio: boolean;
-  /** ...and must not. */
   reject: Array<string>;
-  /** Words (or regular expressions) a release must contain... */
   require: Array<string>;
-  /**
-   * Allowed resolutions, best first ("2160p", "1080p", "720p", "480p").
-   * Empty allows any.
-   */
   resolutions: Array<string>;
 };
 
@@ -395,29 +297,20 @@ export type Provider =
   | 'ANILIST'
   | 'TMDB';
 
-/** What a clip is: a range of a video, its tracks, and its quality. */
 export type RecipeInput = {
-  /** The audio track's index. */
   audio?: number | null | undefined;
   end: number;
   halfRate?: boolean;
-  /** 1080, 720 or 480. */
   height: number;
-  /** Seconds into the video. */
   start: number;
-  /** A subtitle track to burn in. */
   subtitles?: string | null | undefined;
 };
 
-/** One result from a source. */
 export type ReleaseInput = {
   infoHash?: string | null | undefined;
   leechers?: number | null | undefined;
-  /** A .torrent URL or a magnet link. */
   link: string;
-  /** The release's page on the source, for people. */
   page?: string | null | undefined;
-  /** Unix time. */
   published?: number | null | undefined;
   seeders?: number | null | undefined;
   size?: number | null | undefined;
@@ -431,48 +324,50 @@ export type RequestState =
   | 'PENDING';
 
 export type RequestsConfigInput = {
-  /** How approved requests are monitored. */
   monitor: Monitor;
 };
 
-/**
- * One step of the search schedule after an episode airs: search every
- * `every` until `until` has passed since it aired.
- */
 export type RetryStepInput = {
   every: string;
   until: string;
 };
 
 export type ScanConfigInput = {
-  /**
-   * Also do a full rescan this often (useful for network mounts where
-   * change notifications don't work), e.g. "6h".
-   */
   interval?: string | null | undefined;
-  /** Rescan when files change on disk. */
   watch: boolean;
 };
 
+/** Which schemes to use, by id: a built-in's name or a saved scheme's number. */
+export type SchemeChoiceInput = {
+  dark: string;
+  light: string;
+  mode: SchemeMode;
+  single: string;
+};
+
+export type SchemeInput = {
+  name: string;
+  overrides: Array<TokenInput>;
+  /** Every seed, opaque. */
+  seeds: Array<TokenInput>;
+};
+
+export type SchemeMode =
+  | 'SINGLE'
+  /** One scheme for the system's light mode, one for its dark mode. */
+  | 'SYSTEM';
+
 export type SeedAction =
-  /** Stop the torrent but keep it (and its files) around. */
   | 'PAUSE'
-  /** Remove the torrent and its copy in the download folder. The library copy stays. */
   | 'REMOVE';
 
-/**
- * When to stop seeding. Whichever limit is reached first wins; with none
- * set, a torrent seeds forever.
- */
 export type SeedingInput = {
-  /** Stop when nobody has downloaded from us for this long. */
   idle?: string | null | undefined;
   ratio?: number | null | undefined;
   then: SeedAction;
   time?: string | null | undefined;
 };
 
-/** Changes to a managed show. Left out stays as it is; null clears it. */
 export type SeriesPatch = {
   aliases?: Array<string> | null | undefined;
   groups?: Array<string> | null | undefined;
@@ -484,36 +379,27 @@ export type SeriesPatch = {
   sources?: Array<string> | null | undefined;
 };
 
-/** Somewhere releases come from. tinystream ships with none. */
+export type ServerAppearanceInput = {
+  colors: SchemeChoiceInput;
+  style: ComponentStyle;
+};
+
 export type SourceInput = {
   apiKey?: string | null | undefined;
-  /** Torznab categories to search, e.g. [5070] for anime. */
   categories: Array<number>;
   downloadPath?: string | null | undefined;
   enabled?: boolean;
-  /**
-   * RSS: the feed of new releases, checked regularly. Defaults to the
-   * search URL with an empty query.
-   */
   feed?: string | null | undefined;
   kind: SourceKind;
   name: string;
-  /**
-   * Overrides [downloads.seeding] for torrents from here (private
-   * trackers usually have their own rules).
-   */
   seeding?: SeedingInput | null | undefined;
-  /** Torznab: the API endpoint. RSS: the search URL, with `{query}`. */
   url: string;
 };
 
 export type SourceKind =
-  /** An RSS feed with a search URL, `{query}` marking where the search goes. */
   | 'RSS'
-  /** A Torznab API (many trackers speak it natively). */
   | 'TORZNAB';
 
-/** Whether the video a clip was cut from is still there, and still the same. */
 export type SourceStatus =
   | 'CHANGED'
   | 'GONE'
@@ -523,18 +409,20 @@ export type TitleKind =
   | 'MOVIE'
   | 'SHOW';
 
+export type TokenInput = {
+  name: string;
+  value: string;
+};
+
 export type TorrentStage =
   | 'CHECKING'
   | 'DOWNLOADING'
-  /** Fetching the torrent's metadata from peers. */
   | 'METADATA'
   | 'SEEDING';
 
-/** Tracks everyone gets unless they pick their own. */
 export type TracksInput = {
   audio?: number | null | undefined;
   audioLanguage?: string | null | undefined;
-  /** Null is off. */
   subtitle?: string | null | undefined;
   subtitleLanguage?: string | null | undefined;
 };
@@ -544,15 +432,86 @@ export type TranscodeConfigInput = {
   vaapiDevice: string;
 };
 
-/** Changes to an account; what's left out stays as it is. */
 export type UserPatch = {
   isAdmin?: boolean | null | undefined;
-  /** Signs them out everywhere (unless it's you). */
   password?: string | null | undefined;
-  /** Replaces all of their overrides. */
   permissions?: PermissionOverridesInput | null | undefined;
   username?: string | null | undefined;
 };
+
+export type ColorSchemesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ColorSchemesQuery = { colorSchemes: Array<{ id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } }> };
+
+export type AppearanceSettingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AppearanceSettingsQuery = { appearanceSettings: { style: ComponentStyle | null, mediaTint: boolean, colors: { mode: SchemeMode, single: string, light: string, dark: string } | null } };
+
+export type ServerAppearanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ServerAppearanceQuery = { serverAppearance: { style: ComponentStyle, colors: { mode: SchemeMode, single: string, light: string, dark: string } } };
+
+export type SetAppearanceMutationVariables = Exact<{
+  input: AppearanceSettingsInput;
+}>;
+
+
+export type SetAppearanceMutation = { setAppearance: { mode: SchemeMode } };
+
+export type SetServerAppearanceMutationVariables = Exact<{
+  input: ServerAppearanceInput;
+}>;
+
+
+export type SetServerAppearanceMutation = { setServerAppearance: { style: ComponentStyle } };
+
+export type SaveSchemeMutationVariables = Exact<{
+  id?: string | null | undefined;
+  input: SchemeInput;
+}>;
+
+
+export type SaveSchemeMutation = { saveScheme: { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
+
+export type ForkSchemeMutationVariables = Exact<{
+  id: string;
+}>;
+
+
+export type ForkSchemeMutation = { forkScheme: { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
+
+export type ImportSchemeMutationVariables = Exact<{
+  code: string;
+  name?: string | null | undefined;
+}>;
+
+
+export type ImportSchemeMutation = { importScheme: { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
+
+export type DeleteSchemeMutationVariables = Exact<{
+  id: string;
+}>;
+
+
+export type DeleteSchemeMutation = { deleteScheme: string };
+
+export type PublishSchemeMutationVariables = Exact<{
+  id: string;
+  published: boolean;
+}>;
+
+
+export type PublishSchemeMutation = { publishScheme: { id: string } };
+
+export type DecodeSchemeQueryVariables = Exact<{
+  code: string;
+}>;
+
+
+export type DecodeSchemeQuery = { decodeScheme: { name: string | null, code: string, palette: { tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } } };
 
 export type SetAvatarMutationVariables = Exact<{
   image: Blob;
@@ -606,6 +565,14 @@ export type AddSeriesMutationVariables = Exact<{
 
 
 export type AddSeriesMutation = { addSeries: { id: number } };
+
+export type AiredEpisodesQueryVariables = Exact<{
+  provider: Provider;
+  id: string;
+}>;
+
+
+export type AiredEpisodesQuery = { airedEpisodes: number };
 
 export type CreateRequestMutationVariables = Exact<{
   input: NewRequest;
@@ -789,7 +756,7 @@ export type TitleSeriesQueryVariables = Exact<{
 }>;
 
 
-export type TitleSeriesQuery = { title: { series: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } | null } | null };
+export type TitleSeriesQuery = { title: { series: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number, skipped: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } | null } | null };
 
 export type TitleScheduleQueryVariables = Exact<{
   id: number;
@@ -811,7 +778,7 @@ export type UpdateSeriesMutationVariables = Exact<{
 }>;
 
 
-export type UpdateSeriesMutation = { updateSeries: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } };
+export type UpdateSeriesMutation = { updateSeries: { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number, skipped: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> } };
 
 export type RefreshSeriesScheduleMutationVariables = Exact<{
   id: number;
@@ -852,6 +819,13 @@ export type SearchQueryVariables = Exact<{
 
 export type SearchQuery = { search: { titles: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }>, videos: Array<{ id: number, label: string | null, name: string | null, title: { name: string } }> } };
 
+export type RecentTitlesQueryVariables = Exact<{
+  ids: Array<number> | number;
+}>;
+
+
+export type RecentTitlesQuery = { titles: Array<{ id: number }> };
+
 export type DownloadStatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -879,7 +853,7 @@ export type ReleasesQueryVariables = Exact<{
 }>;
 
 
-export type ReleasesQuery = { series: { releases: Array<{ batch: boolean, release: { title: string, source: string, link: string, infoHash: string | null, size: number | null, seeders: number | null, leechers: number | null, published: number | null, page: string | null }, attributes: { group: string | null, resolution: number | null, codec: string | null, source: string | null, dualAudio: boolean, version: number, proper: boolean, tenBit: boolean }, episodes: Array<{ season: number, episode: number }>, verdict: { accepted: boolean, score: number, rejections: Array<string>, warnings: Array<string> } }> } | null };
+export type ReleasesQuery = { series: { releases: Array<{ batch: boolean, release: { title: string, source: string, link: string, infoHash: string | null, size: number | null, seeders: number | null, leechers: number | null, published: number | null, page: string | null }, attributes: { group: string | null, resolution: number | null, codec: string | null, source: string | null, dualAudio: boolean, version: number, proper: boolean, tenBit: boolean }, episodes: Array<{ season: number, episode: number }>, verdict: { accepted: boolean, score: number, rejections: Array<string>, warnings: Array<string>, nonstandard: boolean } }> } | null };
 
 export type GrabReleaseMutationVariables = Exact<{
   release: ReleaseInput;
@@ -889,6 +863,23 @@ export type GrabReleaseMutationVariables = Exact<{
 
 
 export type GrabReleaseMutation = { grabRelease: { id: number } };
+
+export type DeleteDownloadedMutationVariables = Exact<{
+  seriesId: number;
+  season?: number | null | undefined;
+}>;
+
+
+export type DeleteDownloadedMutation = { deleteDownloaded: { undone: number, problems: Array<string> } };
+
+export type LookForAgainMutationVariables = Exact<{
+  seriesId: number;
+  season?: number | null | undefined;
+  episode?: number | null | undefined;
+}>;
+
+
+export type LookForAgainMutation = { lookForAgain: boolean };
 
 export type PersonFragment = { id: number, username: string, avatar: string | null };
 
@@ -922,9 +913,9 @@ export type SeriesEpisodeFieldsFragment = { season: number, episode: number, abs
 
 export type SeedingFieldsFragment = { ratio: number | null, time: string | null, idle: string | null, then: SeedAction };
 
-export type SeriesFieldsFragment = { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> };
+export type SeriesFieldsFragment = { id: number, monitor: Monitor, status: string | null, library: string, managed: boolean, path: string, name: string, year: number | null, poster: string | null, overview: string | null, provider: Provider | null, providerId: string | null, profile: string | null, effectiveProfile: string, sources: Array<string>, groups: Array<string>, aliases: Array<string>, knownAs: Array<string>, numbering: Numbering, naming: string | null, scheduleAt: number | null, addedAt: number, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null, title: { id: number } | null, style: { file: string, folder: string, agreement: number | null, samples: number }, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null, counts: { have: number, wanted: number, missing: number, grabbed: number, total: number, upcoming: number, skipped: number }, episodes: Array<{ season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null }> };
 
-export type ReleaseCandidateFieldsFragment = { batch: boolean, release: { title: string, source: string, link: string, infoHash: string | null, size: number | null, seeders: number | null, leechers: number | null, published: number | null, page: string | null }, attributes: { group: string | null, resolution: number | null, codec: string | null, source: string | null, dualAudio: boolean, version: number, proper: boolean, tenBit: boolean }, episodes: Array<{ season: number, episode: number }>, verdict: { accepted: boolean, score: number, rejections: Array<string>, warnings: Array<string> } };
+export type ReleaseCandidateFieldsFragment = { batch: boolean, release: { title: string, source: string, link: string, infoHash: string | null, size: number | null, seeders: number | null, leechers: number | null, published: number | null, page: string | null }, attributes: { group: string | null, resolution: number | null, codec: string | null, source: string | null, dualAudio: boolean, version: number, proper: boolean, tenBit: boolean }, episodes: Array<{ season: number, episode: number }>, verdict: { accepted: boolean, score: number, rejections: Array<string>, warnings: Array<string>, nonstandard: boolean } };
 
 export type CalendarEntryFieldsFragment = { seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null };
 
@@ -939,6 +930,13 @@ export type SettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type SettingsQuery = { settings: { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } }, server: { transcoding: { vaapi: string | null, vaapiError: string | null, softwareH264: boolean } } };
+
+export type SchemeFieldsFragment = { id: string, name: string, builtIn: boolean, published: boolean, editable: boolean, code: string, shareCode: string, forkedFrom: { id: string | null, name: string } | null, palette: { seeds: Array<{ name: string, value: string }>, overrides: Array<{ name: string, value: string }>, tokens: Array<{ name: string, value: string }>, warnings: Array<{ foreground: string, background: string, ratio: number, minimum: number }> } };
+
+export type AppearanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AppearanceQuery = { appearance: { mode: SchemeMode, style: ComponentStyle, mediaTint: boolean, light: { id: string, palette: { tokens: Array<{ name: string, value: string }> } }, dark: { id: string, palette: { tokens: Array<{ name: string, value: string }> } } } };
 
 export type ClipQueryVariables = Exact<{
   id: number;
@@ -1195,13 +1193,13 @@ export type ImportDownloadMutationVariables = Exact<{
 
 export type ImportDownloadMutation = { importDownload: { id: number } };
 
-export type RemoveDownloadMutationVariables = Exact<{
-  id: number;
+export type RemoveDownloadsMutationVariables = Exact<{
+  ids: Array<number> | number;
   deleteFiles: boolean;
 }>;
 
 
-export type RemoveDownloadMutation = { removeDownload: number };
+export type RemoveDownloadsMutation = { removeDownloads: Array<number> };
 
 export type HomeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1863,6 +1861,7 @@ export const SeriesFieldsFragmentDoc = new TypedDocumentString(`
     grabbed
     total
     upcoming
+    skipped
   }
   episodes {
     ...SeriesEpisodeFields
@@ -1923,6 +1922,7 @@ export const ReleaseCandidateFieldsFragmentDoc = new TypedDocumentString(`
     score
     rejections
     warnings
+    nonstandard
   }
 }
     `, {"fragmentName":"ReleaseCandidateFields"}) as unknown as TypedDocumentString<ReleaseCandidateFieldsFragment, unknown>;
@@ -2069,6 +2069,41 @@ export const SettingsFieldsFragmentDoc = new TypedDocumentString(`
   idle
   then
 }`, {"fragmentName":"SettingsFields"}) as unknown as TypedDocumentString<SettingsFieldsFragment, unknown>;
+export const SchemeFieldsFragmentDoc = new TypedDocumentString(`
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}
+    `, {"fragmentName":"SchemeFields"}) as unknown as TypedDocumentString<SchemeFieldsFragment, unknown>;
 export const NotificationFieldsFragmentDoc = new TypedDocumentString(`
     fragment NotificationFields on Notification {
   id
@@ -2117,6 +2152,235 @@ fragment NotificationFields on Notification {
   expiresAt
   readAt
 }`, {"fragmentName":"InboxFields"}) as unknown as TypedDocumentString<InboxFieldsFragment, unknown>;
+export const ColorSchemesDocument = new TypedDocumentString(`
+    query ColorSchemes {
+  colorSchemes {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<ColorSchemesQuery, ColorSchemesQueryVariables>;
+export const AppearanceSettingsDocument = new TypedDocumentString(`
+    query AppearanceSettings {
+  appearanceSettings {
+    colors {
+      mode
+      single
+      light
+      dark
+    }
+    style
+    mediaTint
+  }
+}
+    `) as unknown as TypedDocumentString<AppearanceSettingsQuery, AppearanceSettingsQueryVariables>;
+export const ServerAppearanceDocument = new TypedDocumentString(`
+    query ServerAppearance {
+  serverAppearance {
+    colors {
+      mode
+      single
+      light
+      dark
+    }
+    style
+  }
+}
+    `) as unknown as TypedDocumentString<ServerAppearanceQuery, ServerAppearanceQueryVariables>;
+export const SetAppearanceDocument = new TypedDocumentString(`
+    mutation SetAppearance($input: AppearanceSettingsInput!) {
+  setAppearance(input: $input) {
+    mode
+  }
+}
+    `) as unknown as TypedDocumentString<SetAppearanceMutation, SetAppearanceMutationVariables>;
+export const SetServerAppearanceDocument = new TypedDocumentString(`
+    mutation SetServerAppearance($input: ServerAppearanceInput!) {
+  setServerAppearance(input: $input) {
+    style
+  }
+}
+    `) as unknown as TypedDocumentString<SetServerAppearanceMutation, SetServerAppearanceMutationVariables>;
+export const SaveSchemeDocument = new TypedDocumentString(`
+    mutation SaveScheme($id: String, $input: SchemeInput!) {
+  saveScheme(id: $id, input: $input) {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<SaveSchemeMutation, SaveSchemeMutationVariables>;
+export const ForkSchemeDocument = new TypedDocumentString(`
+    mutation ForkScheme($id: String!) {
+  forkScheme(id: $id) {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<ForkSchemeMutation, ForkSchemeMutationVariables>;
+export const ImportSchemeDocument = new TypedDocumentString(`
+    mutation ImportScheme($code: String!, $name: String) {
+  importScheme(code: $code, name: $name) {
+    ...SchemeFields
+  }
+}
+    fragment SchemeFields on ColorScheme {
+  id
+  name
+  builtIn
+  published
+  editable
+  code
+  shareCode
+  forkedFrom {
+    id
+    name
+  }
+  palette {
+    seeds {
+      name
+      value
+    }
+    overrides {
+      name
+      value
+    }
+    tokens {
+      name
+      value
+    }
+    warnings {
+      foreground
+      background
+      ratio
+      minimum
+    }
+  }
+}`) as unknown as TypedDocumentString<ImportSchemeMutation, ImportSchemeMutationVariables>;
+export const DeleteSchemeDocument = new TypedDocumentString(`
+    mutation DeleteScheme($id: String!) {
+  deleteScheme(id: $id)
+}
+    `) as unknown as TypedDocumentString<DeleteSchemeMutation, DeleteSchemeMutationVariables>;
+export const PublishSchemeDocument = new TypedDocumentString(`
+    mutation PublishScheme($id: String!, $published: Boolean!) {
+  publishScheme(id: $id, published: $published) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<PublishSchemeMutation, PublishSchemeMutationVariables>;
+export const DecodeSchemeDocument = new TypedDocumentString(`
+    query DecodeScheme($code: String!) {
+  decodeScheme(code: $code) {
+    name
+    code
+    palette {
+      tokens {
+        name
+        value
+      }
+      warnings {
+        foreground
+        background
+        ratio
+        minimum
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<DecodeSchemeQuery, DecodeSchemeQueryVariables>;
 export const SetAvatarDocument = new TypedDocumentString(`
     mutation SetAvatar($image: Upload!, $userId: Int) {
   setAvatar(image: $image, userId: $userId) {
@@ -2244,6 +2508,11 @@ export const AddSeriesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AddSeriesMutation, AddSeriesMutationVariables>;
+export const AiredEpisodesDocument = new TypedDocumentString(`
+    query AiredEpisodes($provider: Provider!, $id: String!) {
+  airedEpisodes(provider: $provider, id: $id)
+}
+    `) as unknown as TypedDocumentString<AiredEpisodesQuery, AiredEpisodesQueryVariables>;
 export const CreateRequestDocument = new TypedDocumentString(`
     mutation CreateRequest($input: NewRequest!) {
   createRequest(input: $input) {
@@ -2615,6 +2884,7 @@ fragment SeriesFields on Series {
     grabbed
     total
     upcoming
+    skipped
   }
   episodes {
     ...SeriesEpisodeFields
@@ -2729,6 +2999,7 @@ fragment SeriesFields on Series {
     grabbed
     total
     upcoming
+    skipped
   }
   episodes {
     ...SeriesEpisodeFields
@@ -2857,6 +3128,13 @@ export const SearchDocument = new TypedDocumentString(`
   progress
   freshCount
 }`) as unknown as TypedDocumentString<SearchQuery, SearchQueryVariables>;
+export const RecentTitlesDocument = new TypedDocumentString(`
+    query RecentTitles($ids: [Int!]!) {
+  titles(ids: $ids) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<RecentTitlesQuery, RecentTitlesQueryVariables>;
 export const DownloadStatesDocument = new TypedDocumentString(`
     query DownloadStates {
   downloads {
@@ -2919,6 +3197,7 @@ export const ReleasesDocument = new TypedDocumentString(`
     score
     rejections
     warnings
+    nonstandard
   }
 }`) as unknown as TypedDocumentString<ReleasesQuery, ReleasesQueryVariables>;
 export const GrabReleaseDocument = new TypedDocumentString(`
@@ -2928,6 +3207,19 @@ export const GrabReleaseDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GrabReleaseMutation, GrabReleaseMutationVariables>;
+export const DeleteDownloadedDocument = new TypedDocumentString(`
+    mutation DeleteDownloaded($seriesId: Int!, $season: Int) {
+  deleteDownloaded(seriesId: $seriesId, season: $season) {
+    undone
+    problems
+  }
+}
+    `) as unknown as TypedDocumentString<DeleteDownloadedMutation, DeleteDownloadedMutationVariables>;
+export const LookForAgainDocument = new TypedDocumentString(`
+    mutation LookForAgain($seriesId: Int!, $season: Int, $episode: Int) {
+  lookForAgain(seriesId: $seriesId, season: $season, episode: $episode)
+}
+    `) as unknown as TypedDocumentString<LookForAgainMutation, LookForAgainMutationVariables>;
 export const LibrariesDocument = new TypedDocumentString(`
     query Libraries {
   libraries {
@@ -3067,6 +3359,33 @@ fragment SettingsFields on Settings {
     log
   }
 }`) as unknown as TypedDocumentString<SettingsQuery, SettingsQueryVariables>;
+export const AppearanceDocument = new TypedDocumentString(`
+    query Appearance {
+  appearance {
+    mode
+    style
+    mediaTint
+    light {
+      id
+      palette {
+        tokens {
+          name
+          value
+        }
+      }
+    }
+    dark {
+      id
+      palette {
+        tokens {
+          name
+          value
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AppearanceQuery, AppearanceQueryVariables>;
 export const ClipDocument = new TypedDocumentString(`
     query Clip($id: Int!) {
   clip(id: $id) {
@@ -4364,11 +4683,11 @@ export const ImportDownloadDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ImportDownloadMutation, ImportDownloadMutationVariables>;
-export const RemoveDownloadDocument = new TypedDocumentString(`
-    mutation RemoveDownload($id: Int!, $deleteFiles: Boolean!) {
-  removeDownload(id: $id, deleteFiles: $deleteFiles)
+export const RemoveDownloadsDocument = new TypedDocumentString(`
+    mutation RemoveDownloads($ids: [Int!]!, $deleteFiles: Boolean!) {
+  removeDownloads(ids: $ids, deleteFiles: $deleteFiles)
 }
-    `) as unknown as TypedDocumentString<RemoveDownloadMutation, RemoveDownloadMutationVariables>;
+    `) as unknown as TypedDocumentString<RemoveDownloadsMutation, RemoveDownloadsMutationVariables>;
 export const HomeDocument = new TypedDocumentString(`
     query Home {
   home {

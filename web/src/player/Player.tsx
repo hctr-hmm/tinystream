@@ -52,7 +52,7 @@ function skipLabel(title: string) {
   return 'Skip preview'
 }
 
-const pref = {
+export const pref = {
   get: (k: string) => (typeof localStorage === 'undefined' ? null : localStorage.getItem(`tinystream.${k}`)),
   set: (k: string, v: string) => localStorage.setItem(`tinystream.${k}`, v),
 }
@@ -739,14 +739,14 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
         pointerType.current = e.pointerType
         if (e.pointerType === 'mouse') poke()
       }}
-      className={`fixed inset-0 bg-black select-none ${showChrome || clipping ? '' : 'cursor-none'}`}
+      className={`fixed inset-0 bg-media-shade select-none ${showChrome || clipping ? '' : 'cursor-none'}`}
     >
       <Ambilight video={videoRef} />
       <video
         ref={videoRef}
         className={
           clipping && room
-            ? 'absolute top-5 right-5 z-30 aspect-video w-64 rounded-xl bg-black object-cover shadow-[0_0_0_1px_rgb(255_255_255/0.12),0_12px_32px_rgb(0_0_0/0.6)] transition-all duration-300 md:w-80'
+            ? 'absolute top-5 right-5 z-30 aspect-video w-64 rounded-xl bg-media-shade object-cover shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-media-ink)_12%,transparent),0_12px_32px_color-mix(in_srgb,var(--color-media-shade)_60%,transparent)] transition-all duration-300 md:w-80'
             : 'recede absolute inset-0 size-full'
         }
         data-receded={rested || undefined}
@@ -790,7 +790,7 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
       {pb && <Resting pb={pb} line={subtitleLine} overview={overview} time={time} duration={duration} shown={rested} />}
 
       {(waiting || !pb) && !error && (
-        <div className="pointer-events-none absolute inset-0 grid place-items-center text-white/80">
+        <div className="pointer-events-none absolute inset-0 grid place-items-center text-media-ink/80">
           <Spinner className="size-9" />
         </div>
       )}
@@ -819,7 +819,7 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
       )}
 
       <div
-        className={`absolute inset-x-0 top-0 flex items-start gap-3 bg-linear-to-b from-black/70 to-transparent px-5 pt-4 pb-16 transition-opacity duration-300 ${showChrome ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`absolute inset-x-0 top-0 flex items-start gap-3 bg-linear-to-b from-media-shade/70 to-transparent px-5 pt-4 pb-16 transition-opacity duration-300 ${showChrome ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       >
         {canLeave && (
           <ChromeButton label="Back" onClick={back}>
@@ -827,8 +827,8 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
           </ChromeButton>
         )}
         <div className="min-w-0 flex-1 pt-1">
-          <p className="truncate text-[15px] font-medium text-white">{title}</p>
-          {subtitleLine && <p className="truncate text-[13px] text-white/60">{subtitleLine}</p>}
+          <p className="truncate text-[15px] font-medium text-media-ink">{title}</p>
+          {subtitleLine && <p className="truncate text-[13px] text-media-ink/60">{subtitleLine}</p>}
         </div>
         {room && <RoomButton ctx={room} />}
       </div>
@@ -853,7 +853,7 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
       )}
 
       <div
-        className={`absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/40 to-transparent px-5 pt-20 pb-4 transition-opacity duration-300 ${showChrome ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`absolute inset-x-0 bottom-0 bg-linear-to-t from-media-shade/80 via-media-shade/40 to-transparent px-5 pt-20 pb-4 transition-opacity duration-300 ${showChrome ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       >
         <Timeline
           base={mediaBase}
@@ -878,12 +878,12 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
             </ChromeButton>
           )}
           <VolumeControl volume={volume} muted={muted} setVolume={setVolume} setMuted={setMuted} />
-          <span className="ml-2 text-[13px] text-white/80 tabular">
-            {clock(time)} <span className="text-white/40">/ {clock(duration)}</span>
+          <span className="ml-2 text-[13px] text-media-ink/80 tabular">
+            {clock(time)} <span className="text-media-ink/40">/ {clock(duration)}</span>
           </span>
-          {chapter?.title && <span className="ml-3 hidden truncate text-[13px] text-white/50 sm:inline">{chapter.title}</span>}
-          {shownRate !== 1 && <span className="ml-3 rounded-md bg-white/10 px-1.5 py-0.5 text-2xs text-white/80 tabular">{shownRate}×</span>}
-          {controller && <span className="ml-3 hidden truncate text-[13px] text-white/50 sm:inline">{controller} is in control</span>}
+          {chapter?.title && <span className="ml-3 hidden truncate text-[13px] text-media-ink/50 sm:inline">{chapter.title}</span>}
+          {shownRate !== 1 && <span className="ml-3 rounded-md bg-media-ink/10 px-1.5 py-0.5 text-2xs text-media-ink/80 tabular">{shownRate}×</span>}
+          {controller && <span className="ml-3 hidden truncate text-[13px] text-media-ink/50 sm:inline">{controller} is in control</span>}
           <div className="flex-1" />
 
           {pb && (
@@ -1061,9 +1061,9 @@ function ShotCard({ shot, onClose }: { shot: Shot; onClose: () => void }) {
   const { clip, error } = shot
   return (
     <>
-      <div key={shot.key} className="pointer-events-none absolute inset-0 z-30 animate-[shutter_420ms_ease-out_forwards] bg-white" />
+      <div key={shot.key} className="pointer-events-none absolute inset-0 z-30 animate-[shutter_420ms_ease-out_forwards] bg-media-ink" />
       <div className="absolute right-5 bottom-28 z-40 w-56 animate-[rise_220ms_cubic-bezier(.2,.8,.2,1)] md:w-64">
-        <Squircle radius={14} edge className="overflow-hidden bg-float shadow-[0_12px_32px_rgb(0_0_0/0.5)]">
+        <Squircle radius={14} edge className="overflow-hidden bg-float shadow-[0_12px_32px_color-mix(in_srgb,var(--color-media-shade)_50%,transparent)]">
           {error ? (
             <div className="p-3">
               <p className="text-sm font-medium">Couldn’t take a screenshot</p>
@@ -1071,11 +1071,11 @@ function ShotCard({ shot, onClose }: { shot: Shot; onClose: () => void }) {
             </div>
           ) : (
             <Link to="/clips" search={{ clip: clip?.id }} disabled={!clip} onClick={onClose} className="block outline-none">
-              <div className="grid aspect-video place-items-center bg-black">
+              <div className="grid aspect-video place-items-center bg-media-shade">
                 {clip?.poster ? <img src={clip.poster} alt="" className="size-full object-cover" /> : <Spinner className="size-5" />}
               </div>
               <p className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium">
-                <Camera className="size-3.5 text-pink-300" />
+                <Camera className="size-3.5 text-highlight" />
                 {clip ? 'Saved to Clips' : 'Taking a screenshot…'}
               </p>
             </Link>
@@ -1100,19 +1100,19 @@ function TrackHeading({ label, own, onFollow }: { label: string; own: boolean; o
   )
 }
 
-type Hud = { kind: 'seek' | 'volume' | 'play' | 'pause' | 'speed'; amount?: number; text?: string; key: number }
+export type Hud = { kind: 'seek' | 'volume' | 'play' | 'pause' | 'speed'; amount?: number; text?: string; key: number }
 
 /** A quiet confirmation of what just happened, fading as it appears. */
-function HudView({ hud }: { hud: Hud }) {
+export function HudView({ hud }: { hud: Hud }) {
   if (hud.kind === 'seek') {
     const back = (hud.amount ?? 0) < 0
     return (
       <div className={`pointer-events-none absolute inset-y-0 flex items-center ${back ? 'left-[12%]' : 'right-[12%]'}`}>
-        <div key={hud.key} className="flex flex-col items-center gap-1 text-white animate-[pop_160ms_ease-out]">
-          <span className="grid size-16 place-items-center rounded-full bg-black/45 backdrop-blur-md">
+        <div key={hud.key} className="flex flex-col items-center gap-1 text-media-ink animate-[pop_160ms_ease-out]">
+          <span className="grid size-16 place-items-center rounded-full bg-media-shade/45 backdrop-blur-md">
             {back ? <RotateCcw className="size-7" /> : <RotateCw className="size-7" />}
           </span>
-          <span className="text-sm font-medium tabular [text-shadow:0_1px_4px_rgb(0_0_0/0.6)]">
+          <span className="text-sm font-medium tabular [text-shadow:0_1px_4px_color-mix(in_srgb,var(--color-media-shade)_60%,transparent)]">
             {back ? '−' : '+'}
             {Math.abs(hud.amount ?? 0)} s
           </span>
@@ -1125,10 +1125,10 @@ function HudView({ hud }: { hud: Hud }) {
     const Icon = v === 0 ? VolumeX : v < 0.5 ? Volume1 : Volume2
     return (
       <div className="pointer-events-none absolute inset-x-0 top-[12%] flex justify-center">
-        <div className="flex items-center gap-3 rounded-full bg-black/55 px-4 py-2.5 text-white backdrop-blur-md">
+        <div className="flex items-center gap-3 rounded-full bg-media-shade/55 px-4 py-2.5 text-media-ink backdrop-blur-md">
           <Icon className="size-4.5" />
-          <div className="h-1 w-36 overflow-hidden rounded-full bg-white/20">
-            <div className="h-full bg-white transition-[width] duration-150" style={{ width: `${v * 100}%` }} />
+          <div className="h-1 w-36 overflow-hidden rounded-full bg-media-ink/20">
+            <div className="h-full bg-media-ink transition-[width] duration-150" style={{ width: `${v * 100}%` }} />
           </div>
           <span className="w-8 text-right text-xs tabular">{Math.round(v * 100)}</span>
         </div>
@@ -1138,13 +1138,13 @@ function HudView({ hud }: { hud: Hud }) {
   if (hud.kind === 'speed') {
     return (
       <div className="pointer-events-none absolute inset-x-0 top-[12%] flex justify-center">
-        <span className="rounded-full bg-black/55 px-4 py-2 text-sm font-medium text-white tabular backdrop-blur-md">{hud.text}</span>
+        <span className="rounded-full bg-media-shade/55 px-4 py-2 text-sm font-medium text-media-ink tabular backdrop-blur-md">{hud.text}</span>
       </div>
     )
   }
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center">
-      <span key={hud.key} className="grid size-20 animate-[flash_600ms_ease-out_forwards] place-items-center rounded-full bg-black/45 text-white backdrop-blur-md">
+      <span key={hud.key} className="grid size-20 animate-[flash_600ms_ease-out_forwards] place-items-center rounded-full bg-media-shade/45 text-media-ink backdrop-blur-md">
         {hud.kind === 'play' ? <Play className="size-8 fill-current" /> : <Pause className="size-8 fill-current" />}
       </span>
     </div>
@@ -1204,19 +1204,19 @@ function Resting({
   return (
     <div
       aria-hidden={!shown}
-      className={`pointer-events-none absolute inset-0 flex items-center bg-linear-to-r from-black/65 via-black/25 to-transparent px-[7vw] transition-opacity duration-700 ${shown ? 'opacity-100' : 'opacity-0'}`}
+      className={`pointer-events-none absolute inset-0 flex items-center bg-linear-to-r from-media-shade/65 via-media-shade/25 to-transparent px-[7vw] transition-opacity duration-700 ${shown ? 'opacity-100' : 'opacity-0'}`}
     >
       <div
         className={`max-w-xl transition-[translate,filter] duration-[1200ms] ease-[cubic-bezier(.16,1,.3,1)] ${shown ? '' : 'translate-y-4 blur-md'}`}
       >
-        <p className="text-xs font-medium tracking-[0.2em] text-white/50 uppercase">Paused</p>
-        <p className="mt-3 text-[40px] leading-[1.05] font-semibold tracking-[-0.025em] text-balance text-white md:text-[52px]">
+        <p className="text-xs font-medium tracking-[0.2em] text-media-ink/50 uppercase">Paused</p>
+        <p className="mt-3 text-[40px] leading-[1.05] font-semibold tracking-[-0.025em] text-balance text-media-ink md:text-[52px]">
           {pb.title.name}
         </p>
-        {line && <p className="mt-2.5 text-lg text-white/75">{line}</p>}
-        {overview && <p className="mt-4 line-clamp-4 text-[15px] leading-relaxed text-white/60">{overview}</p>}
+        {line && <p className="mt-2.5 text-lg text-media-ink/75">{line}</p>}
+        {overview && <p className="mt-4 line-clamp-4 text-[15px] leading-relaxed text-media-ink/60">{overview}</p>}
         {duration > 0 && (
-          <p className="mt-6 text-sm text-white/45 tabular">
+          <p className="mt-6 text-sm text-media-ink/45 tabular">
             {clock(time)} of {clock(duration)}
           </p>
         )}
@@ -1229,11 +1229,11 @@ function Resting({
 function Finale({ pb, series, onBack }: { pb: Playback; series: SeriesGlimpse | null; onBack?: () => void }) {
   const n = series?.next
   return (
-    <div className="absolute inset-0 grid place-items-center bg-black/60 p-6 backdrop-blur-sm animate-[fade_300ms_ease-out]">
+    <div className="absolute inset-0 grid place-items-center bg-media-shade/60 p-6 backdrop-blur-sm animate-[fade_300ms_ease-out]">
       <div className="max-w-md text-center animate-[rise_400ms_cubic-bezier(.2,.8,.2,1)]">
-        <p className="text-xs font-medium tracking-wide text-white/60 uppercase">{n?.airAt ? 'You’re all caught up' : 'That’s the last one'}</p>
-        <p className="mt-2 text-[30px] leading-tight font-semibold tracking-tight text-white">{pb.title.name}</p>
-        <p className="mt-2 text-[15px] text-white/70">
+        <p className="text-xs font-medium tracking-wide text-media-ink/60 uppercase">{n?.airAt ? 'You’re all caught up' : 'That’s the last one'}</p>
+        <p className="mt-2 text-[30px] leading-tight font-semibold tracking-tight text-media-ink">{pb.title.name}</p>
+        <p className="mt-2 text-[15px] text-media-ink/70">
           {n?.airAt
             ? `${episodeCode(n.season, n.episode)}${n.name ? ` “${n.name}”` : ''} airs ${airs(n.airAt).replace(/^(Today|Tomorrow)/, (w) => w.toLowerCase())}.`
             : series?.status === 'finished'
@@ -1243,7 +1243,7 @@ function Finale({ pb, series, onBack }: { pb: Playback; series: SeriesGlimpse | 
         {onBack && (
           <button
             onClick={onBack}
-            className="mt-6 inline-flex h-11 items-center gap-2 rounded-[14px] bg-white px-5 text-[15px] font-medium text-black hover:bg-white/90"
+            className="mt-6 inline-flex h-11 items-center gap-2 rounded-[14px] bg-media-ink px-5 text-[15px] font-medium text-media-shade hover:bg-media-ink/90"
           >
             <ArrowLeft className="size-4.5" /> Back to the show
           </button>
@@ -1253,7 +1253,7 @@ function Finale({ pb, series, onBack }: { pb: Playback; series: SeriesGlimpse | 
   )
 }
 
-function ChromeButton({
+export function ChromeButton({
   label,
   onClick,
   children,
@@ -1274,7 +1274,7 @@ function ChromeButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className={`grid size-10 place-items-center text-white/85 transition-colors hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-40 ${active ? 'bg-white/10 text-white' : ''}`}
+      className={`grid size-10 place-items-center text-media-ink/85 transition-colors hover:bg-media-ink/10 hover:text-media-ink disabled:pointer-events-none disabled:opacity-40 ${active ? 'bg-media-ink/10 text-media-ink' : ''}`}
       {...props}
     >
       {children}
@@ -1291,10 +1291,10 @@ function SkipPill({ children, onClick }: { children: ReactNode; onClick: () => v
         radius={14}
         edge
         onClick={onClick}
-        className="flex h-11 items-center gap-2 bg-white/12 px-4 text-sm font-medium text-white backdrop-blur-xl transition-colors hover:bg-white/20"
+        className="flex h-11 items-center gap-2 bg-media-ink/12 px-4 text-sm font-medium text-media-ink backdrop-blur-xl transition-colors hover:bg-media-ink/20"
       >
         {children}
-        <span className="text-2xs text-white/50">S</span>
+        <span className="text-2xs text-media-ink/50">S</span>
       </Squircle>
     </div>
   )
@@ -1314,7 +1314,7 @@ function UpNext({
 }) {
   return (
     <div className="lift animate-[pop_180ms_ease-out]">
-      <Squircle radius={16} edge className="w-80 bg-[#262626]/85 p-2.5 backdrop-blur-xl">
+      <Squircle radius={16} edge className="w-80 bg-media-panel/85 p-2.5 backdrop-blur-xl">
         <div className="flex gap-3">
           <Squircle radius={9} className="aspect-video w-28 shrink-0 bg-panel">
             <img src={still} alt="" className="size-full object-cover" />
@@ -1327,11 +1327,11 @@ function UpNext({
         {onPlay && (
         <button
           onClick={onPlay}
-          className="relative mt-2.5 flex h-9 w-full items-center justify-center gap-2 overflow-hidden rounded-[10px] bg-ink/85 text-sm font-medium text-canvas hover:bg-white"
+          className="relative mt-2.5 flex h-9 w-full items-center justify-center gap-2 overflow-hidden rounded-[10px] bg-accent/85 text-sm font-medium text-on-accent hover:bg-accent-hover"
         >
           {/* The countdown, as a fill sweeping across. */}
           {countdown !== null && (
-            <span className="absolute inset-0 origin-left animate-[sweep_5s_linear_forwards] bg-white" />
+            <span className="absolute inset-0 origin-left animate-[sweep_5s_linear_forwards] bg-accent-hover" />
           )}
           <span className="relative flex items-center gap-2">
             <Play className="size-4 fill-current" />
@@ -1344,7 +1344,7 @@ function UpNext({
   )
 }
 
-function VolumeControl({
+export function VolumeControl({
   volume,
   muted,
   setVolume,
@@ -1372,13 +1372,13 @@ function VolumeControl({
           setVolume(Number(e.target.value))
           setMuted(() => false)
         }}
-        className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/25 opacity-0 accent-white transition-all duration-200 group-hover:w-20 group-hover:opacity-100 focus:w-20 focus:opacity-100"
+        className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-media-ink/25 opacity-0 accent-media-ink transition-all duration-200 group-hover:w-20 group-hover:opacity-100 focus:w-20 focus:opacity-100"
       />
     </div>
   )
 }
 
-function Timeline({
+export function Timeline({
   base,
   time,
   duration,
@@ -1386,8 +1386,8 @@ function Timeline({
   chapters,
   onSeek,
 }: {
-  /** Where this video's endpoints live. */
-  base: string
+  /** Where this video's endpoints live; without them, no frames on hover. */
+  base?: string
   time: number
   duration: number
   buffered: [number, number][]
@@ -1434,7 +1434,7 @@ function Timeline({
       {segments.map(([s, e], i) => (
         <div
           key={i}
-          className="absolute h-1 overflow-hidden rounded-full bg-white/20 transition-[height] duration-150 group-hover:h-1.5"
+          className="absolute h-1 overflow-hidden rounded-full bg-media-ink/20 transition-[height] duration-150 group-hover:h-1.5"
           style={{ left: pct(s), width: `calc(${pct(e - s)} - ${i < segments.length - 1 ? 3 : 0}px)` }}
         >
           {buffered.map(([bs, be], j) => {
@@ -1444,30 +1444,30 @@ function Timeline({
             return (
               <div
                 key={j}
-                className="absolute inset-y-0 bg-white/25"
+                className="absolute inset-y-0 bg-media-ink/25"
                 style={{ left: `${((from - s) / (e - s)) * 100}%`, width: `${((to - from) / (e - s)) * 100}%` }}
               />
             )
           })}
           <div
-            className="absolute inset-y-0 left-0 bg-white"
+            className="absolute inset-y-0 left-0 bg-media-ink"
             style={{ width: `${Math.max(0, Math.min(1, (shown - s) / (e - s))) * 100}%` }}
           />
         </div>
       ))}
       <div
-        className="absolute size-3.5 -translate-x-1/2 rounded-full bg-white opacity-0 shadow-[0_0_0_4px_rgb(255_255_255/0.15)] transition-opacity group-hover:opacity-100"
+        className="absolute size-3.5 -translate-x-1/2 rounded-full bg-media-ink opacity-0 shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-media-ink)_15%,transparent)] transition-opacity group-hover:opacity-100"
         style={{ left: pct(shown) }}
       />
       {hover !== null && (
         <div
-          className="pointer-events-none absolute bottom-6 -translate-x-1/2 text-center text-xs whitespace-nowrap text-white tabular"
+          className="pointer-events-none absolute bottom-6 -translate-x-1/2 text-center text-xs whitespace-nowrap text-media-ink tabular"
           style={{ left: `clamp(5.5rem, ${pct(hover)}, calc(100% - 5.5rem))` }}
         >
-          <Preview base={base} at={hover} />
-          <span className="mt-1.5 inline-block rounded-lg bg-[#262626]/90 px-2 py-1 backdrop-blur-md">
+          {base && <Preview base={base} at={hover} />}
+          <span className="mt-1.5 inline-block rounded-lg bg-media-panel/90 px-2 py-1 backdrop-blur-md">
             {clock(hover)}
-            {hoverChapter?.title && <span className="ml-1.5 text-white/55">{hoverChapter.title}</span>}
+            {hoverChapter?.title && <span className="ml-1.5 text-media-ink/55">{hoverChapter.title}</span>}
           </span>
         </div>
       )}
@@ -1503,7 +1503,7 @@ function Preview({ base, at }: { base: string; at: number }) {
   }, [base, wanted])
   if (failed) return null
   return (
-    <Squircle radius={10} edge className="block aspect-video w-44 bg-[#262626]/90 shadow-lg">
+    <Squircle radius={10} edge className="block aspect-video w-44 bg-media-panel/90 shadow-lg">
       {shown !== null && <img src={`${base}/preview/${shown}`} alt="" className="size-full object-cover" />}
     </Squircle>
   )

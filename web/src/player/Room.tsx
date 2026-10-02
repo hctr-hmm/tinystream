@@ -88,17 +88,17 @@ export function RoomButton({ ctx }: { ctx: RoomContext }) {
             radius={12}
             onClick={toggle}
             aria-label="Watching together"
-            className={`flex h-10 items-center gap-2 pr-3 pl-1.5 text-white/85 transition-colors hover:bg-white/10 hover:text-white ${open ? 'bg-white/10 text-white' : ''}`}
+            className={`flex h-10 items-center gap-2 pr-3 pl-1.5 text-media-ink/85 transition-colors hover:bg-media-ink/10 hover:text-media-ink ${open ? 'bg-media-ink/10 text-media-ink' : ''}`}
           >
             <span className="flex -space-x-2">
               {shown.map((m) => (
-                <span key={m.id} className="rounded-full ring-2 ring-black/60">
+                <span key={m.id} className="rounded-full ring-2 ring-media-shade/60">
                   <MemberAvatar room={room} m={m} size={26} />
                 </span>
               ))}
             </span>
             <span className="text-[13px] tabular">{room.members.length}</span>
-            {(waiting || !snap.connected) && <span className="size-1.5 animate-pulse rounded-full bg-amber-300" />}
+            {(waiting || !snap.connected) && <span className="size-1.5 animate-pulse rounded-full bg-warn" />}
           </Squircle>
         </OpenOnce>
       )}
@@ -143,7 +143,7 @@ function RoomPanel({ ctx }: { ctx: RoomContext }) {
     <Panel className="max-h-[min(36rem,calc(100vh-6rem))] w-[22rem] max-w-[calc(100vw-2.5rem)] overflow-y-auto p-3">
       <div className="flex items-center justify-between px-1">
         <p className="text-[15px] font-medium">Watching together</p>
-        {!snap.connected && <span className="text-xs text-amber-300">Reconnecting…</span>}
+        {!snap.connected && <span className="text-xs text-warn">Reconnecting…</span>}
       </div>
 
       <div className="mt-3 flex items-center gap-2">
@@ -168,7 +168,7 @@ function RoomPanel({ ctx }: { ctx: RoomContext }) {
             </p>
             {m.userId === room.host.id && <Crown className="size-3.5 text-ink-3" aria-label="Started the room" />}
             {statusText[m.status] && (
-              <span className={`text-xs ${m.status === 'blocked' ? 'text-ink-3' : 'text-amber-300'}`}>{statusText[m.status]}</span>
+              <span className={`text-xs ${m.status === 'blocked' ? 'text-ink-3' : 'text-warn'}`}>{statusText[m.status]}</span>
             )}
           </div>
         ))}
@@ -347,7 +347,7 @@ export function RoomNotices({ client }: { client: SyncClient }) {
     <div className="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center">
       <span
         key={notice.key}
-        className="animate-[pop_160ms_ease-out] rounded-full bg-black/60 px-4 py-2 text-[13px] text-white backdrop-blur-md"
+        className="animate-[pop_160ms_ease-out] rounded-full bg-media-shade/60 px-4 py-2 text-[13px] text-media-ink backdrop-blur-md"
       >
         {notice.text}
       </span>
@@ -360,15 +360,15 @@ export function TapToJoin({ client, title }: { client: SyncClient; title: string
   return (
     <button
       onClick={() => client.unblock()}
-      className="absolute inset-0 z-20 grid place-items-center bg-black/55 backdrop-blur-sm animate-[fade_200ms_ease-out]"
+      className="absolute inset-0 z-20 grid place-items-center bg-media-shade/55 backdrop-blur-sm animate-[fade_200ms_ease-out]"
     >
-      <span className="flex flex-col items-center gap-4 text-white">
-        <span className="grid size-20 place-items-center rounded-full bg-white text-black shadow-2xl">
+      <span className="flex flex-col items-center gap-4 text-media-ink">
+        <span className="grid size-20 place-items-center rounded-full bg-media-ink text-media-shade shadow-2xl">
           <Play className="size-8 translate-x-0.5 fill-current" />
         </span>
         <span className="text-center">
           <span className="block text-[17px] font-medium">Join the others</span>
-          <span className="mt-1 block text-sm text-white/60">{title}</span>
+          <span className="mt-1 block text-sm text-media-ink/60">{title}</span>
         </span>
       </span>
     </button>
