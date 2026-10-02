@@ -27,7 +27,7 @@ export function Row({ children }: { children: ReactNode }) {
     <div className="group/row relative">
       <div
         ref={ref}
-        className="-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-5 overflow-x-auto px-5 pt-1 pb-3 md:-mx-10 md:scroll-px-10 md:px-10 [scrollbar-width:none]"
+        className="-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-5 overflow-x-auto px-5 pt-1 pb-3 md:-mx-10 md:scroll-px-10 md:px-10"
         style={{
           maskImage: `linear-gradient(to right, ${edges.start ? 'black' : 'transparent'}, black 3rem, black calc(100% - 3rem), ${edges.end ? 'black' : 'transparent'})`,
         }}

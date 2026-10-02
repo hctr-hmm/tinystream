@@ -165,8 +165,10 @@
     cursor: default;
   }
   * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-scrollbar) transparent;
+    scrollbar-width: none;
+  }
+  ::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -639,7 +641,6 @@
 @media (width < 40rem) {
   .profile-strip {
     padding-inline: calc(50% - 2rem);
-    scrollbar-width: none;
   }
   .profile-strip > * + * {
     margin-left: -2.25rem;
