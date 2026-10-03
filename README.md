@@ -98,3 +98,11 @@ mixed downloads stay in Other / Mixed instead of being assumed to be movies.
 ## License
 
 Released under the [AGPL-3.0-or-later](./LICENSE) open-source license.
+
+### Custom artwork
+
+In a show's or movie's folder, `thumbnail.jpg` (also `.jpeg`, `.png`, `.webp`, or `.gif`) supplies its thumbnail, and `banner.*` supplies its banner. Existing `poster.*`, `folder.*`, `cover.*`, `backdrop.*`, `fanart.*`, and `background.*` names continue to work; `poster.*` and `backdrop.*` take precedence over the new aliases.
+
+For an episode such as `Episode 1.mkv`, use `Episode 1.thumbnail.png` or `Episode 1.png` beside the video. The same image formats are supported; the `.thumbnail.*` form takes precedence. Existing same-name `.jpg` episode images remain supported.
+
+Users with **Edit metadata** permission can change title thumbnails, banners, and episode thumbnails on the title page. Uploads accept PNG, JPEG, WebP, and GIF up to 8 MB. Uploaded artwork takes precedence over local files and provider artwork, survives metadata refreshes and library rescans, and is stored in tinystream's database without changing library files. **Reset** removes the uploaded override and restores the local, provider, or generated image.

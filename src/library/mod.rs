@@ -4,23 +4,7 @@ pub mod music;
 pub mod parse;
 pub mod scanner;
 
-use std::path::{Path, PathBuf};
+mod art;
 
+pub use art::{ARTWORK_MAX, BACKDROP_NAMES, POSTER_NAMES, image_type, local_art, local_still, local_version};
 pub use scanner::Scanner;
-
-const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp"];
-
-pub fn local_art(dir: &Path, names: &[&str]) -> Option<PathBuf> {
-    for name in names {
-        for ext in IMAGE_EXTENSIONS {
-            let p = dir.join(format!("{name}.{ext}"));
-            if p.is_file() {
-                return Some(p);
-            }
-        }
-    }
-    None
-}
-
-pub const POSTER_NAMES: &[&str] = &["poster", "folder", "cover"];
-pub const BACKDROP_NAMES: &[&str] = &["backdrop", "fanart", "background"];

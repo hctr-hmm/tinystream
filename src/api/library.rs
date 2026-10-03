@@ -4,7 +4,7 @@ use std::cmp::Reverse;
 use std::path::{Path as FsPath, PathBuf};
 use std::sync::Arc;
 
-use async_graphql::{Context, Enum, Object, SimpleObject};
+use async_graphql::{Context, Enum, Object, SimpleObject, Upload};
 use nucleo_matcher::pattern::{AtomKind, CaseMatching, Normalization, Pattern};
 use nucleo_matcher::{Config, Matcher, Utf32Str};
 use tokio::sync::OnceCell;
@@ -14,7 +14,7 @@ use crate::auth::User;
 use crate::config::{LibraryKind, Provider};
 use crate::db::now;
 use crate::error::{ApiError, ApiResult};
-use crate::library::{BACKDROP_NAMES, POSTER_NAMES, local_art};
+use crate::library::{BACKDROP_NAMES, POSTER_NAMES, image_type, local_art, local_still, local_version};
 use crate::media::probe::MediaInfo;
 use crate::metadata::{Candidate, ItemKind};
 use crate::state::AppState;
@@ -29,12 +29,15 @@ pub(super) struct ItemRow {
     pub year: Option<i64>,
     pub poster: Option<String>,
     pub backdrop: Option<String>,
+    pub custom_poster: bool,
+    pub custom_backdrop: bool,
+    pub artwork_version: i64,
     pub updated_at: i64,
 }
 
 const FRESH_FOR: i64 = 3 * 86400;
 
-const ITEM_COLUMNS: &str = "i.id, i.library, i.kind, i.path, i.title, i.year, i.poster, i.backdrop, i.updated_at";
+const ITEM_COLUMNS: &str = "i.id, i.library, i.kind, i.path, i.title, i.year, i.poster, i.backdrop, i.updated_at, i.poster_override IS NOT NULL AS custom_poster, i.backdrop_override IS NOT NULL AS custom_backdrop, i.artwork_version";
 
 pub(super) async fn item_row(state: &AppState, id: i64) -> ApiResult<Option<ItemRow>> {
     Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT {ITEM_COLUMNS} FROM items i WHERE i.id = ?")))
@@ -208,11 +211,22 @@ impl Title {
     }
 
     fn art(&self, kind: &str, names: &[&str], remote: &Option<String>) -> Option<String> {
-        (remote.is_some() || local_art(FsPath::new(&self.row.path), names).is_some()).then(|| {
-            match self.access.room() {
-                Some(code) => format!("/api/together/{code}/art/{kind}"),
-                None => format!("/api/images/item/{}/{kind}?v={}", self.row.id, self.row.updated_at),
-            }
+        let local = local_art(FsPath::new(&self.row.path), names);
+        let version = local_version(local.as_deref());
+        ((if kind == "poster" { self.row.custom_poster } else { self.row.custom_backdrop })
+            || remote.is_some()
+            || local.is_some())
+        .then(|| match self.access.room() {
+            Some(code) => {
+                format!(
+                    "/api/together/{code}/art/{kind}?v={}&a={}&l={version}",
+                    self.row.updated_at, self.row.artwork_version
+                )
+            },
+            None => format!(
+                "/api/images/item/{}/{kind}?v={}&a={}&l={version}",
+                self.row.id, self.row.updated_at, self.row.artwork_version
+            ),
         })
     }
 
@@ -256,6 +270,14 @@ impl Title {
 
     async fn backdrop(&self) -> Option<String> {
         self.art("backdrop", BACKDROP_NAMES, &self.row.backdrop)
+    }
+
+    async fn custom_poster(&self) -> bool {
+        self.row.custom_poster
+    }
+
+    async fn custom_backdrop(&self) -> bool {
+        self.row.custom_backdrop
     }
 
     async fn overview(&self, ctx: &Context<'_>) -> ApiResult<Option<String>> {
@@ -443,11 +465,13 @@ pub(super) struct Episode {
     pub finished: Option<bool>,
     pub updated_at: Option<i64>,
     pub added_at: i64,
+    pub custom_still: bool,
+    pub artwork_version: i64,
 }
 
 const EPISODE_COLUMNS: &str = "m.id, m.item_id, m.path, m.season, m.episode, m.episode_end, m.title, m.overview,
         m.air_date, COALESCE(m.duration, p.duration) AS duration,
-        p.position, p.finished, p.updated_at, m.added_at
+        p.position, p.finished, p.updated_at, m.added_at, m.still_override IS NOT NULL AS custom_still, m.artwork_version
     FROM media m LEFT JOIN progress p ON p.media_path = m.path AND p.user_id = ?";
 
 pub(super) async fn episodes(state: &AppState, user: &User, item_id: i64) -> ApiResult<Vec<Episode>> {
@@ -550,10 +574,18 @@ impl Video {
     }
 
     async fn still(&self) -> String {
+        let local = local_still(FsPath::new(&self.ep.path));
+        let version = local_version(local.as_deref());
         match self.access.room() {
-            Some(code) => format!("/api/together/{code}/stills/{}", self.ep.id),
-            None => format!("/api/images/media/{}", self.ep.id),
+            Some(code) => {
+                format!("/api/together/{code}/stills/{}?v={}&l={version}", self.ep.id, self.ep.artwork_version)
+            },
+            None => format!("/api/images/media/{}?v={}&l={version}", self.ep.id, self.ep.artwork_version),
         }
+    }
+
+    async fn custom_still(&self) -> bool {
+        self.ep.custom_still
     }
 
     async fn air_date(&self) -> Option<&str> {
@@ -861,6 +893,19 @@ impl LibraryQuery {
 #[derive(Default)]
 pub struct LibraryMutation;
 
+#[derive(Enum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TitleArtwork {
+    Poster,
+    Backdrop,
+}
+
+fn artwork_upload(ctx: &Context<'_>, image: Option<Upload>) -> ApiResult<Option<Vec<u8>>> {
+    let Some(image) = image else { return Ok(None) };
+    let value = image.value(ctx).map_err(|e| ApiError::bad_request(e.to_string()))?;
+    image_type(&value.content).map_err(ApiError::bad_request)?;
+    Ok(Some(value.content.to_vec()))
+}
+
 async fn set_watched(state: &AppState, user: &User, media: &[(String, Option<f64>)], watched: bool) -> ApiResult<()> {
     let mut tx = state.db.begin().await?;
     for (path, duration) in media {
@@ -958,6 +1003,45 @@ impl LibraryMutation {
         Title::load(state, &access, id).await?.ok_or_else(|| ApiError::not_found("title"))
     }
 
+    async fn set_title_artwork(
+        &self,
+        ctx: &Context<'_>,
+        id: i64,
+        kind: TitleArtwork,
+        image: Option<Upload>,
+    ) -> ApiResult<Title> {
+        let (state, access) = (ctx.state(), ctx.access()?);
+        let title = Title::load(state, &access, id).await?.ok_or_else(|| ApiError::not_found("title"))?;
+        title.editor(ctx)?;
+        let data = artwork_upload(ctx, image)?;
+        let sql = match kind {
+            TitleArtwork::Poster => {
+                "UPDATE items SET poster_override = ?, artwork_version = artwork_version + 1 WHERE id = ?"
+            },
+            TitleArtwork::Backdrop => {
+                "UPDATE items SET backdrop_override = ?, artwork_version = artwork_version + 1 WHERE id = ?"
+            },
+        };
+        sqlx::query(sql).bind(data).bind(id).execute(&state.db).await?;
+        state.events.send(crate::events::Event::MetadataUpdated { item_id: id });
+        Title::load(state, &access, id).await?.ok_or_else(|| ApiError::not_found("title"))
+    }
+
+    async fn set_video_artwork(&self, ctx: &Context<'_>, video_id: i64, image: Option<Upload>) -> ApiResult<Video> {
+        let (state, access) = (ctx.state(), ctx.access()?);
+        let video = Video::load(state, &access, video_id).await?.ok_or_else(|| ApiError::not_found("video"))?;
+        let title = Title::load(state, &access, video.ep.item_id).await?.ok_or_else(|| ApiError::not_found("title"))?;
+        title.editor(ctx)?;
+        let data = artwork_upload(ctx, image)?;
+        sqlx::query("UPDATE media SET still_override = ?, artwork_version = artwork_version + 1 WHERE id = ?")
+            .bind(data)
+            .bind(video_id)
+            .execute(&state.db)
+            .await?;
+        state.events.send(crate::events::Event::MetadataUpdated { item_id: video.ep.item_id });
+        Video::load(state, &access, video_id).await?.ok_or_else(|| ApiError::not_found("video"))
+    }
+
     async fn refresh_title(&self, ctx: &Context<'_>, id: i64) -> ApiResult<Title> {
         let (state, access) = (ctx.state(), ctx.access()?);
         let title = Title::load(state, &access, id).await?.ok_or_else(|| ApiError::not_found("title"))?;
@@ -1024,6 +1108,8 @@ mod tests {
             finished: Some(finished),
             updated_at: at,
             added_at: 0,
+            custom_still: false,
+            artwork_version: 0,
         }
     }
 

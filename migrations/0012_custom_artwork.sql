@@ -1,0 +1,5 @@
+ALTER TABLE items ADD COLUMN poster_override BLOB;
+ALTER TABLE items ADD COLUMN backdrop_override BLOB;
+ALTER TABLE items ADD COLUMN artwork_version INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE media ADD COLUMN still_override BLOB;
+ALTER TABLE media ADD COLUMN artwork_version INTEGER NOT NULL DEFAULT 0;
