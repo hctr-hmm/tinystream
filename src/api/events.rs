@@ -56,6 +56,8 @@ pub enum ChangedList {
     Notifications,
 
     Appearance,
+
+    Playlists,
 }
 
 #[derive(SimpleObject)]
@@ -90,6 +92,20 @@ pub struct ClipChanged {
     progress: Option<f32>,
 }
 
+#[derive(SimpleObject)]
+pub struct QueueChanged {
+    by: Option<String>,
+}
+
+#[derive(SimpleObject)]
+pub struct PlaybackChanged {
+    client: String,
+    track_id: Option<i64>,
+    /// Seconds in, as of when it was sent.
+    position: f64,
+    paused: bool,
+}
+
 #[derive(Union)]
 #[graphql(name = "Event")]
 pub enum ServerEvent {
@@ -103,6 +119,8 @@ pub enum ServerEvent {
     EpisodesImported(EpisodesImported),
     NotificationReceived(NotificationReceived),
     ClipChanged(ClipChanged),
+    QueueChanged(QueueChanged),
+    PlaybackChanged(PlaybackChanged),
 }
 
 fn translate(event: Event, me: i64, libraries: &[String]) -> Option<ServerEvent> {
@@ -141,6 +159,12 @@ fn translate(event: Event, me: i64, libraries: &[String]) -> Option<ServerEvent>
         Event::AppearanceChanged { user_id } => user_id
             .is_none_or(|u| u == me)
             .then_some(ServerEvent::ListChanged(ListChanged { list: ChangedList::Appearance })),
+        Event::QueueChanged { user_id, by } => {
+            (user_id == me).then_some(ServerEvent::QueueChanged(QueueChanged { by }))
+        },
+        Event::PlaybackChanged { user_id, client, track_id, position, paused } => (user_id == me)
+            .then_some(ServerEvent::PlaybackChanged(PlaybackChanged { client, track_id, position, paused })),
+        Event::PlaylistsChanged => list(ChangedList::Playlists),
         Event::ClipChanged { clip_id, users, state, progress } => users
             .contains(&me)
             .then(|| ServerEvent::ClipChanged(ClipChanged { clip_id, state: ClipState::parse(&state), progress })),

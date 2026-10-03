@@ -14,9 +14,9 @@ use tokio::sync::broadcast;
 
 use crate::db::now;
 
-const STALL_LIMIT: Duration = Duration::from_secs(12);
-const START_LEAD_MS: f64 = 150.0;
-const EXPIRY_SECS: i64 = 7 * 24 * 3600;
+pub(crate) const STALL_LIMIT: Duration = Duration::from_secs(12);
+pub(crate) const START_LEAD_MS: f64 = 150.0;
+pub(crate) const EXPIRY_SECS: i64 = 7 * 24 * 3600;
 
 pub const ENDED: &str = r#"{"type":"ended"}"#;
 
@@ -70,7 +70,7 @@ impl Clock {
         if self.running { self.position + ((t - self.at).max(0.0) / 1000.0) * self.rate } else { self.position }
     }
 
-    fn rebase(&mut self, t: f64) {
+    pub(crate) fn rebase(&mut self, t: f64) {
         self.position = self.position_at(t);
         self.at = t;
     }

@@ -13,6 +13,8 @@ use super::clips::{ClipMutation, ClipQuery};
 use super::discovery::DiscoveryQuery;
 use super::events::EventSubscription;
 use super::library::{LibraryMutation, LibraryQuery};
+use super::listen::{ListenMutation, ListenQuery};
+use super::music::{MusicMutation, MusicQuery};
 use super::notifications::{NotificationMutation, NotificationQuery};
 use super::settings::{SettingsMutation, SettingsQuery};
 use super::together::{RoomMutation, RoomQuery};
@@ -28,8 +30,10 @@ pub struct Query(
     AuthQuery,
     UserQuery,
     LibraryQuery,
+    MusicQuery,
     DiscoveryQuery,
     RoomQuery,
+    ListenQuery,
     ClipQuery,
     NotificationQuery,
     SettingsQuery,
@@ -43,8 +47,10 @@ pub struct Query(
     AuthQuery,
     UserQuery,
     LibraryQuery,
+    MusicQuery,
     DiscoveryQuery,
     RoomQuery,
+    ListenQuery,
     ClipQuery,
     NotificationQuery,
     SettingsQuery,
@@ -57,7 +63,9 @@ pub struct Mutation(
     AuthMutation,
     UserMutation,
     LibraryMutation,
+    MusicMutation,
     RoomMutation,
+    ListenMutation,
     ClipMutation,
     NotificationMutation,
     SettingsMutation,
@@ -71,7 +79,9 @@ pub struct Mutation(
     AuthMutation,
     UserMutation,
     LibraryMutation,
+    MusicMutation,
     RoomMutation,
+    ListenMutation,
     ClipMutation,
     NotificationMutation,
     SettingsMutation,

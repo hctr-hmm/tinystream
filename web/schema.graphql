@@ -1,3 +1,53 @@
+type Album {
+	id: Int!
+	name: String!
+	artist: String!
+	artists: [ArtistRef!]!
+	library: String!
+	year: Int
+	releaseDate: String
+	originalDate: String
+	genres: [String!]!
+	releaseTypes: [String!]!
+	labels: [String!]!
+	compilation: Boolean!
+	discTitles: [DiscTitle!]!
+	trackCount: Int!
+	duration: Float!
+	size: Int!
+	"""
+	Missing when there's no picture in its folder or its files.
+	"""
+	cover: String
+	mbid: String
+	addedAt: Int!
+	starred: Boolean!
+	rating: Int
+	playCount: Int!
+	lastPlayed: Int
+	tracks: [Track!]!
+}
+
+enum AlbumSort {
+	NEWEST
+	NAME
+	ARTIST
+	YEAR
+	RANDOM
+	RECENT
+	FREQUENT
+	STARRED
+	RATED
+}
+
+type AppPassword {
+	id: Int!
+	name: String!
+	createdAt: Int!
+	lastUsed: Int
+	client: String
+}
+
 """
 How tinystream looks for whoever's asking.
 """
@@ -40,6 +90,30 @@ type AppliedRenames {
 	batch: String!
 	renamed: Int!
 	problems: [String!]!
+}
+
+type Artist {
+	id: Int!
+	name: String!
+	sortName: String!
+	library: String!
+	mbid: String
+	albumCount: Int!
+	trackCount: Int!
+	cover: String
+	starred: Boolean!
+	rating: Int
+	albums: [Album!]!
+	"""
+	Albums by others that this artist is on.
+	"""
+	appearsOn: [Album!]!
+	topTracks(count: Int! = 10): [Track!]!
+}
+
+type ArtistRef {
+	id: Int!
+	name: String!
 }
 
 type AudioTrack {
@@ -91,6 +165,7 @@ enum ChangedList {
 	USERS
 	NOTIFICATIONS
 	APPEARANCE
+	PLAYLISTS
 }
 
 type Chapter {
@@ -268,6 +343,7 @@ input ConfigPatch {
 	metadata: MetadataConfigInput
 	transcode: TranscodeConfigInput
 	clips: ClipsConfigInput
+	music: MusicConfigInput
 	downloads: DownloadsConfigInput
 	automation: AutomationConfigInput
 	requests: RequestsConfigInput
@@ -277,6 +353,7 @@ input ConfigPatch {
 type ConfiguredLibrary {
 	name: String!
 	path: String!
+	kind: LibraryKind!
 	metadataProvider: Provider
 	managed: Boolean!
 	profile: String
@@ -316,6 +393,11 @@ type DetectedSource {
 	name: String
 	searchable: Boolean!
 	sample: [Release!]!
+}
+
+type DiscTitle {
+	disc: Int!
+	title: String!
 }
 
 type DiscoverResult {
@@ -468,7 +550,7 @@ type EpisodesImported {
 	episodes: [EpisodeNumber!]!
 }
 
-union Event = ConfigChanged | ScanStarted | ScanFinished | LibraryChanged | MetadataChanged | ListChanged | SeriesChanged | EpisodesImported | NotificationReceived | ClipChanged
+union Event = ConfigChanged | ScanStarted | ScanFinished | LibraryChanged | MetadataChanged | ListChanged | SeriesChanged | EpisodesImported | NotificationReceived | ClipChanged | QueueChanged | PlaybackChanged
 
 type FileOperation {
 	kind: String!
@@ -502,6 +584,26 @@ type ForYouShelf {
 	key: String!
 	name: String!
 	results: [DiscoverResult!]!
+}
+
+type Gains {
+	"""
+	dB to bring the track to ReplayGain's reference loudness.
+	"""
+	trackGain: Float
+	trackPeak: Float
+	albumGain: Float
+	albumPeak: Float
+	"""
+	Neither tagged nor measured yet; `measureLoudness` sorts that out.
+	"""
+	pending: Boolean!
+}
+
+type Genre {
+	name: String!
+	trackCount: Int!
+	albumCount: Int!
 }
 
 enum Hardware {
@@ -551,6 +653,9 @@ scalar JSON
 
 type Library {
 	name: String!
+	kind: LibraryKind!
+	albumCount: Int!
+	trackCount: Int!
 	showCount: Int!
 	movieCount: Int!
 	titles: [Title!]!
@@ -563,14 +668,33 @@ type LibraryChanged {
 input LibraryInput {
 	name: String!
 	path: String!
+	kind: LibraryKind! = VIDEO
 	metadataProvider: Provider
 	managed: Boolean! = false
 	profile: String
 	downloadPath: String
 }
 
+enum LibraryKind {
+	VIDEO
+	MUSIC
+}
+
 type ListChanged {
 	list: ChangedList!
+}
+
+type ListenRoom {
+	code: String!
+	"""
+	What's queued, in order; the room's socket says which is playing.
+	"""
+	tracks: [Track!]!
+	hostName: String!
+	signedIn: Boolean!
+	isHost: Boolean!
+	canShare: Boolean!
+	canInvite: Boolean!
 }
 
 type LogConfig {
@@ -579,6 +703,26 @@ type LogConfig {
 
 input LogConfigInput {
 	level: String!
+}
+
+type LyricLine {
+	"""
+	Milliseconds in; missing for plain lyrics.
+	"""
+	start: Int
+	text: String!
+}
+
+type Lyrics {
+	synced: Boolean!
+	source: LyricsSource!
+	lines: [LyricLine!]!
+}
+
+enum LyricsSource {
+	FILE
+	EMBEDDED
+	ONLINE
 }
 
 type MatchCandidates {
@@ -637,6 +781,36 @@ enum Monitor {
 	MISSING
 }
 
+type MusicConfig {
+	onlineLyrics: Boolean!
+	lyricsUrl: String!
+	analyzeLoudness: Boolean!
+}
+
+input MusicConfigInput {
+	onlineLyrics: Boolean!
+	lyricsUrl: String!
+	analyzeLoudness: Boolean!
+}
+
+type MusicHome {
+	recentlyAdded: [Album!]!
+	recentlyPlayed: [Album!]!
+	rediscover: [Album!]!
+}
+
+enum MusicKind {
+	TRACK
+	ALBUM
+	ARTIST
+}
+
+type MusicSearch {
+	artists: [Artist!]!
+	albums: [Album!]!
+	tracks: [Track!]!
+}
+
 type Mutation {
 	setup(username: String!, password: String!): SignedIn!
 	signIn(username: String, profile: String, password: String!): SignedIn!
@@ -658,7 +832,32 @@ type Mutation {
 	saveProgress(videoId: Int!, position: Float!, duration: Float!): Video!
 	matchTitle(id: Int!, provider: Provider!, providerId: String!): Title!
 	refreshTitle(id: Int!): Title!
+	star(kind: MusicKind!, id: Int!, starred: Boolean!): Boolean!
+	"""
+	1 to 5 stars; 0 takes the rating away.
+	"""
+	rate(kind: MusicKind!, id: Int!, rating: Int!): Boolean!
+	"""
+	Someone listened to (most of) a track.
+	"""
+	played(trackId: Int!): Boolean!
+	"""
+	What's playing in the web player right now, so other apps see it; no track means it stopped.
+	"""
+	nowPlaying(trackId: Int, position: Float! = 0.0, paused: Boolean! = false): Boolean!
+	savePlayQueue(input: QueueInput!): PlayQueue!
+	"""
+	Measures a track's loudness now, if that's still to be done, for whoever's about to hear it.
+	"""
+	measureLoudness(trackId: Int!): Track!
+	createPlaylist(name: String!, tracks: [Int!]! = []): Playlist!
+	updatePlaylist(id: Int!, input: PlaylistInput!): Playlist!
+	addToPlaylist(id: Int!, tracks: [Int!]!): Playlist!
+	deletePlaylist(id: Int!): Boolean!
+	createAppPassword(name: String!): NewAppPassword!
+	deleteAppPassword(id: Int!): Boolean!
 	startRoom(input: NewRoom!): Room!
+	startListenRoom(input: NewListenRoom!): ListenRoom!
 	createClip(input: NewClip!): Clip!
 	takeScreenshot(input: NewScreenshot!): Clip!
 	updateClip(id: Int!, input: ClipPatch!): Clip!
@@ -749,6 +948,14 @@ input NetworkConfigInput {
 	cors: [String!]!
 }
 
+type NewAppPassword {
+	password: AppPassword!
+	"""
+	Shown this once.
+	"""
+	secret: String!
+}
+
 input NewClip {
 	videoId: Int!
 	recipe: RecipeInput!
@@ -756,6 +963,14 @@ input NewClip {
 	public: Boolean! = false
 	recipients: [Int!]! = []
 	room: String
+}
+
+input NewListenRoom {
+	tracks: [Int!]!
+	current: Int! = 0
+	position: Float! = 0.0
+	paused: Boolean! = false
+	public: Boolean! = false
 }
 
 input NewRequest {
@@ -941,6 +1156,58 @@ input PermissionsInput {
 	clipLinks: Boolean!
 }
 
+type PlayQueue {
+	tracks: [Track!]!
+	current: Int!
+	position: Float!
+	shuffled: Boolean!
+	repeat: Repeat!
+	changedBy: String
+	updatedAt: Int!
+}
+
+type PlaybackChanged {
+	client: String!
+	trackId: Int
+	"""
+	Seconds in, as of when it was sent.
+	"""
+	position: Float!
+	paused: Boolean!
+}
+
+type Playlist {
+	id: Int!
+	name: String!
+	comment: String
+	public: Boolean!
+	owner: PlaylistOwner!
+	mine: Boolean!
+	trackCount: Int!
+	duration: Float!
+	updatedAt: Int!
+	"""
+	Up to four album covers from it, for a mosaic.
+	"""
+	covers: [String!]!
+	tracks: [Track!]!
+}
+
+input PlaylistInput {
+	name: String
+	comment: String
+	public: Boolean
+	"""
+	Replaces what's in it.
+	"""
+	tracks: [Int!]
+}
+
+type PlaylistOwner {
+	id: Int!
+	username: String!
+}
+
 type PopularTitle {
 	title: Title!
 	people: Int!
@@ -1007,10 +1274,36 @@ type Query {
 	video(id: Int!): Video
 	home: Home!
 	search(query: String!): SearchResults!
+	albums(library: String, sort: AlbumSort! = NAME, genre: String, offset: Int! = 0, limit: Int! = 500): [Album!]!
+	album(id: Int!): Album
+	"""
+	Artists with albums of their own.
+	"""
+	artists(library: String): [Artist!]!
+	artist(id: Int!): Artist
+	songs(library: String, query: String! = "", offset: Int! = 0, limit: Int! = 500): [Track!]!
+	track(id: Int!): Track
+	"""
+	The tracks among `ids` that still exist and are visible, in the given order.
+	"""
+	tracks(ids: [Int!]!): [Track!]!
+	genres(library: String): [Genre!]!
+	musicSearch(query: String!, limit: Int! = 8): MusicSearch!
+	lyrics(trackId: Int!): Lyrics
+	playQueue: PlayQueue!
+	playlists: [Playlist!]!
+	playlist(id: Int!): Playlist
+	musicHome: MusicHome!
+	"""
+	More like a track, from what's here: for radio when the queue runs out.
+	"""
+	similarTracks(trackId: Int!, count: Int! = 25, exclude: [Int!]! = []): [Track!]!
+	appPasswords: [AppPassword!]!
 	discover(library: String, query: String): Discovery!
 	airedEpisodes(provider: Provider!, id: String!): Int!
 	forYou(library: String): ForYou!
 	room(code: String!): Room!
+	listenRoom(code: String!): ListenRoom!
 	clips(scope: ClipScope! = MINE): [Clip!]!
 	clip(id: Int!): Clip
 	clipAllowance: ClipAllowance!
@@ -1045,6 +1338,18 @@ type Query {
 	renameSuggestions: [RenameSuggestion!]!
 	fileHistory: [HistoryBatch!]!
 	requests: [Request!]!
+}
+
+type QueueChanged {
+	by: String
+}
+
+input QueueInput {
+	tracks: [Int!]!
+	current: Int!
+	position: Float!
+	shuffled: Boolean! = false
+	repeat: Repeat! = OFF
 }
 
 input RecipeInput {
@@ -1108,6 +1413,12 @@ type RenameSuggestion {
 	dst: String!
 	reason: String!
 	confidence: Confidence!
+}
+
+enum Repeat {
+	OFF
+	ALL
+	ONE
 }
 
 type Request {
@@ -1364,6 +1675,7 @@ type Settings {
 	metadata: MetadataConfig!
 	transcode: TranscodeConfig!
 	clips: ClipsConfig!
+	music: MusicConfig!
 	downloads: DownloadsConfig!
 	automation: AutomationConfig!
 	requests: RequestsConfig!
@@ -1536,6 +1848,60 @@ type TorrentStatus {
 	seedingSeconds: Int!
 	eta: Int
 	pieces: [Int!]!
+}
+
+type Track {
+	id: Int!
+	title: String!
+	"""
+	The artists as tagged, for display.
+	"""
+	artist: String!
+	artists: [ArtistRef!]!
+	composers: [ArtistRef!]!
+	album: String!
+	albumId: Int
+	albumArtist: String
+	library: String!
+	disc: Int
+	number: Int
+	year: Int
+	genres: [String!]!
+	duration: Float!
+	"""
+	flac, alac, mp3, aac, opus, vorbis, pcm, ape, wavpack, musepack…
+	"""
+	codec: String!
+	suffix: String!
+	lossless: Boolean!
+	"""
+	kbit/s.
+	"""
+	bitrate: Int
+	sampleRate: Int
+	bitDepth: Int
+	channels: Int
+	size: Int!
+	mbid: String
+	"""
+	The file as it is.
+	"""
+	file: String!
+	"""
+	The same as FLAC, made once and kept, for players that can't read the original.
+	"""
+	flac: String!
+	"""
+	The same, converted; add `?format=flac|opus|mp3|aac&start=`.
+	"""
+	stream: String!
+	cover: String
+	gains: Gains!
+	starred: Boolean!
+	rating: Int
+	playCount: Int!
+	lastPlayed: Int
+	addedAt: Int!
 }
 
 input TracksInput {

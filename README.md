@@ -2,7 +2,7 @@
 
 # tinystream
 
-A small self-hosted media server for your shows and movies.
+A small self-hosted media server for your shows, movies and music.
 
 [![CI](https://github.com/tinystream-dev/tinystream/actions/workflows/ci.yml/badge.svg)](https://github.com/tinystream-dev/tinystream/actions/workflows/ci.yml)
 [![Release](https://github.com/tinystream-dev/tinystream/actions/workflows/release.yml/badge.svg)](https://github.com/tinystream-dev/tinystream/actions/workflows/release.yml)
@@ -26,11 +26,13 @@ cd tinystream-*/
 
 FFmpeg and libtorrent are linked in statically. At runtime tinystream needs a few common system libraries: OpenSSL, libstdc++, zlib, bzip2 and xz. GPU transcoding also needs libva and a VA-API driver; without them, tinystream transcodes on the CPU.
 
+Music apps that speak Subsonic (Feishin, Symfonium, Tempo and others) connect to the same address. Each person makes a password per app under Settings → Account → Music apps.
+
 On first run tinystream writes a commented config to `~/.config/tinystream/config.toml` and serves the UI on <http://localhost:3000>. The first account you create is the admin.
 
 ### Building from source
 
-You need Rust 1.94 or newer, bun or npm (for the web UI), and what the bundled FFmpeg and libtorrent builds use: curl, tar, git, make, meson, ninja, autotools, a C/C++17 compiler, libclang, and the OpenSSL, libdrm, zlib, bzip2 and xz headers.
+You need Rust 1.94 or newer, bun or npm (for the web UI), the `wasm32-unknown-unknown` target and the wasm-bindgen CLI at the version `web/decoder` pins (for the music player's decoder), and what the bundled FFmpeg and libtorrent builds use: curl, tar, git, make, meson, ninja, autotools, a C/C++17 compiler, libclang, and the OpenSSL, libdrm, zlib, bzip2 and xz headers.
 
 ```sh
 git clone https://github.com/tinystream-dev/tinystream
@@ -40,7 +42,7 @@ cargo build --release
 
 The result is `target/release/tinystream`.
 
-The first build compiles FFmpeg (with x264, dav1d, libva and libass) and libtorrent from source into `.native/`, which takes a few minutes. Each library is a crate under `native/`, so cargo's progress bar shows which one it's on, and each one's output goes to `.native/<library>-<version>/build.log`. Later builds reuse it, even after `cargo clean`.
+The first build compiles FFmpeg (with x264, dav1d, libva, libass, libopus and LAME) and libtorrent from source into `.native/`, which takes a few minutes. Each library is a crate under `native/`, so cargo's progress bar shows which one it's on, and each one's output goes to `.native/<library>-<version>/build.log`. Later builds reuse it, even after `cargo clean`.
 
 | Variable | Effect |
 | --- | --- |

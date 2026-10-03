@@ -59,6 +59,19 @@ pub enum Event {
         state: String,
         progress: Option<f32>,
     },
+    QueueChanged {
+        user_id: i64,
+        by: Option<String>,
+    },
+    /// Another app started, paused, moved or stopped playing; no track means it stopped.
+    PlaybackChanged {
+        user_id: i64,
+        client: String,
+        track_id: Option<i64>,
+        position: f64,
+        paused: bool,
+    },
+    PlaylistsChanged,
     /// Someone's own appearance, or everyone's when there's no `user_id`.
     AppearanceChanged {
         user_id: Option<i64>,

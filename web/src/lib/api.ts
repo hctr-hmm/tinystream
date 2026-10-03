@@ -569,6 +569,11 @@ graphql(`
       fontsDir
       defaultFont
     }
+    music {
+      onlineLyrics
+      lyricsUrl
+      analyzeLoudness
+    }
     downloads {
       path
       import
@@ -632,6 +637,7 @@ graphql(`
     libraries {
       name
       path
+      kind
       metadataProvider
       managed
       profile
@@ -686,18 +692,22 @@ export type ProfileConfig = Settings['profiles'][number]
 export type Seeding = NonNullable<SourceConfig['seeding']>
 export type DownloadsConfig = Settings['downloads']
 export type ClipsConfig = Settings['clips']
+export type MusicConfig = Settings['music']
 
 const LibrariesQuery = graphql(`
   query Libraries {
     libraries {
       name
+      kind
       showCount
       movieCount
+      albumCount
+      trackCount
     }
   }
 `)
 
-export type Library = { name: string; showCount: number; movieCount: number }
+export type Library = { name: string; kind: 'VIDEO' | 'MUSIC'; showCount: number; movieCount: number; albumCount: number; trackCount: number }
 
 /** The libraries you can see; cached under ['libraries']. */
 export const librariesQuery = {

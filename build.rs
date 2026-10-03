@@ -9,7 +9,15 @@ fn main() {
     if std::env::var_os("CARGO_FEATURE_WEB_UI").is_none() {
         return;
     }
-    for p in ["web/src", "web/public", "web/package.json", "web/vite.config.ts", "web/bun.lock"] {
+    for p in [
+        "web/src",
+        "web/public",
+        "web/decoder",
+        "web/scripts",
+        "web/package.json",
+        "web/vite.config.ts",
+        "web/bun.lock",
+    ] {
         println!("cargo:rerun-if-changed={p}");
     }
     println!("cargo:rerun-if-env-changed=TINYSTREAM_SKIP_WEB_BUILD");

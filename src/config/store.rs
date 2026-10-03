@@ -12,7 +12,8 @@ use tokio::sync::watch;
 use toml_edit::{ArrayOfTables, DocumentMut, Item, Table};
 
 use super::{
-    Automation, Clips, Config, Downloads, Log, Metadata, Network, Provider, Requests, Scan, SignIn, TEMPLATE, Transcode,
+    Automation, Clips, Config, Downloads, LibraryKind, Log, Metadata, Music, Network, Provider, Requests, Scan, SignIn,
+    TEMPLATE, Transcode,
 };
 use crate::events::{Event, Events};
 
@@ -35,6 +36,7 @@ pub struct SettingsPatch {
     pub metadata: Option<Metadata>,
     pub transcode: Option<Transcode>,
     pub clips: Option<Clips>,
+    pub music: Option<Music>,
     pub downloads: Option<Downloads>,
     pub automation: Option<Automation>,
     pub requests: Option<Requests>,
@@ -46,6 +48,9 @@ pub struct SettingsPatch {
 pub struct LibraryInput {
     pub name: String,
     pub path: String,
+    #[serde(default)]
+    #[graphql(default)]
+    pub kind: LibraryKind,
     #[serde(default)]
     pub metadata_provider: Option<Provider>,
     #[serde(default)]
@@ -171,6 +176,9 @@ impl ConfigStore {
             }
             if let Some(v) = patch.clips {
                 sync_section(doc, "clips", &v, &Clips::default())?;
+            }
+            if let Some(v) = patch.music {
+                sync_section(doc, "music", &v, &Music::default())?;
             }
             if let Some(v) = patch.downloads {
                 sync_section(doc, "downloads", &v, &Downloads::default())?;
@@ -335,6 +343,7 @@ fn write_library(table: &mut Table, input: &LibraryInput) -> Result<(), String> 
     };
     set_value(table, "name", Some(toml::Value::String(input.name.trim().to_string())))?;
     set_value(table, "path", Some(toml::Value::String(input.path.trim().to_string())))?;
+    set_value(table, "kind", (!input.kind.is_video()).then(|| toml::Value::String(input.kind.as_str().into())))?;
     set_value(table, "metadata-provider", input.metadata_provider.map(|p| toml::Value::String(p.as_str().into())))?;
     set_value(table, "managed", input.managed.then_some(toml::Value::Boolean(true)))?;
     set_value(table, "profile", text(&input.profile))?;
@@ -488,6 +497,7 @@ mod tests {
             &LibraryInput {
                 name: "Anime".into(),
                 path: "~/Anime".into(),
+                kind: LibraryKind::Video,
                 metadata_provider: Some(Provider::Anilist),
                 managed: true,
                 profile: None,

@@ -33,6 +33,7 @@ mod library;
 mod logging;
 mod media;
 mod metadata;
+mod music;
 mod notifications;
 mod paths;
 mod state;
@@ -203,11 +204,13 @@ async fn serve(paths: Paths) -> anyhow::Result<()> {
         http,
         together: Default::default(),
         clips: Default::default(),
+        music: Default::default(),
     });
 
     library::scanner::spawn_worker(state.clone(), scan_rx);
     library::scanner::spawn_triggers(state.clone());
     metadata::spawn_worker(state.clone());
+    music::spawn(state.clone());
     #[cfg(feature = "torrent")]
     automation::spawn(state.clone());
     spawn_config_followers(state.clone());
@@ -283,6 +286,9 @@ fn spawn_config_followers(state: Arc<AppState>) {
             }
             if config.metadata != previous.metadata {
                 state.metadata.wake();
+            }
+            if config.music != previous.music {
+                music::loudness::wake(&state);
             }
             previous = config;
         }

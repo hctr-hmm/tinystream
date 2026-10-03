@@ -7,11 +7,13 @@ fn main() {
     let b = Build::new(
         "ffmpeg",
         version,
-        &["nasm", "va", "dav1d", "x264", "zimg", "freetype", "fribidi", "harfbuzz", "ass"],
+        &["nasm", "va", "dav1d", "x264", "zimg", "freetype", "fribidi", "harfbuzz", "ass", "opus", "mp3lame"],
     );
+    let lame = std::env::var("DEP_MP3LAME_PREFIX").expect("no metadata from lame-src");
     let args = [
         "--pkg-config-flags=--static".to_string(),
-        format!("--extra-cflags={}", b.cflags()),
+        format!("--extra-cflags={} -I{lame}/include", b.cflags()),
+        format!("--extra-ldflags=-L{lame}/lib"),
         "--enable-static".into(),
         "--disable-shared".into(),
         "--enable-pic".into(),
@@ -26,6 +28,8 @@ fn main() {
         "--enable-libfreetype".into(),
         "--enable-libfribidi".into(),
         "--enable-libharfbuzz".into(),
+        "--enable-libopus".into(),
+        "--enable-libmp3lame".into(),
         "--disable-programs".into(),
         "--disable-doc".into(),
         "--disable-network".into(),

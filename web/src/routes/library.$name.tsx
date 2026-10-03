@@ -9,7 +9,8 @@ import { PosterGrid } from '../components/PosterGrid'
 import { PosterGridSkeleton } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
 import { graphql } from '../gql'
-import { type Card, request } from '../lib/api'
+import { type Card, librariesQuery, request } from '../lib/api'
+import { MusicLibrary } from '../music/Library'
 import { useTitle } from '../lib/title'
 
 export const Route = createFileRoute('/library/$name')({ component: LibraryPage })
@@ -45,7 +46,14 @@ function matches(c: Card, f: Filter) {
 
 function LibraryPage() {
   const { name } = Route.useParams()
+  const { data: libraries } = useQuery(librariesQuery)
+  const lib = libraries?.find((l) => l.name === name)
   useTitle(name)
+  if (lib?.kind === 'MUSIC') return <MusicLibrary key={name} name={name} albums={lib.albumCount} tracks={lib.trackCount} />
+  return <VideoLibrary name={name} />
+}
+
+function VideoLibrary({ name }: { name: string }) {
   const { data } = useQuery({ queryKey: ['library', name], queryFn: async () => (await request(LibraryQuery, { name })).library?.titles ?? [] })
   const [filter, setFilter] = useState<Filter>('all')
   const [sort, setSort] = useState<Sort>('title')

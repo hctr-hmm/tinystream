@@ -11,7 +11,7 @@ use tokio::sync::OnceCell;
 
 use super::schema::{Access, Ctx};
 use crate::auth::User;
-use crate::config::Provider;
+use crate::config::{LibraryKind, Provider};
 use crate::db::now;
 use crate::error::{ApiError, ApiResult};
 use crate::library::{BACKDROP_NAMES, POSTER_NAMES, local_art};
@@ -615,6 +615,24 @@ pub struct Library {
 impl Library {
     async fn name(&self) -> &str {
         &self.name
+    }
+
+    async fn kind(&self, ctx: &Context<'_>) -> LibraryKind {
+        ctx.state().config.current().library(&self.name).map(|l| l.kind).unwrap_or_default()
+    }
+
+    async fn album_count(&self, ctx: &Context<'_>) -> ApiResult<i64> {
+        Ok(sqlx::query_scalar("SELECT COUNT(*) FROM albums WHERE library = ?")
+            .bind(&self.name)
+            .fetch_one(&ctx.state().db)
+            .await?)
+    }
+
+    async fn track_count(&self, ctx: &Context<'_>) -> ApiResult<i64> {
+        Ok(sqlx::query_scalar("SELECT COUNT(*) FROM tracks WHERE library = ?")
+            .bind(&self.name)
+            .fetch_one(&ctx.state().db)
+            .await?)
     }
 
     async fn show_count(&self, ctx: &Context<'_>) -> ApiResult<i64> {

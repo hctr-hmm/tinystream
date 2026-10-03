@@ -7,6 +7,7 @@ use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderValue, header};
 use axum::response::{IntoResponse, Response};
+use futures::StreamExt;
 use serde::Deserialize;
 use tokio_stream_shim::ReceiverStream;
 
@@ -74,8 +75,13 @@ pub(super) fn stream_file(state: &AppState, who: &str, path: PathBuf, q: StreamQ
         VideoMode::Transcode { .. } => state.media.hw.device(),
         VideoMode::Copy => None,
     };
+    let hold = (video != VideoMode::Copy || audio != AudioMode::Copy).then(|| state.media.busy.hold());
     let rx = stream::spawn(StreamRequest { path, start: q.start.max(0.0), video, audio_stream: q.audio, audio }, hw);
-    let mut res = Body::from_stream(ReceiverStream(rx)).into_response();
+    let chunks = ReceiverStream(rx).map(move |c| {
+        let _ = &hold;
+        c
+    });
+    let mut res = Body::from_stream(chunks).into_response();
     let h = res.headers_mut();
     h.insert(header::CONTENT_TYPE, HeaderValue::from_static("video/mp4"));
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
@@ -117,7 +123,7 @@ pub(super) async fn font_file(path: PathBuf, index: usize) -> ApiResult<Response
     Ok(([(header::CONTENT_TYPE, mime), (header::CACHE_CONTROL, "private, max-age=86400".into())], data).into_response())
 }
 
-mod tokio_stream_shim {
+pub(super) mod tokio_stream_shim {
     use std::pin::Pin;
     use std::task::{Context, Poll};
 

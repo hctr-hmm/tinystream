@@ -14,7 +14,11 @@ export function Img({ className = '', onLoad, ...props }: ImgHTMLAttributes<HTML
   const [ready, setReady] = useState(false)
   useIsoLayoutEffect(() => {
     const img = ref.current
-    setReady(!!img && img.complete && img.naturalWidth > 0)
+    const done = !!img && img.complete && img.naturalWidth > 0
+    // Marked right away: a parent measuring itself in its own layout effect
+    // would otherwise style it undeveloped first, and it'd develop anyway.
+    if (done) img.dataset.ready = 'true'
+    setReady(done)
   }, [props.src])
   return (
     <img
