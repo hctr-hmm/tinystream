@@ -8,7 +8,7 @@
     "dev": "bun run decoder && vite dev --port 5173",
     "build": "bun run decoder && vite build",
     "decoder": "bun scripts/decoder.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun run decoder && tsc --noEmit",
     "codegen": "graphql-codegen"
   },
   "dependencies": {
