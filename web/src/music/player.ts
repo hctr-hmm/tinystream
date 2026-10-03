@@ -556,9 +556,10 @@ export const music = {
     void save()
   },
 
-  /** Puts the player away; only while paused, and the queue stays for later. */
+  /** Puts the player away, pausing it first; the queue stays for later. A room plays on, so it stays. */
   dismiss() {
-    if (state.playing) return
+    if (room) return
+    music.pause()
     set({ dismissed: true })
     localStorage.setItem(DISMISSED, '1')
   },

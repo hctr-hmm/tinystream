@@ -10,7 +10,7 @@ import { useAmbient } from '../lib/ambient'
 import { cover } from './api'
 import { Artists, Cover, QualityBadge, StarButton } from './components'
 import { PlayButton, Scrubber, Transport, Volume } from './controls'
-import { NowPlaying, type Tab } from './NowPlaying'
+import { ART, NowPlaying, type Tab } from './NowPlaying'
 import { current, music, usePlayer, usePosition } from './player'
 
 type View = { open: 'pill' | 'card' | 'full'; tab: Tab }
@@ -24,9 +24,12 @@ function setView(v: Partial<View>, morph = false) {
     watchers.forEach((f) => f())
   }
   // The cover grows from where it is into where it's going.
-  const doc = document as Document & { startViewTransition?: (f: () => void) => unknown }
+  const doc = document as Document & { startViewTransition?: (f: () => void) => { finished: Promise<void> } }
   if (morph && doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    doc.startViewTransition(() => flushSync(apply))
+    // Not a navigation: the page under Now Playing holds still.
+    const root = document.documentElement
+    root.dataset.morph = v.open === 'full' ? 'open' : 'close'
+    doc.startViewTransition(() => flushSync(apply)).finished.finally(() => delete root.dataset.morph)
   } else apply()
 }
 
@@ -37,9 +40,18 @@ export const useView = () =>
     () => view,
   )
 
+// The big cover has to be there when it's captured, or it slides in as nothing.
+function preload(src: string | undefined) {
+  if (!src) return Promise.resolve()
+  const img = new Image()
+  img.src = src
+  return img.decode().catch(() => {})
+}
+
 /** Opens Now Playing on a tab, from anywhere. */
 export function openNowPlaying(tab: Tab = view.tab) {
-  setView({ open: 'full', tab }, true)
+  const art = preload(cover(current()?.track.cover, ART))
+  void Promise.race([art, new Promise((r) => setTimeout(r, 300))]).then(() => setView({ open: 'full', tab }, true))
 }
 
 export function closeNowPlaying() {
@@ -62,6 +74,7 @@ export function MusicPill() {
   const hidden = usePlayer((s) => s.dismissed || s.suspended || s.queue.length === 0)
   const next = usePlayer((s) => s.queue[s.index + 1]?.track ?? null)
   const error = usePlayer((s) => s.error)
+  const room = usePlayer((s) => s.room != null)
   const { open, tab } = useView()
   const track = entry?.track ?? null
   const tint = useAmbient(track ? cover(track.cover, 32) : null)
@@ -84,10 +97,11 @@ export function MusicPill() {
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [!shown])
 
   useEffect(() => {
     if (!card) return
+    void preload(cover(current()?.track.cover, ART))
     const away = (e: globalThis.PointerEvent) => !root.current?.contains(e.target as Node) && setView({ open: 'pill' })
     const key = (e: KeyboardEvent) => e.key === 'Escape' && setView({ open: 'pill' })
     document.addEventListener('pointerdown', away)
@@ -137,7 +151,7 @@ export function MusicPill() {
         className="pointer-events-none fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom)+0.625rem)] left-1/2 z-[44] -translate-x-1/2 [view-transition-name:music] md:bottom-5 md:left-[calc(50%+7.5rem)]"
       >
         <div
-          className={`lift origin-bottom transition-[opacity,transform,filter] duration-[360ms] ease-[cubic-bezier(.2,.8,.2,1)] ${
+          className={`lift origin-bottom transition-[opacity,transform,translate,scale,filter] duration-[360ms] ease-[cubic-bezier(.2,.8,.2,1)] ${
             visible ? 'pointer-events-auto opacity-100' : 'pointer-events-none translate-y-6 scale-90 opacity-0 blur-[3px]'
           }`}
           style={{
@@ -148,7 +162,7 @@ export function MusicPill() {
           } as CSSProperties}
         >
           <div
-            className="material relative overflow-hidden bg-float inset-ring inset-ring-glow/8 transition-[width,height,border-radius] duration-[480ms] ease-[cubic-bezier(.3,1.2,.4,1)]"
+            className="material relative flex items-end justify-center overflow-hidden bg-float inset-ring inset-ring-glow/8 transition-[width,height,border-radius] duration-[480ms] ease-[cubic-bezier(.3,1.2,.4,1)]"
             style={size ? { width: size.w, height: size.h, borderRadius: radius } : { borderRadius: 26 }}
           >
             {tint && (
@@ -158,7 +172,7 @@ export function MusicPill() {
                 style={{ background: `radial-gradient(130% 160% at ${card ? '50% 0%' : '0% 50%'}, rgb(${tint} / 0.3), transparent 62%)` }}
               />
             )}
-            <div ref={inner} className="relative w-max">
+            <div ref={inner} className="relative w-max shrink-0">
               {card ? (
                 <div key="card" className="w-[min(22rem,calc(100vw-1.5rem))] animate-[fade_260ms_ease-out] p-4">
                   <button
@@ -220,36 +234,36 @@ export function MusicPill() {
                   onPointerMove={onMove}
                   onPointerUp={onUp}
                   onPointerCancel={() => setDrag(null)}
-                  className="group flex h-[52px] max-w-[calc(100vw-1.5rem)] animate-[fade_260ms_ease-out] cursor-pointer touch-none items-center gap-3 pr-2 pl-2 select-none"
+                  className="group flex h-[52px] max-w-[calc(100vw-1.5rem)] animate-[fade_260ms_ease-out] cursor-pointer touch-none items-center gap-3 pr-2 pl-[7px] select-none"
                 >
-                  <Cover src={shown.cover} size={38} className={`size-[38px] shrink-0 transition-transform duration-500 ${playing ? 'scale-100' : 'scale-[0.92]'} ${open === 'pill' ? '[view-transition-name:now-playing]' : ''}`} />
-                  <div className="w-[min(13rem,calc(100vw-11rem))] min-w-0">
+                  <Cover src={shown.cover} size={38} round className={`size-[38px] shrink-0 ${open === 'pill' ? '[view-transition-name:now-playing]' : ''}`} />
+                  <div className="w-[min(13rem,calc(100vw-13.5rem))] min-w-0">
                     <p key={shown.id} className="animate-[fade_300ms_ease-out] truncate text-[13px] leading-tight font-medium">
                       {error ?? shown.title}
                     </p>
                     <p className="truncate text-xs leading-tight text-ink-3">{shown.artist}</p>
                   </div>
                   <PlayButton size="sm" />
-                  {playing || !next ? (
-                    <button
-                      aria-label="Next"
-                      disabled={!next}
-                      onClick={() => music.next()}
-                      className="grid size-9 place-items-center rounded-full text-ink-2 transition-[color,scale] hover:text-ink active:scale-90 disabled:opacity-30"
-                    >
-                      <SkipForward className="size-4.5 fill-current" />
-                    </button>
-                  ) : (
+                  <button
+                    aria-label="Next"
+                    disabled={!next}
+                    onClick={() => music.next()}
+                    className="grid size-9 place-items-center rounded-full text-ink-2 transition-[color,scale] hover:text-ink active:scale-90 disabled:opacity-30"
+                  >
+                    <SkipForward className="size-4.5 fill-current" />
+                  </button>
+                  {!room && (
                     <button
                       aria-label="Close the player"
                       onClick={() => {
+                        music.pause()
                         setLeaving(true)
                         setTimeout(() => {
                           music.dismiss()
                           setLeaving(false)
                         }, 260)
                       }}
-                      className="grid size-9 place-items-center rounded-full text-ink-3 transition-[color,scale] hover:text-ink active:scale-90"
+                      className="-ml-2 grid size-9 place-items-center rounded-full text-ink-3 transition-[color,scale,background-color] hover:bg-hover hover:text-ink active:scale-90"
                     >
                       <X className="size-4.5" />
                     </button>

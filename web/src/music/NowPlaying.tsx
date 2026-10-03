@@ -16,6 +16,9 @@ import { current, music, outputRate, usePlayer, usePosition } from './player'
 
 export type Tab = 'lyrics' | 'queue' | 'details'
 
+/** How big the cover is drawn, so it can be loaded before it's opened. */
+export const ART = 520
+
 const TABS: { value: Tab; label: string }[] = [
   { value: 'lyrics', label: 'Lyrics' },
   { value: 'queue', label: 'Queue' },
@@ -239,7 +242,7 @@ export function NowPlaying({ tab, onTab, onClose }: { tab: Tab; onTab: (t: Tab) 
 
         <div className="grid min-h-0 flex-1 gap-8 pt-4 max-md:grid-rows-[minmax(0,1fr)] md:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] md:gap-16 md:pt-8 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
           <div className="flex min-h-0 flex-col justify-center max-md:hidden">
-            <Cover src={t.cover} size={520} className="aspect-square w-full max-w-[min(32rem,52vh)] self-center shadow-[0_40px_80px_-30px_var(--color-shade)] [view-transition-name:now-playing]" />
+            <Cover src={t.cover} size={ART} className="aspect-square w-full max-w-[min(32rem,52vh)] self-center shadow-[0_40px_80px_-30px_var(--color-shade)] [view-transition-name:now-playing]" />
             <div className="mx-auto mt-7 w-full max-w-[min(32rem,52vh)]">
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">

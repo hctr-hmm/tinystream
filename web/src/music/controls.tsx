@@ -78,8 +78,8 @@ export function PlayButton({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       className={`relative grid shrink-0 place-items-center rounded-full bg-ink text-canvas transition-[scale] duration-150 hover:scale-105 active:scale-95 ${box}`}
     >
       {waiting && <span className="absolute -inset-1 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />}
-      <span key={playing ? 'pause' : 'play'} className="animate-[pop_160ms_ease-out]">
-        {playing ? <Pause className={`${icon} fill-current`} /> : <Play className={`${icon} ml-0.5 fill-current`} />}
+      <span key={playing ? 'pause' : 'play'} className="grid animate-[pop_160ms_ease-out]">
+        {playing ? <Pause className={`${icon} fill-current`} /> : <Play className={`${icon} translate-x-[6%] fill-current`} />}
       </span>
     </button>
   )

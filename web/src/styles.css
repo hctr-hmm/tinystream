@@ -228,6 +228,12 @@
   }
 }
 
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes slide {
   from {
     left: -33%;
@@ -430,6 +436,32 @@
 ::view-transition-new(music):not(:only-child) {
   animation: none;
   mix-blend-mode: normal;
+}
+/*
+ * Opening and closing Now Playing isn't a navigation: it fades over the page,
+ * and the chrome and player go with the page under it, so nothing stays on
+ * top. Now Playing itself isn't captured on its own, as anything new is drawn
+ * above what was already there, the cover sliding into it included.
+ */
+:root[data-morph]::view-transition-old(root) {
+  animation: fade-out 320ms ease both;
+}
+:root[data-morph]::view-transition-new(root) {
+  animation: fade 320ms ease both;
+}
+:root[data-morph='open']::view-transition-new(chrome),
+:root[data-morph='open']::view-transition-new(chrome-top),
+:root[data-morph='open']::view-transition-new(chrome-bottom) {
+  animation: fade-out 320ms ease both;
+}
+:root[data-morph='close']::view-transition-new(chrome),
+:root[data-morph='close']::view-transition-new(chrome-top),
+:root[data-morph='close']::view-transition-new(chrome-bottom) {
+  animation: fade 320ms ease both;
+}
+:root[data-morph='open']::view-transition-old(music):not(:only-child) {
+  display: block;
+  animation: fade-out 320ms ease both;
 }
 ::view-transition-group(profile) {
   animation-duration: 440ms;
