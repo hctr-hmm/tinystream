@@ -10,6 +10,7 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { toast, toastError } from '../components/feedback'
 import { Empty, Page, Section } from '../components/Page'
 import { Img } from '../components/Img'
+import { ArtworkEditor } from '../components/ArtworkEditor'
 import { Overview } from '../components/Overview'
 import { Poster, morphFrom } from '../components/Poster'
 import { Row } from '../components/Row'
@@ -136,6 +137,7 @@ function TitlePage() {
   const [season, setSeason] = useState<number | null>(null)
   const [matching, setMatching] = useState(false)
   const [backdropBroken, setBackdropBroken] = useState(false)
+  useEffect(() => setBackdropBroken(false), [item?.backdrop])
   const features = useFeatures()
   const { data: series } = useItemSeries(Number(id), !!features && item?.kind === 'SHOW', !!me?.permissions.manageShows)
   const [searchEpisode, setSearchEpisode] = useState<SeriesEpisode | null>(null)
@@ -352,6 +354,13 @@ function TitlePage() {
           </div>
         </div>
 
+        {can?.editMetadata && (
+          <div className="mt-5 flex flex-wrap gap-3">
+            <ArtworkEditor target={{ titleId: item.id, kind: 'POSTER' }} custom={item.customPoster} label="thumbnail" />
+            <ArtworkEditor target={{ titleId: item.id, kind: 'BACKDROP' }} custom={item.customBackdrop} label="banner" />
+            {item.movie && <ArtworkEditor target={{ videoId: item.movie.id }} custom={item.movie.customStill} label="video thumbnail" />}
+          </div>
+        )}
         {item.overview && <Overview text={item.overview} style={refreshing(3)} />}
         {can?.manageShows && features && item.kind === 'SHOW' && series !== undefined && (
           <SeriesPanel item={item} series={series && 'counts' in series ? series : null} season={season} />
@@ -404,6 +413,7 @@ function TitlePage() {
                   <EpisodeRow
                     key={e.id}
                     e={e}
+                    canEditArtwork={!!can?.editMetadata}
                     order={5 + i}
                     next={!allWatched && next?.video.id === e.id}
                     scrollTo={!allWatched && next?.video.id === e.id && i > 4}
@@ -466,7 +476,7 @@ function TitlePage() {
                 <div className="-mx-3 space-y-0.5">
                   {extras.map((e, i) => (
                     <EpisodeRow key={e.id} e={e} order={5 + regular.length + i} next={next?.video.id === e.id}
-                      scrollTo={false} onWatched={(w) => setEpisodes.mutate({ ids: [e.id], watched: w })} />
+                      canEditArtwork={!!can?.editMetadata} scrollTo={false} onWatched={(w) => setEpisodes.mutate({ ids: [e.id], watched: w })} />
                   ))}
                 </div>
               </>
@@ -597,10 +607,12 @@ function EpisodeRow({
   next,
   scrollTo,
   onWatched,
+  canEditArtwork,
   onWatchedUpTo,
   onUnwatchedFrom,
 }: {
   e: Episode
+  canEditArtwork: boolean
   order: number
   next: boolean
   scrollTo: boolean
@@ -610,6 +622,7 @@ function EpisodeRow({
 }) {
   const [broken, setBroken] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => setBroken(false), [e.still])
   const progress = !e.finished && e.position && e.duration ? e.position / e.duration : 0
   // The check draws itself when it's marked here, not every time the page opens.
   const finishedBefore = useRef(e.finished)
@@ -666,6 +679,11 @@ function EpisodeRow({
           </div>
         </Squircle>
       </Link>
+      {canEditArtwork && (
+        <div className="absolute right-3 bottom-3">
+          <ArtworkEditor target={{ videoId: e.id }} custom={e.customStill} label="episode thumbnail" compact />
+        </div>
+      )}
       <div className="absolute top-3 right-3 flex gap-0.5">
         {onWatchedUpTo && (
           <IconButton

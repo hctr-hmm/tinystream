@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { Link } from '@tanstack/react-router'
-import { type CSSProperties, type MouseEvent, useState } from 'react'
+import { type CSSProperties, type MouseEvent, useEffect, useState } from 'react'
 import type { Card } from '../lib/api'
 import { useFetching } from '../lib/refreshing'
 import { useTilt } from '../lib/tilt'
@@ -67,6 +67,7 @@ function holdScroll() {
 /** `caption` replaces the watched count under the title. */
 export function Poster({ card, caption }: { card: Card; caption?: string }) {
   const [broken, setBroken] = useState(false)
+  useEffect(() => setBroken(false), [card.poster])
   const done = card.videoCount > 0 && card.watchedCount >= card.videoCount
   const unwatched = card.kind === 'SHOW' ? card.videoCount - card.watchedCount : 0
   const fresh = card.freshCount > 0 && !done

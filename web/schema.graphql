@@ -831,6 +831,8 @@ type Mutation {
 	setTitleWatched(id: Int!, watched: Boolean!): Title!
 	saveProgress(videoId: Int!, position: Float!, duration: Float!): Video!
 	matchTitle(id: Int!, provider: Provider!, providerId: String!): Title!
+	setTitleArtwork(id: Int!, kind: TitleArtwork!, image: Upload): Title!
+	setVideoArtwork(videoId: Int!, image: Upload): Video!
 	refreshTitle(id: Int!): Title!
 	star(kind: MusicKind!, id: Int!, starred: Boolean!): Boolean!
 	"""
@@ -1785,6 +1787,8 @@ type Title {
 	year: Int
 	poster: String
 	backdrop: String
+	customPoster: Boolean!
+	customBackdrop: Boolean!
 	overview: String
 	genres: [String!]!
 	rating: Float
@@ -1804,6 +1808,11 @@ type Title {
 	similar: Similar!
 	matchCandidates(query: String, provider: Provider): MatchCandidates!
 	series: Series
+}
+
+enum TitleArtwork {
+	POSTER
+	BACKDROP
 }
 
 enum TitleKind {
@@ -1974,6 +1983,7 @@ type Video {
 	name: String
 	overview: String
 	still: String!
+	customStill: Boolean!
 	airDate: String
 	duration: Float
 	position: Float

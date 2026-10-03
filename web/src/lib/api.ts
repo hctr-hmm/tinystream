@@ -104,6 +104,7 @@ graphql(`
     name
     overview
     still
+    customStill
     airDate
     duration
     position
@@ -114,6 +115,8 @@ graphql(`
 graphql(`
   fragment TitleDetail on Title {
     ...Card
+    customPoster
+    customBackdrop
     overview
     genres
     rating
