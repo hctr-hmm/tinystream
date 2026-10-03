@@ -167,7 +167,7 @@ async function playback(mediaId: number, room: string | null): Promise<Playback>
   return { ...r.video, transcoding: r.server.transcoding }
 }
 
-export function Player({ mediaId, room, editClip }: { mediaId: number; room?: RoomContext; editClip?: number }) {
+export function Player({ mediaId, room, editClip, startAt }: { mediaId: number; room?: RoomContext; editClip?: number; startAt?: number }) {
   const navigate = useNavigate()
   const router = useRouter()
   const canGoBack = useCanGoBack()
@@ -302,7 +302,7 @@ export function Player({ mediaId, room, editClip }: { mediaId: number; room?: Ro
   }
 
   // (Re)build the stream whenever the plan changes, keeping our place.
-  const resumeAt = useRef<number | null>(null)
+  const resumeAt = useRef<number | null>(startAt ?? null)
   const resumePaused = useRef(false)
   useEffect(() => {
     const video = videoRef.current

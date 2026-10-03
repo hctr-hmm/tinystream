@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Camera, Check, Copy, Download, Link2, Pencil, RotateCw, Scissors, Trash2, TriangleAlert, X } from 'lucide-react'
+import { Camera, Check, Copy, Download, Link2, Pencil, Play, RotateCw, Scissors, Trash2, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Avatar } from '../components/Avatar'
 import { ask, toast, toastError } from '../components/feedback'
@@ -365,6 +365,11 @@ function ClipDialog({ id, onClose }: { id: number; onClose: () => void }) {
                 <Download className="size-4" /> Download
               </Button>
             </a>
+          )}
+          {c.source.video && (
+            <IconButton label="Watch from here" onClick={() => void navigate({ to: '/watch/$id', params: { id: String(c.source.video?.id) }, search: { t: c.start } })}>
+              <Play className="size-4" />
+            </IconButton>
           )}
           {editable && (
             <IconButton label="Change the range, tracks or quality" onClick={() => void navigate({ to: '/watch/$id', params: { id: String(c.source.video?.id) }, search: { clip: c.id } })}>

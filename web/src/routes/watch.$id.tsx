@@ -5,8 +5,11 @@ import { preload } from '../lib/refreshing'
 import { Player } from '../player/Player'
 
 export const Route = createFileRoute('/watch/$id')({
-  // `clip` opens the clip editor on one of your clips.
-  validateSearch: (s: Record<string, unknown>): { clip?: number } => ({ clip: s.clip ? Number(s.clip) : undefined }),
+  // `clip` opens the clip editor on one of your clips; `t` starts playback there.
+  validateSearch: (s: Record<string, unknown>): { clip?: number; t?: number } => ({
+    clip: s.clip ? Number(s.clip) : undefined,
+    t: s.t != null && !isNaN(Number(s.t)) ? Number(s.t) : undefined,
+  }),
   // The still the player opens on is decoded before the page changes, so the
   // one that was clicked grows into it rather than into black.
   loader: ({ params }) => {
@@ -17,7 +20,7 @@ export const Route = createFileRoute('/watch/$id')({
 
 function Watch() {
   const { id } = Route.useParams()
-  const { clip } = Route.useSearch()
+  const { clip, t } = Route.useSearch()
   // Keyed so moving to the next episode starts from a clean player.
-  return <Player key={id} mediaId={Number(id)} editClip={clip} />
+  return <Player key={id} mediaId={Number(id)} editClip={clip} startAt={t} />
 }
