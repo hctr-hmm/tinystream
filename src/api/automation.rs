@@ -16,7 +16,7 @@ use crate::automation::naming::Style;
 use crate::automation::renames::Applied;
 use crate::automation::series::Counts;
 use crate::automation::sources::{Detected, Release};
-use crate::automation::{self, Candidate, Grab, fsops, naming, renames, series};
+use crate::automation::{self, Candidate, Grab, fsops, naming, release, renames, series};
 use crate::config::{List, Monitor, Profile, Provider, Seeding, Source};
 use crate::db::now;
 use crate::error::{ApiError, ApiResult};
@@ -131,6 +131,7 @@ pub struct TorrentFile {
 #[derive(SimpleObject)]
 #[graphql(complex)]
 pub struct Download {
+    category: crate::metadata::MediaCategory,
     id: i64,
     name: String,
     series_id: Option<i64>,
@@ -233,6 +234,7 @@ async fn downloads(ctx: &Context<'_>, id: Option<i64>) -> ApiResult<Vec<Download
         };
         let episodes: Vec<(u32, u32)> = serde_json::from_str(&r.episodes).unwrap_or_default();
         out.push(Download {
+            category: release::media_category(&r.name, &episodes),
             id: r.id,
             name: r.name,
             series_id: r.series_id,

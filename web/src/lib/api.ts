@@ -220,6 +220,7 @@ graphql(`
 
 graphql(`
   fragment DiscoverResultFields on DiscoverResult {
+    category
     provider
     id
     name
@@ -325,6 +326,7 @@ graphql(`
 
 graphql(`
   fragment DownloadFields on Download {
+    category
     id
     name
     seriesId

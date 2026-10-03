@@ -212,10 +212,12 @@ function TitlePage() {
     .map((e) => e.id)
   const allWatched = all.length > 0 && all.every((e) => e.finished)
   const current = item.seasons.find((s) => s.number === season)
+  const extras = current?.episodes.filter((e) => e.episode === null && e.season !== 0) ?? []
+  const regular = current?.episodes.filter((e) => !extras.includes(e)) ?? []
   // Episodes the schedule knows about but the library doesn't have (yet).
   const scheduled = (series && 'episodes' in series ? series.episodes : undefined) ?? []
   const ghosts = scheduled.filter((e) => e.season === season && !e.video && (e.aired || e.airAt))
-  const extraSeasons = [...new Set(scheduled.filter((e) => e.season > 0 && !e.video && (e.aired || e.airAt)).map((e) => e.season))].filter(
+  const extraSeasons = [...new Set(scheduled.filter((e) => !e.video && (e.aired || e.airAt)).map((e) => e.season))].filter(
     (n) => !item.seasons.some((s) => s.number === n),
   )
   // Episodes per season that the schedule says haven't aired yet.
@@ -224,7 +226,7 @@ function TitlePage() {
     if (!e.video && !e.aired && e.airAt && e.airAt * 1000 > Date.now()) unaired.set(e.season, (unaired.get(e.season) ?? 0) + 1)
   const seasonTabs = [
     ...item.seasons.map((s) => ({ number: s.number, name: s.name, done: s.episodes.every((e) => e.finished), upcoming: unaired.get(s.number) ?? 0 })),
-    ...extraSeasons.map((n) => ({ number: n, name: `Season ${n}`, done: false, upcoming: unaired.get(n) ?? 0 })),
+    ...extraSeasons.map((n) => ({ number: n, name: n === 0 ? (scheduled.filter((e) => e.season === 0).length === 1 ? 'Special' : 'Specials') : `Season ${n}`, done: false, upcoming: unaired.get(n) ?? 0 })),
   ].sort((a, b) => (a.number === 0 ? 1 : b.number === 0 ? -1 : a.number - b.number))
   const totalRuntime = item.kind === 'MOVIE' ? runtime(item.movie?.duration) : null
   const next = item.nextUp
@@ -389,12 +391,15 @@ function TitlePage() {
                 })}
               </div>
             )}
+            {season === 0 && seasonTabs.length === 1 && (
+              <h2 className="mb-4 text-[15px] font-semibold">{current?.name ?? 'Specials'}</h2>
+            )}
             {current?.title && current.title !== item.name && (
               <p style={refreshing(4)} className="refreshable mb-4 text-sm text-ink-3">{current.title}</p>
             )}
             <div className="-mx-3 space-y-0.5">
               {[
-                ...(current?.episodes ?? []).map((e, i, list) => ({ n: e.episode ?? 0, row: (
+                ...regular.map((e, i, list) => ({ n: e.episode ?? Number.MAX_SAFE_INTEGER, row: (
                   <EpisodeRow
                     key={e.id}
                     e={e}
@@ -454,6 +459,17 @@ function TitlePage() {
                 .sort((a, b) => a.n - b.n)
                 .map((x) => x.row)}
             </div>
+            {extras.length > 0 && (
+              <>
+                <h2 className="mt-8 mb-4 text-[15px] font-semibold">Extras</h2>
+                <div className="-mx-3 space-y-0.5">
+                  {extras.map((e, i) => (
+                    <EpisodeRow key={e.id} e={e} order={5 + regular.length + i} next={next?.video.id === e.id}
+                      scrollTo={false} onWatched={(w) => setEpisodes.mutate({ ids: [e.id], watched: w })} />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 

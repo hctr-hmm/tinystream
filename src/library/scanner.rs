@@ -57,6 +57,7 @@ struct FoundItem {
 struct FoundMedia {
     path: PathBuf,
     ep: Option<parse::EpisodeNumber>,
+    season: Option<u32>,
     size: i64,
     mtime: i64,
 }
@@ -166,7 +167,7 @@ fn walk_title_folder(dir: &Path, walk: &mut Walk) {
             walk_season_folder(&season_dir, folder_season, &mut media, &mut seen, walk);
         }
         if media.is_empty() {
-            return walk.skip(dir, "show has season folders but no episodes named with SxxEyy");
+            return walk.skip(dir, "show has season folders but no playable episodes or extras");
         }
         walk.items.push(FoundItem { path: dir.to_path_buf(), kind: Kind::Show, title, year, media });
     } else if videos
@@ -208,7 +209,7 @@ fn walk_title_folder(dir: &Path, walk: &mut Walk) {
             kind: Kind::Movie,
             title,
             year,
-            media: vec![FoundMedia { path: main, ep: None, size, mtime }],
+            media: vec![FoundMedia { path: main, ep: None, season: None, size, mtime }],
         });
     } else {
         walk.skip(dir, "no season folders and no videos inside; not a show or a movie");
@@ -231,7 +232,9 @@ fn walk_season_folder(
         }
         let path = entry.path();
         if path.is_dir() {
-            walk.skip(&path, "folders inside a season folder are ignored");
+            if !entry.file_type().is_ok_and(|ft| ft.is_symlink()) {
+                walk_extras(&path, folder_season, media, walk);
+            }
             continue;
         }
         match parse::file_kind(&path) {
@@ -248,6 +251,11 @@ fn walk_season_folder(
             continue;
         }
         let Some(mut ep) = parse::episode_number(&stem) else {
+            if folder_season == 0 {
+                let (size, mtime) = file_info(&path);
+                media.push(FoundMedia { path, ep: None, season: Some(0), size, mtime });
+                continue;
+            }
             walk.skip(&path, "no SxxEyy episode number in the file name (e.g. `Show S01E05.mkv`)");
             continue;
         };
@@ -275,7 +283,31 @@ fn walk_season_folder(
         }
         seen.insert((ep.season, ep.episode), path.clone());
         let (size, mtime) = file_info(&path);
-        media.push(FoundMedia { path, ep: Some(ep), size, mtime });
+        media.push(FoundMedia { path, ep: Some(ep), season: Some(folder_season), size, mtime });
+    }
+}
+
+fn walk_extras(dir: &Path, season: u32, media: &mut Vec<FoundMedia>, walk: &mut Walk) {
+    let Ok(entries) = sorted_entries(dir) else {
+        return walk.skip(dir, "can't read this folder (permissions?)");
+    };
+    for entry in entries {
+        if is_hidden(&entry) {
+            continue;
+        }
+        let path = entry.path();
+        if path.is_dir() {
+            if !entry.file_type().is_ok_and(|ft| ft.is_symlink()) {
+                walk_extras(&path, season, media, walk);
+            }
+        } else if matches!(parse::file_kind(&path), FileKind::Video) {
+            if parse::is_sample(&path.file_stem().unwrap_or_default().to_string_lossy()) {
+                walk.skip(&path, "sample file");
+                continue;
+            }
+            let (size, mtime) = file_info(&path);
+            media.push(FoundMedia { path, ep: None, season: Some(season), size, mtime });
+        }
     }
 }
 
@@ -370,8 +402,8 @@ async fn scan_library(state: &Arc<AppState>, name: &str) -> anyhow::Result<()> {
         for m in &item.media {
             media_count += 1;
             let (season, episode, episode_end) = match m.ep {
-                Some(ep) => (Some(ep.season as i64), Some(ep.episode as i64), ep.episode_end.map(|e| e as i64)),
-                None => (None, None, None),
+                Some(ep) => (m.season.map(i64::from), Some(ep.episode as i64), ep.episode_end.map(|e| e as i64)),
+                None => (m.season.map(i64::from), None, None),
             };
             let (id, inserted): (i64, bool) = sqlx::query_as(
                 "INSERT INTO media (item_id, path, season, episode, episode_end, size, mtime, added_at)
@@ -596,4 +628,92 @@ fn watch_libraries(
         }
     }
     Some(watcher)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Library(PathBuf);
+
+    impl Library {
+        fn new(files: &[&str]) -> Self {
+            let root = std::env::temp_dir().join(format!("tinystream-scan-{}", uuid::Uuid::new_v4()));
+            for file in files {
+                let path = root.join(file);
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, b"video").unwrap();
+            }
+            Self(root)
+        }
+
+        fn scan(&self) -> Walk {
+            walk(&self.0, &[]).unwrap()
+        }
+    }
+
+    impl Drop for Library {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn season_extras_do_not_collide_with_episodes() {
+        let library = Library::new(&[
+            "Show/Season 01/Show S01E01.mkv",
+            "Show/Season 01/extra/Show S01E01 Director's cut.mkv",
+            "Show/Season 01/extras/OP.mp4",
+            "Show/Season 01/extras/credits/ED.mkv",
+            "Show/Season 01/extras/.hidden.mkv",
+            "Show/Season 01/extras/sample.mkv",
+            "Show/Season 01/extras/OP.ass",
+            "Show/Season 02/Show S02E01.mkv",
+        ]);
+        let scan = library.scan();
+        assert_eq!(scan.items.len(), 1);
+        let media = &scan.items[0].media;
+        assert_eq!(media.len(), 5);
+        assert_eq!(media.iter().filter(|m| m.ep.is_some()).count(), 2);
+        assert_eq!(media.iter().filter(|m| m.ep.is_none() && m.season == Some(1)).count(), 3);
+        assert_eq!(scan.skipped.len(), 1);
+        let again = library.scan();
+        assert_eq!(
+            media.iter().map(|m| &m.path).collect::<Vec<_>>(),
+            again.items[0].media.iter().map(|m| &m.path).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn numbered_and_unnumbered_specials() {
+        for folder in ["S00", "Season 00", "Special", "Specials"] {
+            let library = Library::new(&[&format!("Show/{folder}/Show S00E01.mkv"), &format!("Show/{folder}/OVA.mkv")]);
+            let scan = library.scan();
+            let media = &scan.items[0].media;
+            assert_eq!(media.len(), 2);
+            assert!(media.iter().all(|m| m.season == Some(0)));
+            assert_eq!(media.iter().filter(|m| m.ep.is_none()).count(), 1);
+        }
+    }
+
+    #[test]
+    fn ordinary_unnumbered_videos_are_still_skipped() {
+        let library = Library::new(&["Show/S01/Show S01E01.mkv", "Show/S01/Unknown.mkv", "Movie (2024)/Movie.mkv"]);
+        let scan = library.scan();
+        assert_eq!(scan.items.len(), 2);
+        let show = scan.items.iter().find(|i| i.kind == Kind::Show).unwrap();
+        assert_eq!(show.media.len(), 1);
+        let movie = scan.items.iter().find(|i| i.kind == Kind::Movie).unwrap();
+        assert!(movie.media[0].season.is_none());
+        assert_eq!(scan.skipped.len(), 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn extras_do_not_follow_directory_symlink_cycles() {
+        let library = Library::new(&["Show/S01/extras/OP.mkv"]);
+        let extras = library.0.join("Show/S01/extras");
+        std::os::unix::fs::symlink(&extras, extras.join("loop")).unwrap();
+        assert_eq!(library.scan().items[0].media.len(), 1);
+    }
 }

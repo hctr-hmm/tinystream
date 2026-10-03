@@ -27,7 +27,7 @@ import { ListSkeleton, useArrived } from '../components/Skeleton'
 import { PieceMap, Sparkline, record } from '../components/Sparkline'
 import { Squircle } from '../components/Squircle'
 import { Ticker } from '../components/Ticker'
-import { Badge, Button, IconButton, MenuItem, Panel, Popover, Tip } from '../components/ui'
+import { Badge, Button, IconButton, MenuItem, Panel, Popover, Select, Tip } from '../components/ui'
 import { graphql } from '../gql'
 import { type Download, type EngineOverview, request } from '../lib/api'
 
@@ -96,6 +96,7 @@ function run(action: Action, ids: number[]): Promise<unknown> {
 }
 import { bytes, clockTime, duration, episodeCode, relative, speed } from '../lib/downloads'
 import { useMe } from '../lib/hooks'
+import { mediaLabels, mediaOptions, ofMediaType } from '../lib/media'
 import { useTitle } from '../lib/title'
 
 export const Route = createFileRoute('/downloads')({ component: DownloadsPage })
@@ -109,6 +110,7 @@ const lastSeen = new Map<number, Where>()
 
 function DownloadsPage() {
   useTitle('Downloads')
+  const [category, setCategory] = useState('')
   const qc = useQueryClient()
   const { data, dataUpdatedAt } = useQuery({ queryKey: ['downloads'], queryFn: async () => (await request(DownloadsQuery)).downloads, refetchInterval: POLL })
   const { data: engine, dataUpdatedAt: engineAt, isPending: enginePending } = useQuery({
@@ -116,10 +118,11 @@ function DownloadsPage() {
     queryFn: async () => (await request(EngineQuery)).downloadEngine,
     refetchInterval: POLL,
   })
-  const active = data?.filter((d) => d.state === 'DOWNLOADING' || (d.state === 'PAUSED' && !d.finishedAt)) ?? []
-  const seeding = data?.filter((d) => d.state === 'SEEDING' || (d.state === 'PAUSED' && d.finishedAt)) ?? []
-  const gone = data?.filter((d) => d.state === 'FAILED' || d.state === 'REMOVED') ?? []
-  const finished = data?.filter((d) => d.state === 'DONE') ?? []
+  const filtered = ofMediaType(data ?? [], category)
+  const active = filtered.filter((d) => d.state === 'DOWNLOADING' || (d.state === 'PAUSED' && !d.finishedAt))
+  const seeding = filtered.filter((d) => d.state === 'SEEDING' || (d.state === 'PAUSED' && d.finishedAt))
+  const gone = filtered.filter((d) => d.state === 'FAILED' || d.state === 'REMOVED')
+  const finished = filtered.filter((d) => d.state === 'DONE')
   const running = data?.filter((d) => d.state === 'DOWNLOADING' || d.state === 'SEEDING') ?? []
   const paused = data?.filter((d) => d.state === 'PAUSED') ?? []
 
@@ -160,6 +163,10 @@ function DownloadsPage() {
         Downloads
       </PageTitle>
 
+      <div className="mb-6 max-w-56">
+        <Select value={category} options={mediaOptions} onChange={setCategory} />
+      </div>
+
       {engine?.killSwitch && (
         <Squircle radius={14} edge className="mb-6 flex items-start gap-3 bg-danger/10 p-4">
           <ShieldAlert className="mt-0.5 size-5 shrink-0 text-danger" />
@@ -175,7 +182,7 @@ function DownloadsPage() {
 
       {engine && <Traffic engine={engine} stamp={engineAt} downloads={data} />}
 
-      {data.length === 0 && <Empty title="No downloads yet" />}
+      {filtered.length === 0 && <Empty title={category ? "No downloads of this type" : "No downloads yet"} />}
 
       {active.length > 0 && (
         <Section title="Downloading" aside={<span className="text-xs text-ink-3 tabular">{active.length}</span>}>
@@ -284,7 +291,7 @@ function bySeason(items: Download[]): Bunch[] {
       continue
     }
     const season = d.episodes[0].season
-    const key = `s${series}:${season}`
+    const key = `s${series}:${season}:${d.category}`
     const bunch = open.get(key)
     if (bunch) bunch.items.push(d)
     else {
@@ -307,6 +314,7 @@ const opened = new Set<string>()
 /** Episodes, like S01E01–E04, or S01 · 5 episodes when there are gaps. */
 function episodeRange(season: number, items: Download[]) {
   const eps = [...new Set(items.flatMap((d) => d.episodes.map((e) => e.episode)))].sort((a, z) => a - z)
+  if (season === 0) return `${eps.length} specials`
   const code = episodeCode(season, eps[0])
   if (eps[eps.length - 1] - eps[0] === eps.length - 1) return `${code}–E${String(eps[eps.length - 1]).padStart(2, '0')}`
   return `S${String(season).padStart(2, '0')} · ${eps.length} episodes`
@@ -368,6 +376,7 @@ function Group({ season, items, where, stamp }: { season: number; items: Downloa
             <button type="button" aria-expanded={open} onClick={toggle} className="min-w-0 flex-1 text-left">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="max-w-full truncate text-sm font-medium">{lead.seriesName ?? lead.name}</span>
+                <Badge>{mediaLabels[lead.category]}</Badge>
                 <Badge>{episodeRange(season, items)}</Badge>
                 <Badge tone={s.tone}>{s.text}</Badge>
                 {imported > 0 && (
@@ -532,6 +541,7 @@ function Row({ d, where, stamp, nested }: { d: Download; where: Where; stamp: nu
               ) : (
                 <span className="max-w-full truncate text-sm font-medium">{d.seriesName ?? d.name}</span>
               )}
+              {!nested && <Badge>{mediaLabels[d.category]}</Badge>}
               {label && !nested && <Badge>{label}</Badge>}
               <Badge tone={s.tone}>{s.text}</Badge>
               {d.importState === 'DONE' &&

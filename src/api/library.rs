@@ -44,9 +44,16 @@ pub(super) async fn item_row(state: &AppState, id: i64) -> ApiResult<Option<Item
 }
 
 pub(super) fn episode_label(season: Option<i64>, episode: Option<i64>, episode_end: Option<i64>) -> Option<String> {
-    let (s, e) = (season?, episode?);
+    let s = season?;
+    let Some(e) = episode else {
+        return Some(if s == 0 { "Special".into() } else { "Extra".into() });
+    };
     let end = episode_end.map(|x| format!("–E{x:02}")).unwrap_or_default();
     Some(if s == 0 { format!("Special {e}") } else { format!("S{s:02}E{e:02}{end}") })
+}
+
+fn season_name(number: i64, count: usize) -> String {
+    if number == 0 { if count == 1 { "Special".into() } else { "Specials".into() } } else { format!("Season {number}") }
 }
 
 #[derive(Enum, Debug, Clone, Copy, PartialEq, Eq)]
@@ -326,7 +333,7 @@ impl Title {
                 let m = meta.iter().find(|s| s.0 == n);
                 Season {
                     number: n,
-                    name: if n == 0 { "Specials".into() } else { format!("Season {n}") },
+                    name: season_name(n, eps.iter().filter(|e| e.season == Some(n)).count()),
                     title: m.and_then(|m| m.1.clone()),
                     overview: m.and_then(|m| m.2.clone()),
                     poster: m.and_then(|m| m.3.as_ref()).map(|_| match self.access.room() {
@@ -342,8 +349,9 @@ impl Title {
     async fn next_up(&self, ctx: &Context<'_>) -> ApiResult<Option<NextUp>> {
         let state = ctx.state();
         let eps = self.episodes(state).await?;
-        let next =
-            next_up(eps).or_else(|| eps.iter().find(|e| e.season != Some(0)).or(eps.first()).map(|e| (e, false)));
+        let next = next_up(eps).or_else(|| {
+            eps.iter().find(|e| e.season != Some(0) && e.episode.is_some()).or(eps.first()).map(|e| (e, false))
+        });
         Ok(next.map(|(e, resuming)| {
             state.media.prefetch_subtitles(PathBuf::from(&e.path));
             NextUp { video: self.video(e), resuming }
@@ -445,7 +453,7 @@ const EPISODE_COLUMNS: &str = "m.id, m.item_id, m.path, m.season, m.episode, m.e
 pub(super) async fn episodes(state: &AppState, user: &User, item_id: i64) -> ApiResult<Vec<Episode>> {
     Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT {EPISODE_COLUMNS} WHERE m.item_id = ?
-         ORDER BY CASE WHEN m.season = 0 THEN 1 ELSE 0 END, m.season, m.episode"
+         ORDER BY CASE WHEN m.season = 0 THEN 1 ELSE 0 END, m.season, m.episode IS NULL, m.episode, m.path"
     )))
     .bind(user.id)
     .bind(item_id)
@@ -459,7 +467,10 @@ pub(super) fn next_up(eps: &[Episode]) -> Option<(&Episode, bool)> {
         return Some((last, true));
     }
     let idx = eps.iter().position(|e| e.id == last.id)?;
-    eps[idx + 1..].iter().find(|e| e.season != Some(0) && e.finished != Some(true)).map(|e| (e, false))
+    eps[idx + 1..]
+        .iter()
+        .find(|e| e.season != Some(0) && e.episode.is_some() && e.finished != Some(true))
+        .map(|e| (e, false))
 }
 
 pub struct Video {
@@ -486,7 +497,14 @@ impl Video {
     }
 
     async fn neighbours(&self, state: &AppState) -> ApiResult<(Option<Video>, Option<Video>)> {
-        let eps = episodes(state, self.access.person(), self.ep.item_id).await?;
+        let mut eps = episodes(state, self.access.person(), self.ep.item_id).await?;
+        eps.retain(|e| {
+            if self.ep.episode.is_none() {
+                e.episode.is_none() && e.season == self.ep.season
+            } else {
+                e.episode.is_some()
+            }
+        });
         let Some(p) = eps.iter().position(|e| e.id == self.ep.id) else { return Ok((None, None)) };
         let wrap = |e: &Episode| Video { ep: e.clone(), access: self.access.clone() };
         Ok((p.checked_sub(1).map(|p| wrap(&eps[p])), eps.get(p + 1).map(wrap)))
@@ -520,7 +538,11 @@ impl Video {
     }
 
     async fn name(&self) -> Option<&str> {
-        self.ep.title.as_deref()
+        self.ep.title.as_deref().or_else(|| {
+            (self.ep.season.is_some() && self.ep.episode.is_none())
+                .then(|| FsPath::new(&self.ep.path).file_stem().and_then(|s| s.to_str()))
+                .flatten()
+        })
     }
 
     async fn overview(&self) -> Option<&str> {
@@ -961,5 +983,59 @@ mod fuzzy_tests {
         assert_eq!(hits("aot", &titles)[0], "Attack on Titan");
         assert_eq!(hits("pokemon", &titles), ["Pokémon"]);
         assert_eq!(hits("eva", &titles), ["Neon Genesis Evangelion"]);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn episode(id: i64, season: i64, number: Option<i64>, finished: bool, at: Option<i64>) -> Episode {
+        Episode {
+            id,
+            item_id: 1,
+            path: String::new(),
+            season: Some(season),
+            episode: number,
+            episode_end: None,
+            title: None,
+            overview: None,
+            air_date: None,
+            duration: None,
+            position: None,
+            finished: Some(finished),
+            updated_at: at,
+            added_at: 0,
+        }
+    }
+
+    #[test]
+    fn special_and_extra_labels() {
+        assert_eq!(season_name(0, 1), "Special");
+        assert_eq!(season_name(0, 2), "Specials");
+        assert_eq!(season_name(2, 1), "Season 2");
+        assert_eq!(episode_label(Some(0), Some(1), None).as_deref(), Some("Special 1"));
+        assert_eq!(episode_label(Some(0), None, None).as_deref(), Some("Special"));
+        assert_eq!(episode_label(Some(1), None, None).as_deref(), Some("Extra"));
+        assert_eq!(episode_label(None, None, None), None);
+    }
+
+    #[test]
+    fn next_up_skips_extras_but_can_resume_them() {
+        let mut eps = vec![
+            episode(1, 1, Some(1), true, Some(10)),
+            episode(2, 1, None, false, None),
+            episode(3, 2, Some(1), false, None),
+            episode(4, 0, Some(1), false, None),
+        ];
+        assert_eq!(next_up(&eps).map(|(e, resume)| (e.id, resume)), Some((3, false)));
+        eps[1].updated_at = Some(20);
+        eps[1].position = Some(30.0);
+        assert_eq!(next_up(&eps).map(|(e, resume)| (e.id, resume)), Some((2, true)));
+        eps[1].finished = Some(true);
+        assert_eq!(next_up(&eps).map(|(e, resume)| (e.id, resume)), Some((3, false)));
+        eps[2].finished = Some(true);
+        eps[2].updated_at = Some(30);
+        assert!(next_up(&eps).is_none());
     }
 }

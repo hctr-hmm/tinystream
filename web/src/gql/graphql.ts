@@ -153,6 +153,12 @@ export type MatchState =
   | 'PENDING'
   | 'UNMATCHED';
 
+export type MediaCategory =
+  | 'EPISODES'
+  | 'MOVIES'
+  | 'OTHER'
+  | 'SPECIALS';
+
 export type MetadataConfigInput = {
   language: string;
   tmdbApiKey?: string | null | undefined;
@@ -822,7 +828,7 @@ export type NamingPreviewQuery = { series: { namingPreview: { samples: Array<str
 export type TransfersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TransfersQuery = { downloadEngine: { version: string, downloadRate: number, uploadRate: number, active: number, killSwitch: string | null, listening: string | null, listenError: string | null, slowHours: boolean, downloadPath: string }, downloads: Array<{ id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } }> };
+export type TransfersQuery = { downloadEngine: { version: string, downloadRate: number, uploadRate: number, active: number, killSwitch: string | null, listening: string | null, listenError: string | null, slowHours: boolean, downloadPath: string }, downloads: Array<{ category: MediaCategory, id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } }> };
 
 export type SignOutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -914,7 +920,7 @@ export type PlaybackFragment = { id: number, label: string | null, name: string 
 
 export type TranscodingFieldsFragment = { vaapi: string | null, vaapiError: string | null, softwareH264: boolean };
 
-export type DiscoverResultFieldsFragment = { provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null };
+export type DiscoverResultFieldsFragment = { category: MediaCategory, provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null };
 
 export type ClipFieldsFragment = { id: number, screenshot: boolean, name: string, mine: boolean, canManage: boolean, start: number, end: number, audio: number | null, subtitles: string | null, state: ClipState, progress: number | null, error: string | null, bytes: number | null, width: number | null, height: number | null, fps: number | null, renderedAt: number | null, createdAt: number, sharedAt: number | null, public: boolean, link: string | null, linkLive: boolean, file: string, poster: string | null, owner: { id: number, username: string, avatar: string | null }, source: { name: string, kind: TitleKind, label: string | null, year: number | null, status: SourceStatus, video: { id: number } | null, title: { id: number } | null }, quality: { height: number, halfRate: boolean }, recipients: Array<{ sharedAt: number, hidden: boolean, user: { id: number, username: string, avatar: string | null } }> };
 
@@ -922,7 +928,7 @@ export type ClipAllowanceFieldsFragment = { canClip: boolean, canLink: boolean, 
 
 export type NotificationFieldsFragment = { id: number, kind: NotificationKind, priority: boolean, title: string, body: string | null, image: string | null, link: string | null, createdAt: number, expiresAt: number | null, readAt: number | null, actor: { id: number, username: string, avatar: string | null } | null };
 
-export type DownloadFieldsFragment = { id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } };
+export type DownloadFieldsFragment = { category: MediaCategory, id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } };
 
 export type EngineFieldsFragment = { version: string, downloadRate: number, uploadRate: number, active: number, killSwitch: string | null, listening: string | null, listenError: string | null, slowHours: boolean, downloadPath: string };
 
@@ -1168,19 +1174,19 @@ export type DiscoverQueryVariables = Exact<{
 }>;
 
 
-export type DiscoverQuery = { discover: { library: string, results: Array<{ provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }> } };
+export type DiscoverQuery = { discover: { library: string, results: Array<{ category: MediaCategory, provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }> } };
 
 export type ForYouQueryVariables = Exact<{
   library?: string | null | undefined;
 }>;
 
 
-export type ForYouQuery = { forYou: { library: string, shelves: Array<{ key: string, name: string, results: Array<{ provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }> }> } };
+export type ForYouQuery = { forYou: { library: string, shelves: Array<{ key: string, name: string, results: Array<{ category: MediaCategory, provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }> }> } };
 
 export type DownloadsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type DownloadsQuery = { downloads: Array<{ id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } }> };
+export type DownloadsQuery = { downloads: Array<{ category: MediaCategory, id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } }> };
 
 export type EngineQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1371,7 +1377,7 @@ export type SimilarQueryVariables = Exact<{
 }>;
 
 
-export type SimilarQuery = { title: { similar: { recommendations: Array<{ provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }>, alsoWatched: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }> } } | null };
+export type SimilarQuery = { title: { similar: { recommendations: Array<{ category: MediaCategory, provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }>, alsoWatched: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }> } } | null };
 
 export type MatchCandidatesQueryVariables = Exact<{
   id: number;
@@ -1385,7 +1391,7 @@ export type MatchCandidatesQuery = { title: { matchCandidates: { query: string, 
 export type TitleDownloadsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TitleDownloadsQuery = { downloads: Array<{ id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } }> };
+export type TitleDownloadsQuery = { downloads: Array<{ category: MediaCategory, id: number, name: string, seriesId: number | null, seriesName: string | null, poster: string | null, source: string | null, size: number | null, savePath: string, state: DownloadState, importState: ImportState, importError: string | null, importMode: string | null, error: string | null, addedAt: number, finishedAt: number | null, importedAt: number | null, title: { id: number } | null, episodes: Array<{ season: number, episode: number }>, requestedBy: { username: string } | null, live: { stage: TorrentStage, paused: boolean, progress: number, downloadRate: number, uploadRate: number, done: number, uploaded: number, ratio: number, peers: number, seeds: number, seedingSeconds: number, eta: number | null, pieces: Array<number> } | null, seedGoal: { ratio: number | null, seconds: number | null } }> };
 
 export type SetWatchedMutationVariables = Exact<{
   videoIds: Array<number> | number;
@@ -1663,6 +1669,7 @@ export const TranscodingFieldsFragmentDoc = new TypedDocumentString(`
     `, {"fragmentName":"TranscodingFields"}) as unknown as TypedDocumentString<TranscodingFieldsFragment, unknown>;
 export const DiscoverResultFieldsFragmentDoc = new TypedDocumentString(`
     fragment DiscoverResultFields on DiscoverResult {
+  category
   provider
   id
   name
@@ -1751,6 +1758,7 @@ export const ClipAllowanceFieldsFragmentDoc = new TypedDocumentString(`
     `, {"fragmentName":"ClipAllowanceFields"}) as unknown as TypedDocumentString<ClipAllowanceFieldsFragment, unknown>;
 export const DownloadFieldsFragmentDoc = new TypedDocumentString(`
     fragment DownloadFields on Download {
+  category
   id
   name
   seriesId
@@ -3071,6 +3079,7 @@ export const TransfersDocument = new TypedDocumentString(`
   }
 }
     fragment DownloadFields on Download {
+  category
   id
   name
   seriesId
@@ -4644,6 +4653,7 @@ export const DiscoverDocument = new TypedDocumentString(`
   }
 }
     fragment DiscoverResultFields on DiscoverResult {
+  category
   provider
   id
   name
@@ -4672,6 +4682,7 @@ export const ForYouDocument = new TypedDocumentString(`
   }
 }
     fragment DiscoverResultFields on DiscoverResult {
+  category
   provider
   id
   name
@@ -4693,6 +4704,7 @@ export const DownloadsDocument = new TypedDocumentString(`
   }
 }
     fragment DownloadFields on Download {
+  category
   id
   name
   seriesId
@@ -5127,6 +5139,7 @@ export const SimilarDocument = new TypedDocumentString(`
   freshCount
 }
 fragment DiscoverResultFields on DiscoverResult {
+  category
   provider
   id
   name
@@ -5165,6 +5178,7 @@ export const TitleDownloadsDocument = new TypedDocumentString(`
   }
 }
     fragment DownloadFields on Download {
+  category
   id
   name
   seriesId

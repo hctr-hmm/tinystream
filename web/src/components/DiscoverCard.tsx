@@ -28,6 +28,7 @@ const CreateRequest = graphql(`
     }
   }
 `)
+import { mediaLabels } from '../lib/media'
 import { useMe } from '../lib/hooks'
 import { MonitorPicker } from './downloads'
 import { toast } from './feedback'
@@ -58,6 +59,7 @@ export function ResultCard({
   onPick: () => void
   because?: boolean
 }) {
+  if (r.category === 'MOVIES') action = null
   const [broken, setBroken] = useState(false)
   const tilt = useTilt<HTMLDivElement>()
   const status = r.titleId
@@ -95,11 +97,11 @@ export function ResultCard({
       <p className="mt-2 truncate text-[13px] font-medium text-ink">{r.name}</p>
       {r.romaji && <p className="truncate text-xs text-ink-2">{r.romaji}</p>}
       <p className="truncate text-xs text-ink-3 tabular">
-        {because && r.because ? `Like ${r.because}` : (r.year ?? 'Upcoming')}
+        {mediaLabels[r.category]} · {because && r.because ? `Like ${r.because}` : (r.year ?? 'Upcoming')}
       </p>
     </>
   )
-  const hint = r.titleId ? 'In your library' : status ? status.label : action === 'add' ? 'Click to add' : action === 'request' ? 'Click to request' : null
+  const hint = r.titleId ? 'In your library' : r.category === 'MOVIES' ? 'Place a movie folder in your library to watch. Automatic downloads are available for shows.' : status ? status.label : action === 'add' ? 'Click to add' : action === 'request' ? 'Click to request' : null
   return (
     <HoverCard content={<ShowDetails r={r} hint={hint} />} className="min-w-0 self-start">
       {r.titleId ? (
@@ -126,7 +128,7 @@ function ShowDetails({ r, hint }: { r: DiscoverResult; hint: string | null }) {
     <>
       <p className="text-[15px] leading-snug font-semibold tracking-tight text-balance">{r.name}</p>
       {r.romaji && <p className="mt-0.5 text-[13px] text-ink-2">{r.romaji}</p>}
-      <p className="mt-0.5 text-xs text-ink-3 tabular">{r.year ?? 'Upcoming'}</p>
+      <p className="mt-0.5 text-xs text-ink-3 tabular">{mediaLabels[r.category]} · {r.year ?? 'Upcoming'}</p>
       {r.because && <p className="mt-2.5 text-xs text-ink-2">Because you watched {r.because}</p>}
       {r.overview && <p className="mt-2.5 line-clamp-6 text-[13px] leading-relaxed whitespace-pre-line text-ink-2">{r.overview}</p>}
       {hint && <p className="mt-3 border-t border-line pt-2.5 text-xs text-ink-3">{hint}</p>}
@@ -136,6 +138,7 @@ function ShowDetails({ r, hint }: { r: DiscoverResult; hint: string | null }) {
 
 /** The add or request dialog for a picked show, whichever this person gets. */
 export function PickDialog({ r, action, onClose }: { r: DiscoverResult; action: Action; onClose: () => void }) {
+  if (r.category === 'MOVIES') return null
   if (action === 'add') return <AddDialog r={r} onClose={onClose} />
   if (action === 'request') return <RequestDialog r={r} onClose={onClose} />
   return null
@@ -181,7 +184,7 @@ function Heading({ r }: { r: DiscoverResult }) {
       <div className="min-w-0">
         <p className="text-[17px] leading-snug font-semibold tracking-tight">{r.name}</p>
         {r.romaji && <p className="text-sm text-ink-2">{r.romaji}</p>}
-        <p className="text-sm text-ink-3">{r.year ?? 'Upcoming'}</p>
+        <p className="text-sm text-ink-3">{mediaLabels[r.category]} · {r.year ?? 'Upcoming'}</p>
         {r.overview && <p className="mt-2 line-clamp-4 text-[13px] leading-relaxed text-ink-2">{r.overview}</p>}
       </div>
     </div>

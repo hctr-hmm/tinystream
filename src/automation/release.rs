@@ -60,6 +60,7 @@ re!(LEADING_GROUP, r"^\s*[\[【]([^\]】]+)[\]】]");
 re!(SCENE_GROUP, r"-([A-Za-z0-9][A-Za-z0-9]*)\s*$");
 re!(TRAILING_TAGS, r"(?:\s*\[[^\]]*\]|\s*\([^)]*\))+\s*$");
 re!(RECAP, r"(?:^|[\s\-_])\d{1,4}\.5(?:[\s\[\(_]|$)");
+re!(SPECIAL, r"(?i)\b(?:ova|oad|specials?)\b");
 re!(MOVIE, r"(?i)\b(?:movie|film|gekijouban)\b");
 
 fn strip_extension(title: &str) -> &str {
@@ -171,6 +172,29 @@ pub fn is_recap(title: &str) -> bool {
 
 pub fn is_movie(title: &str) -> bool {
     MOVIE.is_match(strip_extension(title))
+}
+
+pub fn media_category(title: &str, episodes: &[(u32, u32)]) -> crate::metadata::MediaCategory {
+    use crate::metadata::MediaCategory;
+    if !episodes.is_empty() {
+        if episodes.iter().all(|e| e.0 == 0) {
+            MediaCategory::Specials
+        } else if episodes.iter().all(|e| e.0 > 0) {
+            MediaCategory::Episodes
+        } else {
+            MediaCategory::Other
+        }
+    } else if let Some(ep) = crate::library::parse::episode_number(title) {
+        if ep.season == 0 { MediaCategory::Specials } else { MediaCategory::Episodes }
+    } else if is_movie(title) {
+        MediaCategory::Movies
+    } else if SPECIAL.is_match(strip_extension(title)) {
+        MediaCategory::Specials
+    } else if let Some(season) = crate::library::parse::season_number(title) {
+        if season == 0 { MediaCategory::Specials } else { MediaCategory::Episodes }
+    } else {
+        MediaCategory::Other
+    }
 }
 
 re!(SXXEYY, r"^s(\d{1,3})e(\d{1,4})(?:v\d)?(?:e(\d{1,4}))?$");
@@ -342,6 +366,22 @@ pub fn parse_size(s: &str) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn media_types() {
+        use crate::metadata::MediaCategory::*;
+        assert_eq!(media_category("Show", &[(1, 1)]), Episodes);
+        assert_eq!(media_category("Show", &[(0, 1)]), Specials);
+        assert_eq!(media_category("Show", &[(0, 1), (1, 1)]), Other);
+        assert_eq!(media_category("Show Movie", &[]), Movies);
+        assert_eq!(media_category("Show OVA", &[]), Specials);
+        assert_eq!(media_category("Show OAD", &[]), Specials);
+        assert_eq!(media_category("Unknown download", &[]), Other);
+        assert_eq!(media_category("Show S00E01.mkv", &[]), Specials);
+        assert_eq!(media_category("Show S02E01.mkv", &[]), Episodes);
+        assert_eq!(media_category("Show Season 02", &[]), Episodes);
+        assert_eq!(media_category("Special Agent S01E01", &[(1, 1)]), Episodes);
+    }
 
     fn after(release: &str, alias: &str) -> Option<Numbers> {
         numbers(after_title(&normalized_name(release), &normalize(alias))?)

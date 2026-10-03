@@ -11,7 +11,7 @@ use crate::auth::User;
 use crate::config::{Monitor, Provider};
 use crate::db::now;
 use crate::error::{ApiError, ApiResult};
-use crate::metadata::{Candidate, ItemKind};
+use crate::metadata::{Candidate, ItemKind, MediaCategory};
 use crate::state::AppState;
 
 #[derive(Enum, Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,38 +71,47 @@ pub(super) async fn annotate(
 ) -> ApiResult<Vec<Found>> {
     let mut out = Vec::with_capacity(candidates.len());
     for c in candidates {
-        let managed: Option<(i64, String, Option<i64>)> = sqlx::query_as(
-            "SELECT s.id, s.monitor, i.id FROM series s LEFT JOIN items i ON i.path = s.path
+        let movie = c.category == MediaCategory::Movies;
+        let managed: Option<(i64, String, Option<i64>)> = if movie {
+            None
+        } else {
+            sqlx::query_as(
+                "SELECT s.id, s.monitor, i.id FROM series s LEFT JOIN items i ON i.path = s.path
              WHERE s.provider = ?1 AND (s.provider_id = ?2 OR EXISTS (
                  SELECT 1 FROM series_seasons ss WHERE ss.series_id = s.id AND (ss.provider_id = ?2
                      OR EXISTS (SELECT 1 FROM json_each(ss.parts) WHERE json_extract(value, '$.provider_id') = ?2))))
              LIMIT 1",
-        )
-        .bind(provider.as_str())
-        .bind(&c.id)
-        .fetch_optional(&state.db)
-        .await?;
-        let item_id: Option<i64> = match managed.as_ref().and_then(|m| m.2) {
-            Some(id) => Some(id),
-            None => {
-                sqlx::query_scalar(
-                    "SELECT i.id FROM items i WHERE i.provider = ?1 AND (i.provider_id = ?2 OR EXISTS (
+            )
+            .bind(provider.as_str())
+            .bind(&c.id)
+            .fetch_optional(&state.db)
+            .await?
+        };
+        let item_id: Option<i64> =
+            match managed.as_ref().and_then(|m| m.2) {
+                Some(id) => Some(id),
+                None => sqlx::query_scalar(
+                    "SELECT i.id FROM items i WHERE i.provider = ?1 AND i.kind = ?3 AND (i.provider_id = ?2 OR EXISTS (
                      SELECT 1 FROM seasons s, json_each(s.provider_ids) WHERE s.item_id = i.id AND value = ?2))
                  LIMIT 1",
                 )
                 .bind(provider.as_str())
                 .bind(&c.id)
+                .bind(if movie { "movie" } else { "show" })
                 .fetch_optional(&state.db)
-                .await?
-            },
-        };
-        let request_state: Option<String> = sqlx::query_scalar(
+                .await?,
+            };
+        let request_state: Option<String> = if movie {
+            None
+        } else {
+            sqlx::query_scalar(
             "SELECT state FROM requests WHERE provider = ? AND provider_id = ? AND state != 'declined' ORDER BY id DESC LIMIT 1",
         )
         .bind(provider.as_str())
         .bind(&c.id)
         .fetch_optional(&state.db)
-        .await?;
+        .await?
+        };
         out.push(Found {
             candidate: c,
             library: library.to_string(),
@@ -414,11 +423,15 @@ impl DiscoveryQuery {
 
         let trending = query.trim().is_empty();
         let bad = |e: anyhow::Error| ApiError::bad_request(format!("{e:#}"));
-        let results = if trending {
-            state.metadata.trending(state, provider).await.map_err(bad)?
-        } else {
-            state.metadata.search(state, provider, ItemKind::Show, query.trim(), None).await.map_err(bad)?
-        };
+        let mut results = Vec::new();
+        for kind in [ItemKind::Show, ItemKind::Movie] {
+            let found = if trending {
+                state.metadata.trending(state, provider, kind).await.map_err(bad)?
+            } else {
+                state.metadata.search(state, provider, kind, query.trim(), None).await.map_err(bad)?
+            };
+            results.extend(found);
+        }
         let mut results = annotate(state, provider, &library, results).await?;
 
         if trending {
@@ -452,6 +465,7 @@ mod tests {
 
     fn show(id: &str) -> Candidate {
         Candidate {
+            category: crate::metadata::MediaCategory::Episodes,
             provider: Provider::Anilist,
             id: id.into(),
             title: id.into(),
