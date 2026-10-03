@@ -334,15 +334,17 @@ export function usePosition(): number {
   const [time, setTime] = useState(() => position()?.time ?? 0)
   const playing = usePlayer((s) => s.playing || (s.remote != null && !s.remote.paused))
   const index = usePlayer((s) => s.index)
+  // Paused, the engine may still hold where it was before a seek; resumeAt already knows where it'll pick up.
+  const resumeAt = usePlayer((s) => s.resumeAt)
   useEffect(() => {
     let raf = 0
     const tick = () => {
-      setTime(position()?.time ?? 0)
+      setTime(playing ? (position()?.time ?? 0) : current() ? resumeAt : 0)
       if (playing) raf = requestAnimationFrame(tick)
     }
     tick()
     return () => cancelAnimationFrame(raf)
-  }, [playing, index])
+  }, [playing, index, resumeAt])
   return time
 }
 
