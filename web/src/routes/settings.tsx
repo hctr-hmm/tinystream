@@ -11,6 +11,7 @@ import {
   FileX,
   Folder,
   FolderPen,
+  Heart,
   KeyRound,
   Library,
   type LucideIcon,
@@ -33,6 +34,7 @@ import { People, Profile } from '../components/People'
 import { AutomationSettings, DownloadsSettings, ProfilesSettings, RenamesSettings, SourcesSettings } from '../components/DownloadSettings'
 import { AppearanceSettings } from '../components/AppearanceSettings'
 import { ClipSettings } from '../components/ClipSettings'
+import { Credits } from '../components/Credits'
 import { AppPasswords, MusicSettings } from '../components/MusicSettings'
 import { Card, Row, useSave, useSettings } from '../components/SettingsKit'
 import { Squircle } from '../components/Squircle'
@@ -162,7 +164,7 @@ import { notifyEnabled, setNotify } from '../lib/notify'
 import { useTitle } from '../lib/title'
 import { createCredential } from '../lib/webauthn'
 
-type Tab = 'libraries' | 'server' | 'clips' | 'music' | 'downloads' | 'sources' | 'profiles' | 'automation' | 'renames' | 'users' | 'account' | 'appearance' | 'file' | 'skipped'
+type Tab = 'libraries' | 'server' | 'clips' | 'music' | 'downloads' | 'sources' | 'profiles' | 'automation' | 'renames' | 'users' | 'account' | 'appearance' | 'file' | 'skipped' | 'credits'
 
 export const Route = createFileRoute('/settings')({
   validateSearch: (s: Record<string, unknown>): { tab?: Tab } => ({ tab: s.tab as Tab | undefined }),
@@ -221,6 +223,10 @@ function SettingsPage() {
           },
         ]
       : []),
+    {
+      title: 'About',
+      tabs: [{ id: 'credits', label: 'Credits', icon: Heart }],
+    },
   ] as { title: string; tabs: { id: Tab; label: string; icon: LucideIcon }[] }[]
 
   return (
@@ -262,6 +268,7 @@ function SettingsPage() {
           {current === 'appearance' && <AppearanceSettings />}
           {current === 'file' && admin && <RawConfig />}
           {current === 'skipped' && admin && <Skipped />}
+          {current === 'credits' && <Credits />}
         </div>
       </div>
     </Page>

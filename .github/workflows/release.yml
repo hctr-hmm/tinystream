@@ -26,6 +26,8 @@ jobs:
           - { target: aarch64-unknown-linux-musl, runner: blacksmith-4vcpu-ubuntu-2404-arm, libc: musl }
     steps:
       - uses: useblacksmith/checkout@v1
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
       - uses: ./.github/actions/native-deps
         if: matrix.libc == 'gnu'
