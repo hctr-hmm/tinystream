@@ -48,9 +48,10 @@ pub fn image_type(data: &[u8]) -> Result<&'static str, &'static str> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::fs;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
 
     fn directory() -> PathBuf {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
