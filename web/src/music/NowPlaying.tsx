@@ -11,7 +11,7 @@ import { useAmbient } from '../lib/ambient'
 import { request } from '../lib/api'
 import { LyricsQuery, cover, duration, hiRes, quality } from './api'
 import { Artists, Cover, Playing, QualityBadge, StarButton } from './components'
-import { Scrubber, Transport, Volume } from './controls'
+import { Elsewhere, Scrubber, Transport, Volume } from './controls'
 import { current, music, outputRate, usePlayer, usePosition } from './player'
 
 export type Tab = 'lyrics' | 'queue' | 'details'
@@ -262,6 +262,7 @@ export function NowPlaying({ tab, onTab, onClose }: { tab: Tab; onTab: (t: Tab) 
                 <QualityBadge track={t} />
                 <StarButton kind="TRACK" id={t.id} starred={t.starred} />
               </div>
+              <Elsewhere className="mt-4" />
               <div className="mt-4">
                 <Scrubber tint={tint} />
               </div>
@@ -290,6 +291,7 @@ export function NowPlaying({ tab, onTab, onClose }: { tab: Tab; onTab: (t: Tab) 
               {tab === 'details' && <Details />}
             </div>
             <div className="shrink-0 pt-3 md:hidden">
+              <Elsewhere className="mb-2" />
               <Scrubber tint={tint} />
               <Transport />
             </div>

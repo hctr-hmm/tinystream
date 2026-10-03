@@ -1128,6 +1128,13 @@ export type PlayQueueQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type PlayQueueQuery = { playQueue: { current: number, position: number, shuffled: boolean, repeat: Repeat, changedBy: string | null, updatedAt: number, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } };
 
+export type TrackQueryVariables = Exact<{
+  id: number;
+}>;
+
+
+export type TrackQuery = { track: { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } } | null };
+
 export type SavePlayQueueMutationVariables = Exact<{
   input: QueueInput;
 }>;
@@ -1316,6 +1323,7 @@ export type EventsSubscription = { events:
     | { __typename: 'ListChanged', list: ChangedList }
     | { __typename: 'MetadataChanged', titleId: number, status: MetadataStatus }
     | { __typename: 'NotificationReceived', notification: { id: number, kind: NotificationKind, priority: boolean, title: string, body: string | null, image: string | null, link: string | null, createdAt: number, expiresAt: number | null, readAt: number | null, actor: { id: number, username: string, avatar: string | null } | null } }
+    | { __typename: 'PlaybackChanged', client: string, trackId: number | null, position: number, paused: boolean }
     | { __typename: 'QueueChanged', by: string | null }
     | { __typename: 'ScanFinished', library: string }
     | { __typename: 'ScanStarted' }
@@ -4320,6 +4328,50 @@ export const PlayQueueDocument = new TypedDocumentString(`
   rating
   playCount
 }`) as unknown as TypedDocumentString<PlayQueueQuery, PlayQueueQueryVariables>;
+export const TrackDocument = new TypedDocumentString(`
+    query Track($id: Int!) {
+  track(id: $id) {
+    ...MusicTrack
+  }
+}
+    fragment MusicTrack on Track {
+  id
+  title
+  artist
+  artists {
+    id
+    name
+  }
+  album
+  albumId
+  albumArtist
+  library
+  disc
+  number
+  year
+  duration
+  codec
+  suffix
+  lossless
+  bitrate
+  sampleRate
+  bitDepth
+  channels
+  size
+  file
+  flac
+  cover
+  gains {
+    trackGain
+    trackPeak
+    albumGain
+    albumPeak
+    pending
+  }
+  starred
+  rating
+  playCount
+}`) as unknown as TypedDocumentString<TrackQuery, TrackQueryVariables>;
 export const SavePlayQueueDocument = new TypedDocumentString(`
     mutation SavePlayQueue($input: QueueInput!) {
   savePlayQueue(input: $input) {
@@ -5059,6 +5111,12 @@ export const EventsDocument = new TypedDocumentString(`
     }
     ... on QueueChanged {
       by
+    }
+    ... on PlaybackChanged {
+      client
+      trackId
+      position
+      paused
     }
   }
 }

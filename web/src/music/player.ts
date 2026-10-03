@@ -4,10 +4,20 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { request } from '../lib/api'
-import { MeasureLoudness, NowPlaying, PlayQueueQuery, Played, type MusicTrack, type Repeat, SavePlayQueue, cover } from './api'
+import { MeasureLoudness, NowPlaying, PlayQueueQuery, Played, type MusicTrack, type Repeat, SavePlayQueue, TrackQuery, cover } from './api'
 import { Engine, type Item } from './engine'
 
 export type Entry = { uid: string; track: MusicTrack; fallback?: boolean }
+
+/** Another app playing (Feishin, Symfonium…), shown here without a sound. */
+export type Remote = {
+  client: string
+  track: number
+  paused: boolean
+  /** Seconds in, as of `at`. */
+  position: number
+  at: number
+}
 
 export type GainMode = 'off' | 'track' | 'album' | 'auto'
 
@@ -39,6 +49,8 @@ export type State = {
   settings: Settings
   /** The listening room being followed, if any. */
   room: string | null
+  /** Another app this player is mirroring, until playing here takes over. */
+  remote: Remote | null
 }
 
 const SETTINGS = 'tinystream.music'
@@ -72,6 +84,7 @@ let state: State = {
   resumeAt: 0,
   error: null,
   room: null,
+  remote: null,
   settings: typeof localStorage !== 'undefined' ? loadSettings() : { volume: 1, muted: false, gain: 'auto', crossfade: 0 },
 }
 
@@ -238,7 +251,7 @@ async function jump(i: number, play: boolean, keepPosition = false, at = 0) {
   const e = state.queue[i]
   if (!e) return
   const start = keepPosition ? (position()?.time ?? state.resumeAt) : at
-  set({ index: i, error: null, waiting: play, resumeAt: start, dismissed: false })
+  set({ index: i, error: null, waiting: play, resumeAt: start, dismissed: false, remote: null })
   localStorage.removeItem(DISMISSED)
   const s = sound()
   if (e.track.gains.pending && state.settings.gain !== 'off') {
@@ -310,13 +323,16 @@ export function position(): { key: string; time: number } | null {
   const p = engine?.position()
   const e = current()
   if (p && e && p.key === e.uid) return p
-  return e ? { key: e.uid, time: state.resumeAt } : null
+  if (!e) return null
+  const r = state.remote
+  const time = r && !r.paused ? Math.min(r.position + (Date.now() - r.at) / 1000, e.track.duration) : state.resumeAt
+  return { key: e.uid, time }
 }
 
 /** The current position, updated every frame while something is on screen to show it. */
 export function usePosition(): number {
   const [time, setTime] = useState(() => position()?.time ?? 0)
-  const playing = usePlayer((s) => s.playing)
+  const playing = usePlayer((s) => s.playing || (s.remote != null && !s.remote.paused))
   const index = usePlayer((s) => s.index)
   useEffect(() => {
     let raf = 0
@@ -357,7 +373,7 @@ function save(soon = 1500): Promise<void> {
   return new Promise((resolve) => {
     saving = setTimeout(async () => {
       saving = null
-      if ((state.queue.length === 0 && !restored) || state.room) return resolve()
+      if ((state.queue.length === 0 && !restored) || state.room || state.remote) return resolve()
       const input = {
         tracks: state.queue.map((e) => e.track.id),
         current: state.index,
@@ -391,11 +407,72 @@ export async function restore() {
   })
 }
 
+/** Entries for these tracks, keeping the ones already in place so nothing's thrown away. */
+const keep = (tracks: MusicTrack[]): Entry[] => tracks.map((t, i) => (state.queue[i]?.track.id === t.id ? state.queue[i] : entry(t)))
+
 /** Another app changed the queue; take it over unless something's playing here. */
 export async function refreshFromServer() {
   if (state.playing) return
   const { playQueue: q } = await request(PlayQueueQuery)
-  set({ queue: q.tracks.map(entry), index: q.current, resumeAt: q.position, repeat: q.repeat, shuffled: q.shuffled })
+  // While mirroring, stay on what the other app last said it's playing.
+  const r = state.remote
+  const index = r ? q.tracks.findIndex((t) => t.id === r.track) : q.current
+  if (index < 0) return
+  set({ queue: keep(q.tracks), index, resumeAt: r ? state.resumeAt : q.position, repeat: q.repeat, shuffled: q.shuffled })
+}
+
+/** The last each app said, so its regular check-ins aren't taken for a fresh start. */
+const heard = new Map<string, { track: number; paused: boolean }>()
+let following = 0
+
+/**
+ * Another app started, paused, moved or stopped: show the same track at the
+ * same spot without playing it. Playing here stops for a fresh start elsewhere,
+ * and pressing play here takes over.
+ */
+export async function followRemote(client: string, track: number | null, time: number, paused: boolean) {
+  const before = heard.get(client)
+  if (track == null) heard.delete(client)
+  else heard.set(client, { track, paused })
+  if (state.room) return
+  if (track == null) {
+    if (state.remote?.client === client) set({ resumeAt: position()?.time ?? state.resumeAt, remote: null })
+    return
+  }
+  const fresh = !before || before.track !== track || (before.paused && !paused)
+  if (state.playing && (paused || !fresh)) return
+  const ticket = ++following
+  let queue = state.queue
+  let index = current()?.track.id === track ? state.index : -1
+  if (index < 0) {
+    const { playQueue: q } = await request(PlayQueueQuery).catch(() => ({ playQueue: null }))
+    const i = q?.tracks.findIndex((t) => t.id === track) ?? -1
+    if (q && i >= 0) {
+      queue = keep(q.tracks)
+      index = i
+    } else if ((index = state.queue.findIndex((e) => e.track.id === track)) < 0) {
+      const found = await request(TrackQuery, { id: track }).catch(() => ({ track: null }))
+      if (!found.track) return
+      queue = [entry(found.track)]
+      index = 0
+    }
+  }
+  if (ticket !== following || state.room) return
+  if (state.playing || engine?.position()) {
+    engine?.stop()
+    silence(false)
+  }
+  set({
+    queue,
+    index,
+    playing: false,
+    waiting: false,
+    error: null,
+    dismissed: false,
+    resumeAt: time,
+    remote: { client, track, paused, position: time, at: Date.now() },
+  })
+  localStorage.removeItem(DISMISSED)
 }
 
 function shuffledCopy<T>(list: T[]): T[] {
@@ -435,7 +512,7 @@ export const music = {
     if (!e) return
     const s = sound()
     if (state.suspended) set({ suspended: false })
-    if (!engine || !engine.position()) return jump(state.index, true, false, state.resumeAt)
+    if (!engine || !engine.position()) return jump(state.index, true, false, position()?.time ?? state.resumeAt)
     await s.play()
     set({ playing: true, dismissed: false })
     silence(true)
@@ -457,7 +534,7 @@ export const music = {
     const e = current()
     if (!e) return
     const t = Math.max(0, Math.min(time, e.track.duration - 0.25))
-    if (!engine) return set({ resumeAt: t })
+    if (!engine) return set({ resumeAt: t, remote: null })
     void jump(state.index, state.playing, false, t)
   },
 
@@ -595,7 +672,7 @@ export const music = {
     if (state.queue.length && !room) await save(0)
     engine?.stop()
     room = control
-    set({ room: code, queue: [], index: 0, playing: false, resumeAt: 0, dismissed: false, suspended: false })
+    set({ room: code, queue: [], index: 0, playing: false, resumeAt: 0, dismissed: false, suspended: false, remote: null })
   },
 
   /** Back to your own queue, paused where you left it. */
@@ -603,7 +680,7 @@ export const music = {
     room = null
     engine?.stop()
     silence(false)
-    set({ room: null, queue: [], index: 0, playing: false })
+    set({ room: null, queue: [], index: 0, playing: false, remote: null })
     restored = false
     await restore()
   },
@@ -616,8 +693,7 @@ export const music = {
     const same = tracks.length === state.queue.length && tracks.every((t, i) => state.queue[i]?.track.id === t.id)
     if (!same) {
       // Keep entries that are still there, so the decoder's work isn't thrown away.
-      const queue = tracks.map((t, i) => (state.queue[i]?.track.id === t.id ? state.queue[i] : entry(t)))
-      set({ queue })
+      set({ queue: keep(tracks) })
       if (engine && state.index === index) lineUp()
     }
     const here = position()

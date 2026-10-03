@@ -117,6 +117,14 @@ export const PlayQueueQuery = graphql(`
   }
 `)
 
+export const TrackQuery = graphql(`
+  query Track($id: Int!) {
+    track(id: $id) {
+      ...MusicTrack
+    }
+  }
+`)
+
 export const SavePlayQueue = graphql(`
   mutation SavePlayQueue($input: QueueInput!) {
     savePlayQueue(input: $input) {

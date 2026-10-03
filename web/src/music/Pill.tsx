@@ -9,7 +9,7 @@ import { createPortal, flushSync } from 'react-dom'
 import { useAmbient } from '../lib/ambient'
 import { cover } from './api'
 import { Artists, Cover, QualityBadge, StarButton } from './components'
-import { PlayButton, Scrubber, Transport, Volume } from './controls'
+import { Elsewhere, PlayButton, Scrubber, Transport, Volume } from './controls'
 import { ART, NowPlaying, type Tab } from './NowPlaying'
 import { current, music, usePlayer, usePosition } from './player'
 
@@ -75,6 +75,7 @@ export function MusicPill() {
   const next = usePlayer((s) => s.queue[s.index + 1]?.track ?? null)
   const error = usePlayer((s) => s.error)
   const room = usePlayer((s) => s.room != null)
+  const remote = usePlayer((s) => s.remote)
   const { open, tab } = useView()
   const track = entry?.track ?? null
   const tint = useAmbient(track ? cover(track.cover, 32) : null)
@@ -199,6 +200,7 @@ export function MusicPill() {
                     </div>
                     <StarButton kind="TRACK" id={shown.id} starred={shown.starred} className="-mt-1 -mr-1" />
                   </div>
+                  <Elsewhere className="mt-3" />
                   <div className="mt-3">
                     <Scrubber tint={tint} />
                   </div>
@@ -241,7 +243,7 @@ export function MusicPill() {
                     <p key={shown.id} className="animate-[fade_300ms_ease-out] truncate text-[13px] leading-tight font-medium">
                       {error ?? shown.title}
                     </p>
-                    <p className="truncate text-xs leading-tight text-ink-3">{shown.artist}</p>
+                    <p className="truncate text-xs leading-tight text-ink-3">{remote ? `${remote.paused ? 'Paused' : 'Playing'} on ${remote.client}` : shown.artist}</p>
                   </div>
                   <PlayButton size="sm" />
                   <button

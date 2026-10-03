@@ -175,7 +175,7 @@ pub async fn scrobble(state: &Arc<AppState>, call: &Call) -> Result<Reply> {
                 duration: t.duration,
                 paused: false,
             };
-            state.music.playing.set(call.user.id, Some(playing));
+            playback(state, call, Some(playing));
         }
     }
     Ok(Reply::empty())
@@ -195,10 +195,10 @@ pub async fn report_playback(state: &Arc<AppState>, call: &Call) -> Result<Reply
                 duration: t.duration,
                 paused: p.get("state") == Some("paused"),
             };
-            state.music.playing.set(call.user.id, Some(playing));
+            playback(state, call, Some(playing));
         },
         "stopped" => {
-            state.music.playing.set(call.user.id, None);
+            playback(state, call, None);
             // Played enough to count: half of it, or four minutes, the way scrobbling sites count.
             let enough = position >= (t.duration / 2.0).min(240.0);
             if enough && !p.flag("ignoreScrobble").unwrap_or(false) {
@@ -208,6 +208,18 @@ pub async fn report_playback(state: &Arc<AppState>, call: &Call) -> Result<Reply
         other => return Err(Failure::new(10, format!("{other:?} isn't a playback state"))),
     }
     Ok(Reply::empty())
+}
+
+/// Records what an app is playing, and tells the web player so it can follow along.
+fn playback(state: &AppState, call: &Call, playing: Option<Playing>) {
+    state.events.send(Event::PlaybackChanged {
+        user_id: call.user.id,
+        client: call.client.clone(),
+        track_id: playing.as_ref().map(|p| p.track_id),
+        position: playing.as_ref().map_or(0.0, |p| p.position),
+        paused: playing.as_ref().is_none_or(|p| p.paused),
+    });
+    state.music.playing.set(call.user.id, playing);
 }
 
 pub async fn play_queue(state: &Arc<AppState>, call: &Call, name: &str) -> Result<Reply> {

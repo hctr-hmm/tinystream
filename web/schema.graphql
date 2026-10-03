@@ -548,7 +548,7 @@ type EpisodesImported {
 	episodes: [EpisodeNumber!]!
 }
 
-union Event = ConfigChanged | ScanStarted | ScanFinished | LibraryChanged | MetadataChanged | ListChanged | SeriesChanged | EpisodesImported | NotificationReceived | ClipChanged | QueueChanged
+union Event = ConfigChanged | ScanStarted | ScanFinished | LibraryChanged | MetadataChanged | ListChanged | SeriesChanged | EpisodesImported | NotificationReceived | ClipChanged | QueueChanged | PlaybackChanged
 
 type FileOperation {
 	kind: String!
@@ -1155,6 +1155,16 @@ type PlayQueue {
 	repeat: Repeat!
 	changedBy: String
 	updatedAt: Int!
+}
+
+type PlaybackChanged {
+	client: String!
+	trackId: Int
+	"""
+	Seconds in, as of when it was sent.
+	"""
+	position: Float!
+	paused: Boolean!
 }
 
 type Playlist {

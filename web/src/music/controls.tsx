@@ -1,9 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react'
+import { MonitorSpeaker, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react'
 import { type PointerEvent, useRef, useState } from 'react'
 import { duration } from './api'
 import { current, music, usePlayer, usePosition } from './player'
+
+/** Which app is playing, while this player follows another one. */
+export function Elsewhere({ className = '' }: { className?: string }) {
+  const remote = usePlayer((s) => s.remote)
+  if (!remote) return null
+  return (
+    <p className={`flex items-center gap-1.5 text-xs text-ink-3 ${className}`}>
+      <MonitorSpeaker className="size-3.5 shrink-0" />
+      <span className="truncate">{remote.paused ? 'Paused' : 'Playing'} on {remote.client}</span>
+    </p>
+  )
+}
 
 /** Where in the track, and a way to go elsewhere in it: thin, thicker when it's being touched. */
 export function Scrubber({ tint, compact = false }: { tint?: string | null; compact?: boolean }) {

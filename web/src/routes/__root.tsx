@@ -14,7 +14,7 @@ import { receive, refresh as refreshNotifications } from '../lib/notifications'
 import { preload, startFetching, stopFetching } from '../lib/refreshing'
 import { useAppearance } from '../lib/appearance'
 import { bootstrap } from '../lib/theme'
-import { music, refreshFromServer, restore } from '../music/player'
+import { followRemote, music, refreshFromServer, restore } from '../music/player'
 import { queryClient } from '../router'
 import appCss from '../styles.css?url'
 
@@ -97,6 +97,12 @@ const EventsSubscription = graphql(`
       ... on QueueChanged {
         by
       }
+      ... on PlaybackChanged {
+        client
+        trackId
+        position
+        paused
+      }
     }
   }
 `)
@@ -121,6 +127,9 @@ function useLiveUpdates(enabled: boolean) {
           case 'QueueChanged':
             // Another app moved the queue on; follow it unless we're the ones playing.
             if (e.by !== 'tinystream') void refreshFromServer()
+            break
+          case 'PlaybackChanged':
+            void followRemote(e.client, e.trackId ?? null, e.position, e.paused)
             break
           case 'MetadataChanged': {
             const id = e.titleId

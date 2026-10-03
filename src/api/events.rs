@@ -97,6 +97,15 @@ pub struct QueueChanged {
     by: Option<String>,
 }
 
+#[derive(SimpleObject)]
+pub struct PlaybackChanged {
+    client: String,
+    track_id: Option<i64>,
+    /// Seconds in, as of when it was sent.
+    position: f64,
+    paused: bool,
+}
+
 #[derive(Union)]
 #[graphql(name = "Event")]
 pub enum ServerEvent {
@@ -111,6 +120,7 @@ pub enum ServerEvent {
     NotificationReceived(NotificationReceived),
     ClipChanged(ClipChanged),
     QueueChanged(QueueChanged),
+    PlaybackChanged(PlaybackChanged),
 }
 
 fn translate(event: Event, me: i64, libraries: &[String]) -> Option<ServerEvent> {
@@ -152,6 +162,8 @@ fn translate(event: Event, me: i64, libraries: &[String]) -> Option<ServerEvent>
         Event::QueueChanged { user_id, by } => {
             (user_id == me).then_some(ServerEvent::QueueChanged(QueueChanged { by }))
         },
+        Event::PlaybackChanged { user_id, client, track_id, position, paused } => (user_id == me)
+            .then_some(ServerEvent::PlaybackChanged(PlaybackChanged { client, track_id, position, paused })),
         Event::PlaylistsChanged => list(ChangedList::Playlists),
         Event::ClipChanged { clip_id, users, state, progress } => users
             .contains(&me)
