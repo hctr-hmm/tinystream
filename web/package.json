@@ -5,8 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 5173",
-    "build": "vite build",
+    "dev": "bun run decoder && vite dev --port 5173",
+    "build": "bun run decoder && vite build",
+    "decoder": "bun scripts/decoder.ts",
     "typecheck": "tsc --noEmit",
     "codegen": "graphql-codegen"
   },

@@ -8,8 +8,8 @@ use async_graphql::{Context, Object, SimpleObject};
 use super::schema::Ctx;
 use crate::auth::permissions;
 use crate::config::{
-    Automation, Clips, Config, Downloads, LibraryInput, Log, Metadata, Network, Profile, Provider, Requests, Scan,
-    SettingsPatch, SignIn, Source, Transcode,
+    Automation, Clips, Config, Downloads, LibraryInput, LibraryKind, Log, Metadata, Music, Network, Profile, Provider,
+    Requests, Scan, SettingsPatch, SignIn, Source, Transcode,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::paths::resolve_config_path;
@@ -28,6 +28,7 @@ pub struct ConfiguredLibrary {
     name: String,
 
     path: String,
+    kind: LibraryKind,
     metadata_provider: Option<Provider>,
 
     managed: bool,
@@ -76,6 +77,10 @@ impl Settings {
         &self.0.clips
     }
 
+    async fn music(&self) -> &Music {
+        &self.0.music
+    }
+
     async fn downloads(&self) -> &Downloads {
         &self.0.downloads
     }
@@ -107,7 +112,8 @@ impl Settings {
         for lib in &self.0.libraries {
             let resolved = lib.resolved_path(config_dir);
             let (title_count, skipped_count): (i64, i64) = sqlx::query_as(
-                "SELECT (SELECT COUNT(*) FROM items WHERE library = ?1), (SELECT COUNT(*) FROM skipped WHERE library = ?1)",
+                "SELECT (SELECT COUNT(*) FROM items WHERE library = ?1) + (SELECT COUNT(*) FROM albums WHERE library = ?1),
+                        (SELECT COUNT(*) FROM skipped WHERE library = ?1)",
             )
             .bind(&lib.name)
             .fetch_one(&state.db)
@@ -115,6 +121,7 @@ impl Settings {
             out.push(ConfiguredLibrary {
                 name: lib.name.clone(),
                 path: lib.path.clone(),
+                kind: lib.kind,
                 metadata_provider: lib.metadata_provider,
                 managed: lib.managed,
                 profile: lib.profile.clone(),
@@ -266,12 +273,22 @@ impl SettingsMutation {
 
         if old.name != new_name {
             let mut tx = state.db.begin().await?;
-            for table in ["items", "skipped"] {
+            for table in ["items", "skipped", "tracks", "albums", "artists"] {
                 sqlx::query(sqlx::AssertSqlSafe(format!("UPDATE {table} SET library = ? WHERE library = ?")))
                     .bind(&new_name)
                     .bind(&old.name)
                     .execute(&mut *tx)
                     .await?;
+            }
+            for table in ["stars", "ratings"] {
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "UPDATE {table} SET target = ?1 || substr(target, length(?2) + 1)
+                     WHERE kind != 'track' AND substr(target, 1, length(?2) + 1) = ?2 || '/'"
+                )))
+                .bind(&new_name)
+                .bind(&old.name)
+                .execute(&mut *tx)
+                .await?;
             }
             tx.commit().await?;
             permissions::rename_library(state, &old.name, &new_name).await?;

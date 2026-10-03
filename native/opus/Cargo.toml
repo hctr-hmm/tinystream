@@ -1,0 +1,15 @@
+[package]
+name = "opus-src"
+# The version of libopus it builds.
+version = "1.5.2"
+edition.workspace = true
+description = "A static libopus, for sending music to apps that ask for Opus"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+links = "opus"
+
+[build-dependencies]
+native-support = { path = "../support" }

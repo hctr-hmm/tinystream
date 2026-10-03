@@ -59,6 +59,11 @@ pub enum Event {
         state: String,
         progress: Option<f32>,
     },
+    QueueChanged {
+        user_id: i64,
+        by: Option<String>,
+    },
+    PlaylistsChanged,
     /// Someone's own appearance, or everyone's when there's no `user_id`.
     AppearanceChanged {
         user_id: Option<i64>,

@@ -29,4 +29,5 @@ pub struct AppState {
     pub http: reqwest::Client,
     pub together: Arc<Together>,
     pub clips: Arc<crate::clips::Clips>,
+    pub music: crate::music::Music,
 }

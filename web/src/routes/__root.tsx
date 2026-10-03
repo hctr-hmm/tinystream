@@ -14,6 +14,7 @@ import { receive, refresh as refreshNotifications } from '../lib/notifications'
 import { preload, startFetching, stopFetching } from '../lib/refreshing'
 import { useAppearance } from '../lib/appearance'
 import { bootstrap } from '../lib/theme'
+import { music, refreshFromServer, restore } from '../music/player'
 import { queryClient } from '../router'
 import appCss from '../styles.css?url'
 
@@ -93,6 +94,9 @@ const EventsSubscription = graphql(`
         state
         progress
       }
+      ... on QueueChanged {
+        by
+      }
     }
   }
 `)
@@ -112,7 +116,11 @@ function useLiveUpdates(enabled: boolean) {
         switch (e.__typename) {
           case 'LibraryChanged':
           case 'ScanFinished':
-            invalidate(['home'], ['libraries'], ['library', e.library], ['settings'])
+            invalidate(['home'], ['libraries'], ['library', e.library], ['settings'], ['music'])
+            break
+          case 'QueueChanged':
+            // Another app moved the queue on; follow it unless we're the ones playing.
+            if (e.by !== 'tinystream') void refreshFromServer()
             break
           case 'MetadataChanged': {
             const id = e.titleId
@@ -154,6 +162,9 @@ function useLiveUpdates(enabled: boolean) {
                 break
               case 'NOTIFICATIONS':
                 refreshNotifications(qc)
+                break
+              case 'PLAYLISTS':
+                invalidate(['music'])
                 break
               case 'APPEARANCE':
                 invalidate(['appearance'], ['schemes'], ['appearance-settings'], ['server-appearance'])
@@ -199,13 +210,22 @@ function Gate() {
   // page commits would remount the old one mid-navigation (under the view
   // transition's snapshot, and without whatever was named for it to morph).
   const path = useRouterState({ select: (s) => (s.resolvedLocation ?? s.location).pathname })
-  const fullscreen = path.startsWith('/watch/') || path.startsWith('/together/')
+  const fullscreen = path.startsWith('/watch/') || path.startsWith('/together/') || path.startsWith('/listen/')
+  const video = path.startsWith('/watch/') || path.startsWith('/together/')
   useLiveUpdates(!!data?.viewer)
   useAppearance(data?.viewer?.id ?? null, !isPending)
+  useEffect(() => {
+    if (data?.viewer) void restore()
+  }, [data?.viewer])
+  // Music steps aside while a video plays, and comes back paused after.
+  useEffect(() => {
+    if (video) music.suspend()
+    else music.unsuspend()
+  }, [video])
 
   if (isPending) return null
   // Rooms decide for themselves who gets in; public ones need no account.
-  if (path.startsWith('/together/'))
+  if (path.startsWith('/together/') || path.startsWith('/listen/'))
     return (
       <>
         <Outlet />

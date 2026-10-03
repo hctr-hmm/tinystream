@@ -13,6 +13,7 @@ import {
   House,
   Inbox,
   Keyboard,
+  Music,
   ListTodo,
   LogOut,
   Pause,
@@ -37,6 +38,10 @@ import { Feedback, toast, toastError } from './feedback'
 import { NotificationsMenu, PriorityPill, setInboxOpen } from './Notifications'
 import { Squircle } from './Squircle'
 import { Ticker } from './Ticker'
+import { MusicPill } from '../music/Pill'
+import { albumTracks } from '../music/components'
+import { music, usePlayer } from '../music/player'
+import type { MusicTrack } from '../music/api'
 import { cssColor } from '../lib/theme'
 import { Dialog, Panel, Popover } from './ui'
 
@@ -115,6 +120,24 @@ const SignOut = graphql(`
 
 const SearchQuery = graphql(`
   query Search($query: String!) {
+    musicSearch(query: $query, limit: 5) {
+      artists {
+        id
+        name
+        cover
+        albumCount
+      }
+      albums {
+        id
+        name
+        artist
+        cover
+        year
+      }
+      tracks {
+        ...MusicTrack
+      }
+    }
     search(query: $query) {
       titles {
         ...Card
@@ -271,6 +294,8 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const transfers = useTransfers(user.permissions.downloads)
   const wide = useWide()
   const clipsOn = useClipsOn()
+  // Room at the bottom for the music player, so it never covers the end of a page.
+  const pill = usePlayer((p) => p.queue.length > 0 && !p.dismissed && !p.suspended)
   useTabProgress(transfers.progress, transfers.engine?.downloadRate ?? 0)
 
   const signOut = useCallback(async () => {
@@ -354,8 +379,8 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
                   key={l.name}
                   to="/library/$name"
                   params={{ name: l.name }}
-                  icon={l.showCount >= l.movieCount ? <Tv /> : <Film />}
-                  count={l.showCount + l.movieCount}
+                  icon={l.kind === 'MUSIC' ? <Music /> : l.showCount >= l.movieCount ? <Tv /> : <Film />}
+                  count={l.kind === 'MUSIC' ? l.albumCount : l.showCount + l.movieCount}
                 >
                   {l.name}
                 </NavLink>
@@ -367,7 +392,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         <AccountMenu user={user} onShortcuts={() => setShortcuts(true)} onSignOut={signOut} />
       </aside>
 
-      <div className="min-w-0 flex-1 pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className={`min-w-0 flex-1 ${pill ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:pb-24' : 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0'}`}>
         {/* Small screens: a slim top bar, and tabs along the bottom. */}
         <header className="sticky top-0 z-30 flex h-12 items-center gap-1 material-bar border-b border-line bg-canvas/85 px-3 backdrop-blur-xl [view-transition-name:chrome-top] md:hidden">
           <Link to="/" className="flex items-center gap-2 px-1.5 text-sm font-semibold">
@@ -394,6 +419,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       {searching && <CommandPalette user={user} onClose={() => setSearching(false)} onShortcuts={() => setShortcuts(true)} />}
       {shortcuts && <Shortcuts onClose={() => setShortcuts(false)} />}
       <PriorityPill />
+      <MusicPill />
       <Feedback />
     </div>
   )
@@ -586,9 +612,9 @@ function MoreSheet({
         {libraries.length > 0 && <p className="px-3 pt-2 pb-1 text-xs text-ink-3">Libraries</p>}
         {libraries.map((l) => (
           <Link key={l.name} to="/library/$name" params={{ name: l.name }} className={item}>
-            {l.showCount >= l.movieCount ? <Tv /> : <Film />}
+            {l.kind === 'MUSIC' ? <Music /> : l.showCount >= l.movieCount ? <Tv /> : <Film />}
             <span className="flex-1">{l.name}</span>
-            <span className="text-xs text-ink-3 tabular">{l.showCount + l.movieCount}</span>
+            <span className="text-xs text-ink-3 tabular">{l.kind === 'MUSIC' ? l.albumCount : l.showCount + l.movieCount}</span>
           </Link>
         ))}
         {clipsOn && (
@@ -619,6 +645,14 @@ function MoreSheet({
     document.body,
   )
 }
+/** Plays a song from the search with the rest of its album after it. */
+async function playTrack(t: MusicTrack) {
+  if (t.albumId == null) return music.play([t])
+  const tracks = await albumTracks(t.albumId)
+  const i = tracks.findIndex((x) => x.id === t.id)
+  return i < 0 ? music.play([t]) : music.play(tracks, i)
+}
+
 type Command = {
   key: string
   group: string
@@ -626,6 +660,8 @@ type Command = {
   meta?: string
   icon?: ReactNode
   image?: string | null
+  /** Album art is square; posters are tall. */
+  square?: boolean
   go: () => void
 }
 
@@ -653,7 +689,10 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
 
   const { data } = useQuery({
     queryKey: ['search', debounced],
-    queryFn: async () => (await request(SearchQuery, { query: debounced })).search,
+    queryFn: async () => {
+      const r = await request(SearchQuery, { query: debounced })
+      return { ...r.search, music: r.musicSearch }
+    },
     enabled: debounced.trim().length > 0,
     placeholderData: (prev) => prev,
   })
@@ -741,6 +780,35 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
           icon: <Clapperboard />,
           go: () => void navigate({ to: '/watch/$id', params: { id: String(e.id) } }),
         })),
+        ...(data?.music.artists ?? []).map((a) => ({
+          key: `ar${a.id}`,
+          group: 'Artists',
+          title: a.name,
+          meta: `${a.albumCount} album${a.albumCount === 1 ? '' : 's'}`,
+          image: a.cover ? `${a.cover}?size=48` : null,
+          go: () => void navigate({ to: '/artist/$id', params: { id: String(a.id) } }),
+        })),
+        ...(data?.music.albums ?? []).map((a) => ({
+          key: `al${a.id}`,
+          group: 'Albums',
+          title: a.name,
+          meta: `${a.artist}${a.year ? ` · ${a.year}` : ''}`,
+          image: a.cover ? `${a.cover}?size=48` : null,
+          square: true,
+          go: () => void navigate({ to: '/album/$id', params: { id: String(a.id) } }),
+        })),
+        ...(data?.music.tracks ?? []).map((t) => ({
+          key: `tr${t.id}`,
+          group: 'Songs',
+          title: t.title,
+          meta: `${t.artist} · ${t.album}`,
+          image: t.cover ? `${t.cover}?size=48` : null,
+          square: true,
+          go: () => {
+            onClose()
+            void playTrack(t)
+          },
+        })),
         ...commands.pages.filter(matches),
         ...commands.actions.filter(matches),
         ...(features && (can.request || can.manageShows)
@@ -811,7 +879,7 @@ function CommandPalette({ user, onClose, onShortcuts }: { user: User; onClose: (
                 <button data-index={i} className="block w-full text-left" onMouseMove={() => setIndex(i)} onClick={r.go}>
                   <Squircle radius={10} className={`flex items-center gap-3 px-3 py-2 ${i === index ? 'bg-hover' : ''}`}>
                     {r.image !== undefined ? (
-                      <Squircle radius={5} className="aspect-[2/3] w-6 shrink-0 bg-panel">
+                      <Squircle radius={5} className={`${r.square ? 'aspect-square' : 'aspect-[2/3]'} w-6 shrink-0 bg-panel`}>
                         {r.image && <img src={r.image} alt="" loading="lazy" className="size-full object-cover" />}
                       </Squircle>
                     ) : (

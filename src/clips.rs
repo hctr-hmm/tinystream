@@ -169,6 +169,7 @@ impl Clips {
     }
 
     async fn render(self: &Arc<Self>, state: &Arc<AppState>, id: i64, cancel: &Arc<AtomicBool>) -> anyhow::Result<()> {
+        let _busy = state.media.busy.hold();
         let row: Option<(
             i64,
             Option<i64>,

@@ -14,6 +14,11 @@ pub fn preview(path: &Path, at: f64, width: i32) -> anyhow::Result<Vec<u8>> {
     grab(path, width, Some(at), 6, None)
 }
 
+/// A picture made `width` wide.
+pub fn picture(path: &Path, width: i32) -> anyhow::Result<Vec<u8>> {
+    grab(path, width, Some(0.0), 3, None)
+}
+
 pub fn still(
     path: &Path,
     at: f64,

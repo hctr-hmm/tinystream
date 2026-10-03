@@ -27,6 +27,11 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: ./.github/actions/native-deps
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@0.2.126
       - uses: Swatinem/rust-cache@v2
 
       - name: Build

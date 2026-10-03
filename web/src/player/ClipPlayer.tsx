@@ -4,6 +4,7 @@ import { Maximize, Minimize, Pause, PictureInPicture2, Play } from 'lucide-react
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Spinner } from '../components/ui'
 import { clock } from '../lib/format'
+import { music } from '../music/player'
 import { ChromeButton, type Hud, HudView, Timeline, VolumeControl, pref } from './Player'
 
 /**
@@ -13,6 +14,8 @@ import { ChromeButton, type Hud, HudView, Timeline, VolumeControl, pref } from '
 export function ClipPlayer({ src, poster, muted: startMuted = false }: { src: string; poster?: string; muted?: boolean }) {
   const stage = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const suspended = useRef(false)
+  useEffect(() => () => void (suspended.current && music.unsuspend()), [])
   const [playing, setPlaying] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -137,7 +140,12 @@ export function ClipPlayer({ src, poster, muted: startMuted = false }: { src: st
         className="absolute inset-0 size-full object-contain"
         onClick={() => flash({ kind: togglePlay() ? 'play' : 'pause' })}
         onDoubleClick={toggleFullscreen}
-        onPlay={() => setPlaying(true)}
+        onPlay={() => {
+          setPlaying(true)
+          // Music steps aside while a clip plays, and comes back paused after.
+          music.suspend()
+          suspended.current = true
+        }}
         onPause={() => setPlaying(false)}
         onWaiting={() => setWaiting(true)}
         onPlaying={() => setWaiting(false)}

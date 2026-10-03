@@ -18,6 +18,7 @@ import {
   Plus,
   RefreshCw,
   Rss,
+  Music,
   Scissors,
   Server as ServerIcon,
   SlidersHorizontal,
@@ -32,9 +33,10 @@ import { People, Profile } from '../components/People'
 import { AutomationSettings, DownloadsSettings, ProfilesSettings, RenamesSettings, SourcesSettings } from '../components/DownloadSettings'
 import { AppearanceSettings } from '../components/AppearanceSettings'
 import { ClipSettings } from '../components/ClipSettings'
+import { AppPasswords, MusicSettings } from '../components/MusicSettings'
 import { Card, Row, useSave, useSettings } from '../components/SettingsKit'
 import { Squircle } from '../components/Squircle'
-import { Button, Dialog as SharedDialog, Field, IconButton, Input, Select, Tip, Toggle } from '../components/ui'
+import { Button, Dialog as SharedDialog, Field, IconButton, Input, Segmented, Select, Tip, Toggle } from '../components/ui'
 import { graphql } from '../gql'
 import { type ConfigLibrary, type Provider, type Settings, request } from '../lib/api'
 
@@ -160,7 +162,7 @@ import { notifyEnabled, setNotify } from '../lib/notify'
 import { useTitle } from '../lib/title'
 import { createCredential } from '../lib/webauthn'
 
-type Tab = 'libraries' | 'server' | 'clips' | 'downloads' | 'sources' | 'profiles' | 'automation' | 'renames' | 'users' | 'account' | 'appearance' | 'file' | 'skipped'
+type Tab = 'libraries' | 'server' | 'clips' | 'music' | 'downloads' | 'sources' | 'profiles' | 'automation' | 'renames' | 'users' | 'account' | 'appearance' | 'file' | 'skipped'
 
 export const Route = createFileRoute('/settings')({
   validateSearch: (s: Record<string, unknown>): { tab?: Tab } => ({ tab: s.tab as Tab | undefined }),
@@ -190,6 +192,7 @@ function SettingsPage() {
             title: 'Library',
             tabs: [
               { id: 'libraries', label: 'Libraries', icon: Library },
+              { id: 'music', label: 'Music', icon: Music },
               { id: 'clips', label: 'Clips', icon: Scissors },
               { id: 'skipped', label: 'Skipped files', icon: FileX },
             ],
@@ -248,6 +251,7 @@ function SettingsPage() {
           {current === 'libraries' && admin && <Libraries />}
           {current === 'server' && admin && <Server />}
           {current === 'clips' && admin && <ClipSettings />}
+          {current === 'music' && admin && <MusicSettings />}
           {current === 'downloads' && downloads && <DownloadsSettings />}
           {current === 'sources' && downloads && <SourcesSettings />}
           {current === 'profiles' && downloads && <ProfilesSettings />}
@@ -315,7 +319,7 @@ function Libraries() {
               onClick={() => setEditing(l)}
               className="flex w-full items-center gap-4 px-3 py-2.5 text-left transition-colors hover:bg-hover"
             >
-              <Folder className="size-4.5 shrink-0 text-ink-3" />
+              {l.kind === 'MUSIC' ? <Music className="size-4.5 shrink-0 text-ink-3" /> : <Folder className="size-4.5 shrink-0 text-ink-3" />}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{l.name}</p>
                 <p className={`truncate text-xs ${l.exists ? 'text-ink-3' : 'text-danger'}`}>
@@ -324,7 +328,7 @@ function Libraries() {
               </div>
               {l.managed && <span className="shrink-0 rounded-md bg-panel px-1.5 py-0.5 text-2xs text-ink-2">Managed</span>}
               <span className="shrink-0 text-xs text-ink-3 tabular">
-                {l.titleCount} titles{l.skippedCount > 0 && `, ${l.skippedCount} skipped`}
+                {l.titleCount} {l.kind === 'MUSIC' ? 'albums' : 'titles'}{l.skippedCount > 0 && `, ${l.skippedCount} skipped`}
               </span>
               <ChevronRight className="size-4 shrink-0 text-ink-3" />
             </Squircle>
@@ -348,6 +352,7 @@ function Libraries() {
 function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary | null; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(library?.name ?? '')
   const [path, setPath] = useState(library?.path ?? '')
+  const [kind, setKind] = useState<'VIDEO' | 'MUSIC'>(library?.kind ?? 'VIDEO')
   const [provider, setProvider] = useState<'' | Provider>(library?.metadataProvider ?? '')
   const [managed, setManaged] = useState(library?.managed ?? false)
   const [profile, setProfile] = useState(library?.profile ?? '')
@@ -355,12 +360,14 @@ function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary |
   const { data: settings } = useSettings()
   const [browsing, setBrowsing] = useState(!library)
   const [error, setError] = useState<string | null>(null)
+  const music = kind === 'MUSIC'
   const body = {
     name,
     path,
-    metadataProvider: provider || null,
-    managed,
-    profile: profile || null,
+    kind,
+    metadataProvider: music ? null : provider || null,
+    managed: music ? false : managed,
+    profile: music ? null : profile || null,
     downloadPath: downloadPath.trim() || null,
   }
   const save = useMutation({
@@ -374,8 +381,16 @@ function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary |
     <Dialog onClose={onClose}>
       <p className="text-[15px] font-medium">{library ? `Edit ${library.name}` : 'Add a library'}</p>
       <div className="mt-5 space-y-4">
+        <Segmented
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: 'VIDEO', label: 'Shows and movies' },
+            { value: 'MUSIC', label: 'Music' },
+          ]}
+        />
         <Field label="Name">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Anime" autoFocus={!!library} />
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={music ? 'Music' : 'Anime'} autoFocus={!!library} />
         </Field>
         <Field label="Folder">
           <div className="flex gap-2">
@@ -394,10 +409,14 @@ function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary |
             }}
           />
         )}
-        <Field label="Metadata provider">
-          <Select value={provider} options={providers} onChange={setProvider} />
-        </Field>
-        {settings?.downloads && (
+        {music ? (
+          <p className="text-xs leading-relaxed text-ink-3">Albums and artists come from the files' tags, however the folders are laid out.</p>
+        ) : (
+          <Field label="Metadata provider">
+            <Select value={provider} options={providers} onChange={setProvider} />
+          </Field>
+        )}
+        {settings?.downloads && !music && (
           <>
             <Row label="Managed" hint="Off = read-only">
               <Toggle label="Managed" checked={managed} onChange={setManaged} />
@@ -685,6 +704,7 @@ function Account() {
     <>
       <Profile />
       <Notifications />
+      <AppPasswords />
       <Card title="Passkeys">
         <div className="-mx-2 mb-4 space-y-0.5">
           {keys?.length === 0 && <p className="px-2 text-sm text-ink-3">No passkeys yet.</p>}

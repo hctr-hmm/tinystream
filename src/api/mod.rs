@@ -9,10 +9,13 @@ mod discovery;
 mod events;
 mod images;
 mod library;
+mod listen;
 mod media;
+mod music;
 mod notifications;
 mod schema;
 mod settings;
+mod subsonic;
 mod together;
 mod users;
 
@@ -62,6 +65,18 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/together/{code}/stills/{id}", get(together::still))
         .route("/together/{code}/art/{kind}", get(together::art))
         .route("/together/{code}/avatars/{user}", get(together::avatar))
+        .route("/music/tracks/{id}/file", get(music::file))
+        .route("/music/tracks/{id}/flac", get(music::flac))
+        .route("/music/tracks/{id}/stream", get(music::stream))
+        .route("/music/tracks/{id}/cover", get(music::track_cover))
+        .route("/music/albums/{id}/cover", get(music::album_cover))
+        .route("/music/artists/{id}/cover", get(music::artist_cover))
+        .route("/listen/{code}/ws", get(listen::socket))
+        .route("/listen/{code}/tracks/{id}/file", get(listen::file))
+        .route("/listen/{code}/tracks/{id}/flac", get(listen::flac))
+        .route("/listen/{code}/tracks/{id}/stream", get(listen::stream))
+        .route("/listen/{code}/tracks/{id}/cover", get(listen::cover))
+        .route("/listen/{code}/avatars/{user}", get(listen::avatar))
         .route("/clips/still/{media}", get(clips::still))
         .route("/clips/{id}/video", get(clips::file))
         .route("/clips/{id}/image", get(clips::file))
@@ -78,7 +93,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/c/{code}/poster.jpg", get(clips::public_poster))
         .layer(middleware::from_fn(clips::rate_limit))
         .with_state(state.clone());
-    let app = Router::new().nest("/api", api).merge(public);
+    let app = Router::new().nest("/api", api).merge(public).merge(subsonic::router(state.clone()));
     #[cfg(feature = "web-ui")]
     let app = app.merge(crate::web::router());
     #[cfg(not(feature = "web-ui"))]

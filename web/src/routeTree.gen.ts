@@ -17,7 +17,11 @@ import { Route as DownloadsRouteImport } from './routes/downloads'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WantedRouteImport } from './routes/wanted'
+import { Route as AlbumIdRouteImport } from './routes/album.$id'
+import { Route as ArtistIdRouteImport } from './routes/artist.$id'
 import { Route as LibraryNameRouteImport } from './routes/library.$name'
+import { Route as ListenCodeRouteImport } from './routes/listen.$code'
+import { Route as PlaylistIdRouteImport } from './routes/playlist.$id'
 import { Route as TitleIdRouteImport } from './routes/title.$id'
 import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as WatchIdRouteImport } from './routes/watch.$id'
@@ -62,9 +66,29 @@ const WantedRoute = WantedRouteImport.update({
   path: '/wanted',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlbumIdRoute = AlbumIdRouteImport.update({
+  id: '/album/$id',
+  path: '/album/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtistIdRoute = ArtistIdRouteImport.update({
+  id: '/artist/$id',
+  path: '/artist/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LibraryNameRoute = LibraryNameRouteImport.update({
   id: '/library/$name',
   path: '/library/$name',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListenCodeRoute = ListenCodeRouteImport.update({
+  id: '/listen/$code',
+  path: '/listen/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaylistIdRoute = PlaylistIdRouteImport.update({
+  id: '/playlist/$id',
+  path: '/playlist/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TitleIdRoute = TitleIdRouteImport.update({
@@ -92,7 +116,11 @@ export interface FileRoutesByFullPath {
   '/requests': typeof RequestsRoute
   '/settings': typeof SettingsRoute
   '/wanted': typeof WantedRoute
+  '/album/$id': typeof AlbumIdRoute
+  '/artist/$id': typeof ArtistIdRoute
   '/library/$name': typeof LibraryNameRoute
+  '/listen/$code': typeof ListenCodeRoute
+  '/playlist/$id': typeof PlaylistIdRoute
   '/title/$id': typeof TitleIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/watch/$id': typeof WatchIdRoute
@@ -106,7 +134,11 @@ export interface FileRoutesByTo {
   '/requests': typeof RequestsRoute
   '/settings': typeof SettingsRoute
   '/wanted': typeof WantedRoute
+  '/album/$id': typeof AlbumIdRoute
+  '/artist/$id': typeof ArtistIdRoute
   '/library/$name': typeof LibraryNameRoute
+  '/listen/$code': typeof ListenCodeRoute
+  '/playlist/$id': typeof PlaylistIdRoute
   '/title/$id': typeof TitleIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/watch/$id': typeof WatchIdRoute
@@ -121,7 +153,11 @@ export interface FileRoutesById {
   '/requests': typeof RequestsRoute
   '/settings': typeof SettingsRoute
   '/wanted': typeof WantedRoute
+  '/album/$id': typeof AlbumIdRoute
+  '/artist/$id': typeof ArtistIdRoute
   '/library/$name': typeof LibraryNameRoute
+  '/listen/$code': typeof ListenCodeRoute
+  '/playlist/$id': typeof PlaylistIdRoute
   '/title/$id': typeof TitleIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/watch/$id': typeof WatchIdRoute
@@ -137,7 +173,11 @@ export interface FileRouteTypes {
     | '/requests'
     | '/settings'
     | '/wanted'
+    | '/album/$id'
+    | '/artist/$id'
     | '/library/$name'
+    | '/listen/$code'
+    | '/playlist/$id'
     | '/title/$id'
     | '/together/$code'
     | '/watch/$id'
@@ -151,7 +191,11 @@ export interface FileRouteTypes {
     | '/requests'
     | '/settings'
     | '/wanted'
+    | '/album/$id'
+    | '/artist/$id'
     | '/library/$name'
+    | '/listen/$code'
+    | '/playlist/$id'
     | '/title/$id'
     | '/together/$code'
     | '/watch/$id'
@@ -165,7 +209,11 @@ export interface FileRouteTypes {
     | '/requests'
     | '/settings'
     | '/wanted'
+    | '/album/$id'
+    | '/artist/$id'
     | '/library/$name'
+    | '/listen/$code'
+    | '/playlist/$id'
     | '/title/$id'
     | '/together/$code'
     | '/watch/$id'
@@ -180,7 +228,11 @@ export interface RootRouteChildren {
   RequestsRoute: typeof RequestsRoute
   SettingsRoute: typeof SettingsRoute
   WantedRoute: typeof WantedRoute
+  AlbumIdRoute: typeof AlbumIdRoute
+  ArtistIdRoute: typeof ArtistIdRoute
   LibraryNameRoute: typeof LibraryNameRoute
+  ListenCodeRoute: typeof ListenCodeRoute
+  PlaylistIdRoute: typeof PlaylistIdRoute
   TitleIdRoute: typeof TitleIdRoute
   TogetherCodeRoute: typeof TogetherCodeRoute
   WatchIdRoute: typeof WatchIdRoute
@@ -244,11 +296,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WantedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/album/$id': {
+      id: '/album/$id'
+      path: '/album/$id'
+      fullPath: '/album/$id'
+      preLoaderRoute: typeof AlbumIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artist/$id': {
+      id: '/artist/$id'
+      path: '/artist/$id'
+      fullPath: '/artist/$id'
+      preLoaderRoute: typeof ArtistIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/library/$name': {
       id: '/library/$name'
       path: '/library/$name'
       fullPath: '/library/$name'
       preLoaderRoute: typeof LibraryNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/listen/$code': {
+      id: '/listen/$code'
+      path: '/listen/$code'
+      fullPath: '/listen/$code'
+      preLoaderRoute: typeof ListenCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playlist/$id': {
+      id: '/playlist/$id'
+      path: '/playlist/$id'
+      fullPath: '/playlist/$id'
+      preLoaderRoute: typeof PlaylistIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/title/$id': {
@@ -284,7 +364,11 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsRoute: RequestsRoute,
   SettingsRoute: SettingsRoute,
   WantedRoute: WantedRoute,
+  AlbumIdRoute: AlbumIdRoute,
+  ArtistIdRoute: ArtistIdRoute,
   LibraryNameRoute: LibraryNameRoute,
+  ListenCodeRoute: ListenCodeRoute,
+  PlaylistIdRoute: PlaylistIdRoute,
   TitleIdRoute: TitleIdRoute,
   TogetherCodeRoute: TogetherCodeRoute,
   WatchIdRoute: WatchIdRoute,

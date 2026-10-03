@@ -13,8 +13,10 @@ import { Ticker } from '../components/Ticker'
 import { Button } from '../components/ui'
 import { useAmbient } from '../lib/ambient'
 import { graphql } from '../gql'
+import type { AlbumCard } from '../music/api'
+import { AlbumTile } from '../music/components'
 import type { HomeQuery } from '../gql/graphql'
-import { type CalendarEntry, request } from '../lib/api'
+import { type CalendarEntry, librariesQuery, request } from '../lib/api'
 import { airs, countdown, episodeCode, useFeatures, useNow } from '../lib/downloads'
 import { remaining } from '../lib/format'
 import { useMe } from '../lib/hooks'
@@ -76,10 +78,11 @@ function HomePage() {
   const me = useMe()
   useTitle('Home')
   const { data } = useQuery({ queryKey: ['home'], queryFn: async () => (await request(HomeQueryDoc)).home })
+  const { data: libraries } = useQuery(librariesQuery)
   const arrived = useArrived(!!data)
   if (!data) return <HomeSkeleton />
 
-  const nothing = data.recentlyAdded.every((r) => r.titles.length === 0)
+  const nothing = data.recentlyAdded.every((r) => r.titles.length === 0) && !libraries?.some((l) => l.kind === 'MUSIC' && l.albumCount > 0)
   // A fresh episode takes the hero; otherwise whatever was watched last.
   const hero = data.continueWatching.find((e) => e.newEpisode) ?? data.continueWatching[0]
   const rest = data.continueWatching.filter((e) => e !== hero)
@@ -147,7 +150,46 @@ function HomePage() {
             </Row>
           </Section>
         ))}
+
+      {libraries?.some((l) => l.kind === 'MUSIC') && <MusicShelves />}
     </Page>
+  )
+}
+
+const MusicHomeQuery = graphql(`
+  query MusicHome {
+    musicHome {
+      recentlyPlayed {
+        ...AlbumCard
+      }
+      recentlyAdded {
+        ...AlbumCard
+      }
+    }
+  }
+`)
+
+/** Music, a step quieter than the shows and movies above it. */
+function MusicShelves() {
+  const { data } = useQuery({ queryKey: ['music', 'home'], queryFn: async () => (await request(MusicHomeQuery)).musicHome })
+  if (!data) return null
+  const shelf = (title: string, albums: AlbumCard[]) =>
+    albums.length > 0 && (
+      <Section title={title}>
+        <Row>
+          {albums.map((a) => (
+            <div key={a.id} className="w-34 shrink-0 snap-start">
+              <AlbumTile album={a} />
+            </div>
+          ))}
+        </Row>
+      </Section>
+    )
+  return (
+    <>
+      {shelf('Jump back in', data.recentlyPlayed)}
+      {shelf('New music', data.recentlyAdded)}
+    </>
   )
 }
 

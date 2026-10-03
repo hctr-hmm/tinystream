@@ -64,6 +64,8 @@ pub struct Config {
     pub transcode: Transcode,
     #[serde(default)]
     pub clips: Clips,
+    #[serde(default)]
+    pub music: Music,
     #[serde(default, rename = "library")]
     pub libraries: Vec<Library>,
     #[serde(default)]
@@ -217,6 +219,23 @@ impl Default for Clips {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, async_graphql::SimpleObject, async_graphql::InputObject)]
+#[graphql(name = "MusicConfig", input_name = "MusicConfigInput")]
+#[serde(rename_all = "kebab-case", deny_unknown_fields, default)]
+pub struct Music {
+    pub online_lyrics: bool,
+
+    pub lyrics_url: String,
+
+    pub analyze_loudness: bool,
+}
+
+impl Default for Music {
+    fn default() -> Self {
+        Self { online_lyrics: true, lyrics_url: "https://lrclib.net".into(), analyze_loudness: true }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize, async_graphql::Enum)]
 #[serde(rename_all = "kebab-case")]
 pub enum Provider {
@@ -238,6 +257,8 @@ impl Provider {
 pub struct Library {
     pub name: String,
     pub path: String,
+    #[serde(default, skip_serializing_if = "LibraryKind::is_video")]
+    pub kind: LibraryKind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metadata_provider: Option<Provider>,
 
@@ -251,7 +272,32 @@ pub struct Library {
     pub download_path: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize, async_graphql::Enum)]
+#[serde(rename_all = "kebab-case")]
+pub enum LibraryKind {
+    #[default]
+    Video,
+    Music,
+}
+
+impl LibraryKind {
+    pub fn is_video(&self) -> bool {
+        *self == LibraryKind::Video
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            LibraryKind::Video => "video",
+            LibraryKind::Music => "music",
+        }
+    }
+}
+
 impl Library {
+    pub fn is_music(&self) -> bool {
+        self.kind == LibraryKind::Music
+    }
+
     pub fn resolved_path(&self, config_dir: &Path) -> anyhow::Result<PathBuf> {
         resolve_config_path(&self.path, config_dir)
     }
@@ -558,6 +604,11 @@ impl Config {
             if lib.path.trim().is_empty() {
                 return Err(format!("library {name:?} needs a `path`"));
             }
+            if lib.is_music() && (lib.managed || lib.metadata_provider.is_some() || lib.profile.is_some()) {
+                return Err(format!(
+                    "library {name:?} is a music library; `managed`, `metadata-provider` and `profile` are for video"
+                ));
+            }
         }
         let mut seen = std::collections::HashSet::new();
         for source in &self.sources {
@@ -616,6 +667,9 @@ impl Config {
                 return Err(format!("proxy {proxy:?} must look like socks5://host:1080 or http://host:8080"));
             }
         }
+        if self.music.online_lyrics && url::Url::parse(self.music.lyrics_url.trim()).is_err() {
+            return Err(format!("`[music] lyrics-url = {:?}` isn't a URL", self.music.lyrics_url));
+        }
         if self.clips.concurrency == 0 {
             return Err("`[clips] concurrency` has to be at least 1".into());
         }
@@ -673,6 +727,13 @@ port = 3000
 # path = "~/Videos/Anime"
 # metadata-provider = "anilist"
 # managed = true   # let tinystream put downloads here and rename files you approve
+#
+# Music libraries are read from the files' tags, however the folders are laid out:
+#
+# [[library]]
+# name = "Music"
+# path = "~/Music"
+# kind = "music"
 
 # Downloads (Settings → Downloads and Sources in the UI). tinystream ships
 # with no sources; add the ones you use:

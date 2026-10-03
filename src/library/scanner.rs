@@ -83,7 +83,7 @@ fn is_hidden(entry: &std::fs::DirEntry) -> bool {
     entry.file_name().to_string_lossy().starts_with('.')
 }
 
-fn file_info(path: &Path) -> (i64, i64) {
+pub(super) fn file_info(path: &Path) -> (i64, i64) {
     std::fs::metadata(path)
         .map(|m| {
             let mtime = m.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok());
@@ -317,6 +317,9 @@ async fn scan_library(state: &Arc<AppState>, name: &str) -> anyhow::Result<()> {
     }
 
     state.events.send(Event::ScanStarted { library: name.to_string() });
+    if library.is_music() {
+        return super::music::scan(state, name, &root, download_dirs(state, &config)).await;
+    }
     let started = std::time::Instant::now();
     let walk = {
         let root = root.clone();
@@ -480,6 +483,16 @@ async fn prune_removed_libraries(state: &AppState, names: &[String]) -> anyhow::
     }
     let removed = q.execute(&state.db).await?.rows_affected();
     q2.execute(&state.db).await?;
+    for table in ["tracks", "albums", "artists"] {
+        let mut q = sqlx::query(sqlx::AssertSqlSafe(sql.replace("items", table)));
+        if names.is_empty() {
+            q = q.bind("");
+        }
+        for n in names {
+            q = q.bind(n);
+        }
+        q.execute(&state.db).await?;
+    }
     if removed > 0 {
         tracing::info!("forgot {removed} titles from libraries removed from config.toml");
     }

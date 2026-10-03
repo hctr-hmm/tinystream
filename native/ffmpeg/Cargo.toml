@@ -21,6 +21,8 @@ freetype-src = { path = "../freetype" }
 fribidi-src = { path = "../fribidi" }
 harfbuzz-src = { path = "../harfbuzz" }
 libass-src = { path = "../libass" }
+opus-src = { path = "../opus" }
+lame-src = { path = "../lame" }
 
 [build-dependencies]
 native-support = { path = "../support" }

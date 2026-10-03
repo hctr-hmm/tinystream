@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+pub mod audio;
 pub mod burn;
 pub mod clip;
 pub mod codecs;
@@ -13,13 +14,54 @@ pub mod thumb;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 pub use probe::MediaInfo;
 use tokio::sync::OnceCell;
 
+/// Work someone's waiting on right now, like a transcode or a clip being
+/// rendered. Background jobs hold off while there's any.
+#[derive(Default)]
+pub struct Busy {
+    count: AtomicUsize,
+    idle: tokio::sync::Notify,
+}
+
+pub struct Hold(Arc<Busy>);
+
+impl Busy {
+    pub fn hold(self: &Arc<Self>) -> Hold {
+        self.count.fetch_add(1, Ordering::SeqCst);
+        Hold(self.clone())
+    }
+
+    pub fn is_busy(&self) -> bool {
+        self.count.load(Ordering::SeqCst) > 0
+    }
+
+    pub async fn until_idle(&self) {
+        loop {
+            let idle = self.idle.notified();
+            if !self.is_busy() {
+                return;
+            }
+            idle.await;
+        }
+    }
+}
+
+impl Drop for Hold {
+    fn drop(&mut self) {
+        if self.0.count.fetch_sub(1, Ordering::SeqCst) == 1 {
+            self.0.idle.notify_waiters();
+        }
+    }
+}
+
 pub struct MediaService {
     pub hw: hw::Hw,
+    pub busy: Arc<Busy>,
     cache_dir: PathBuf,
     probes: Mutex<HashMap<(PathBuf, i64), Arc<MediaInfo>>>,
 
@@ -43,6 +85,7 @@ impl MediaService {
         unsafe { ff::ffi::av_log_set_level(ff::ffi::AV_LOG_ERROR as i32) };
         Self {
             hw: hw::Hw::new(),
+            busy: Default::default(),
             cache_dir,
             probes: Mutex::new(HashMap::new()),
             extractions: Mutex::new(HashMap::new()),

@@ -212,6 +212,16 @@
   }
 }
 
+/* The bars beside whatever's playing. */
+@keyframes eq {
+  from {
+    transform: scaleY(0.2);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes fade {
   from {
     opacity: 0;
@@ -406,6 +416,20 @@
 ::view-transition-group(still) {
   animation-duration: 460ms;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Album cover → album page, and the player's cover into Now Playing and back. */
+::view-transition-group(cover),
+::view-transition-group(now-playing) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* The music player stays put while pages change under it. */
+::view-transition-old(music):not(:only-child) {
+  display: none;
+}
+::view-transition-new(music):not(:only-child) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 ::view-transition-group(profile) {
   animation-duration: 440ms;
