@@ -133,7 +133,7 @@ pub const ALBUM_COLUMNS: &str = "a.id, a.library, a.key, a.title, a.sort_title, 
     a.original_date, a.genres, a.release_types, a.labels, a.disc_titles, a.compilation, a.mbid, a.dir, a.cover_track,
     a.added_at,
     (SELECT COUNT(*) FROM tracks WHERE album_id = a.id) AS track_count,
-    (SELECT COALESCE(SUM(duration), 0) FROM tracks WHERE album_id = a.id) AS duration,
+    (SELECT COALESCE(SUM(duration), 0.0) FROM tracks WHERE album_id = a.id) AS duration,
     (SELECT COALESCE(SUM(size), 0) FROM tracks WHERE album_id = a.id) AS size";
 
 #[derive(sqlx::FromRow, Debug, Clone)]
@@ -778,7 +778,7 @@ pub struct Playlist {
 
 const PLAYLIST_COLUMNS: &str = "p.id, p.owner_id, u.username AS owner, p.name, p.comment, p.public, p.created_at, p.updated_at,
     (SELECT COUNT(*) FROM playlist_tracks pt JOIN tracks t ON t.path = pt.track_path WHERE pt.playlist_id = p.id) AS track_count,
-    (SELECT COALESCE(SUM(t.duration), 0) FROM playlist_tracks pt JOIN tracks t ON t.path = pt.track_path WHERE pt.playlist_id = p.id) AS duration";
+    (SELECT COALESCE(SUM(t.duration), 0.0) FROM playlist_tracks pt JOIN tracks t ON t.path = pt.track_path WHERE pt.playlist_id = p.id) AS duration";
 
 pub async fn playlists(db: &SqlitePool, user_id: i64) -> sqlx::Result<Vec<Playlist>> {
     sqlx::query_as(sqlx::AssertSqlSafe(format!(
