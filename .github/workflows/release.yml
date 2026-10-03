@@ -20,12 +20,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: x86_64-unknown-linux-gnu, runner: blacksmith-4vcpu-ubuntu-2404 }
-          - { target: aarch64-unknown-linux-gnu, runner: blacksmith-4vcpu-ubuntu-2404-arm }
+          - { target: x86_64-unknown-linux-gnu, runner: blacksmith-4vcpu-ubuntu-2404, libc: gnu }
+          - { target: aarch64-unknown-linux-gnu, runner: blacksmith-4vcpu-ubuntu-2404-arm, libc: gnu }
+          - { target: x86_64-unknown-linux-musl, runner: blacksmith-4vcpu-ubuntu-2404, libc: musl }
+          - { target: aarch64-unknown-linux-musl, runner: blacksmith-4vcpu-ubuntu-2404-arm, libc: musl }
     steps:
       - uses: useblacksmith/checkout@v1
       - uses: oven-sh/setup-bun@v2
       - uses: ./.github/actions/native-deps
+        if: matrix.libc == 'gnu'
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
@@ -33,9 +36,47 @@ jobs:
         with:
           tool: wasm-bindgen@0.2.126
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Cache musl native libraries
+        if: matrix.libc == 'musl'
+        uses: actions/cache@v4
+        with:
+          path: .native-musl
+          key: native-musl-${{ matrix.target }}-${{ hashFiles('native/**/Cargo.toml', 'native/**/build.rs', 'native/support/src/**') }}
+          restore-keys: native-musl-${{ matrix.target }}-
+
+      - name: Build web UI
+        if: matrix.libc == 'musl'
+        run: |
+          cd web
+          bun install --frozen-lockfile
+          bun run build
 
       - name: Build
+        if: matrix.libc == 'gnu'
         run: cargo build --release --locked
+
+      - name: Build musl
+        if: matrix.libc == 'musl'
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" -w /workspace \
+            -e CARGO_TERM_COLOR \
+            -e TS_BUILD_OWNER="$(id -u):$(id -g)" \
+            -e TINYSTREAM_SKIP_WEB_BUILD=1 \
+            -e TINYSTREAM_NATIVE_DIR=/workspace/.native-musl \
+            rust:alpine sh -ec '
+              apk add --no-cache \
+                build-base pkgconf curl git tar bash \
+                meson ninja autoconf automake libtool \
+                clang-dev openssl-dev openssl-libs-static libdrm-dev linux-headers \
+                zlib-dev zlib-static bzip2-dev bzip2-static xz-dev xz-static
+              git config --global --add safe.directory /workspace
+              cargo build --release --locked --target "${{ matrix.target }}"
+              chown -R "$TS_BUILD_OWNER" target .native-musl
+            '
 
       - name: Package
         id: package
@@ -43,7 +84,11 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           name="tinystream-${version}-${{ matrix.target }}"
           mkdir -p "dist/$name"
-          cp target/release/tinystream LICENSE README.md "dist/$name/"
+          binary="target/release/tinystream"
+          if [ "${{ matrix.libc }}" = musl ]; then
+            binary="target/${{ matrix.target }}/release/tinystream"
+          fi
+          cp "$binary" LICENSE README.md "dist/$name/"
           tar -C dist -czf "dist/$name.tar.gz" "$name"
           (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
           echo "archive=dist/$name.tar.gz" >> "$GITHUB_OUTPUT"
