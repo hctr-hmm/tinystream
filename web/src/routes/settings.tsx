@@ -468,29 +468,35 @@ function LibraryDialog({ library, onClose, onSaved }: { library: ConfigLibrary |
 
 
 function FolderPicker({ start, onPick }: { start: string; onPick: (p: string) => void }) {
-  const [at, setAt] = useState(start || '~')
-  const { data, error } = useQuery({
+  const path = start.trim() || '~'
+  const [at, setAt] = useState(path)
+  useEffect(() => {
+    const timer = setTimeout(() => setAt(path), 200)
+    return () => clearTimeout(timer)
+  }, [path])
+  const { data, error, isFetching } = useQuery({
     queryKey: ['browse', at],
     queryFn: async () => (await request(FoldersQuery, { path: at || null })).folders,
-    placeholderData: (p) => p,
+    retry: false,
   })
+  const loading = path !== at || isFetching
   const pretty = (p: string) => (data?.home && p.startsWith(data.home) ? `~${p.slice(data.home.length)}` : p)
   const pick = (p: string) => {
-    setAt(p)
     onPick(pretty(p))
   }
   return (
     <Squircle radius={12} edge className="bg-canvas">
       <div className="flex items-center gap-1 border-b border-line px-2 py-1.5">
-        <IconButton label="Up a folder" disabled={!data?.parent} onClick={() => data?.parent && pick(data.parent)}>
+        <IconButton label="Up a folder" disabled={loading || !!error || !data?.parent} onClick={() => data?.parent && pick(data.parent)}>
           <CornerLeftUp className="size-4" />
         </IconButton>
-        <span className="truncate text-xs text-ink-2">{data ? pretty(data.path) : ''}</span>
+        <span className="truncate text-xs text-ink-2">{loading ? path : data ? pretty(data.path) : path}</span>
       </div>
-      <div className="max-h-56 overflow-y-auto p-1">
-        {error && <p className="p-3 text-xs text-danger">{(error as Error).message}</p>}
-        {data?.folders.length === 0 && <p className="p-3 text-xs text-ink-3">No folders in here.</p>}
-        {data?.folders.map((e) => (
+      <div className="max-h-56 overflow-y-auto p-1" aria-busy={loading}>
+        {loading && <p className="p-3 text-xs text-ink-3">Loading folders…</p>}
+        {!loading && error && <p className="p-3 text-xs text-danger">{(error as Error).message}</p>}
+        {!loading && !error && data?.folders.length === 0 && <p className="p-3 text-xs text-ink-3">No folders in here.</p>}
+        {!loading && !error && data?.folders.map((e) => (
           <button
             key={e.path}
             onClick={() => pick(e.path)}
