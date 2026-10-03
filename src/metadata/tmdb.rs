@@ -6,7 +6,8 @@ use anyhow::{Context, bail};
 use serde::Deserialize;
 
 use super::{
-    Candidate, Details, EpisodeDetails, ItemKind, ScheduledEpisode, SeasonDetails, SeasonSchedule, ShowSchedule,
+    Candidate, Details, EpisodeDetails, ItemKind, MediaCategory, ScheduledEpisode, SeasonDetails, SeasonSchedule,
+    ShowSchedule,
 };
 use crate::config::{Metadata, Provider};
 
@@ -121,8 +122,9 @@ fn non_empty(s: Option<String>) -> Option<String> {
     s.filter(|s| !s.trim().is_empty())
 }
 
-fn candidate(r: SearchResult) -> Candidate {
+fn candidate(r: SearchResult, kind: ItemKind) -> Candidate {
     Candidate {
+        category: if kind == ItemKind::Movie { MediaCategory::Movies } else { MediaCategory::Episodes },
         provider: Provider::Tmdb,
         id: r.id.to_string(),
         year: year(&r.release_date),
@@ -176,12 +178,13 @@ impl Client {
         if page.results.is_empty() && year_hint.is_some() {
             page = self.get(config, path, &q[..1]).await?;
         }
-        Ok(page.results.into_iter().map(candidate).collect())
+        Ok(page.results.into_iter().map(|r| candidate(r, kind)).collect())
     }
 
-    pub async fn trending(&self, config: &Metadata) -> anyhow::Result<Vec<Candidate>> {
-        let page: SearchPage = self.get(config, "/trending/tv/week", &[]).await?;
-        Ok(page.results.into_iter().map(candidate).collect())
+    pub async fn trending(&self, config: &Metadata, kind: ItemKind) -> anyhow::Result<Vec<Candidate>> {
+        let path = if kind == ItemKind::Movie { "/trending/movie/week" } else { "/trending/tv/week" };
+        let page: SearchPage = self.get(config, path, &[]).await?;
+        Ok(page.results.into_iter().map(|r| candidate(r, kind)).collect())
     }
 
     pub async fn recommendations(
@@ -203,7 +206,7 @@ impl Client {
         for (id, page) in pages {
             match page {
                 Ok(page) => {
-                    out.insert(id.clone(), page.results.into_iter().map(candidate).collect());
+                    out.insert(id.clone(), page.results.into_iter().map(|r| candidate(r, kind)).collect());
                 },
                 Err(e) if config.tmdb_api_key.as_deref().is_none_or(str::is_empty) => {
                     return Err(e);
@@ -313,5 +316,18 @@ impl Client {
             });
         }
         Ok(details)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn candidates_keep_the_search_kind() {
+        let result =
+            |title| serde_json::from_value::<SearchResult>(serde_json::json!({ "id": 1, "title": title })).unwrap();
+        assert_eq!(candidate(result("Show"), ItemKind::Show).category, MediaCategory::Episodes);
+        assert_eq!(candidate(result("Movie"), ItemKind::Movie).category, MediaCategory::Movies);
     }
 }

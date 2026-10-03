@@ -319,6 +319,7 @@ type DetectedSource {
 }
 
 type DiscoverResult {
+	category: MediaCategory!
 	provider: Provider!
 	id: String!
 	name: String!
@@ -340,6 +341,7 @@ type Discovery {
 }
 
 type Download {
+	category: MediaCategory!
 	id: Int!
 	name: String!
 	seriesId: Int
@@ -614,6 +616,13 @@ type MetadataConfig {
 input MetadataConfigInput {
 	tmdbApiKey: String
 	language: String!
+}
+
+enum MediaCategory {
+	EPISODES
+	SPECIALS
+	MOVIES
+	OTHER
 }
 
 enum MetadataStatus {
@@ -971,6 +980,7 @@ enum Provider {
 }
 
 type ProviderTitle {
+	category: MediaCategory!
 	provider: Provider!
 	id: String!
 	name: String!

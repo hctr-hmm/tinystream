@@ -13,6 +13,7 @@ import { Select, Spinner } from '../components/ui'
 import { graphql } from '../gql'
 import { type DiscoverResult, librariesQuery, request } from '../lib/api'
 import { useMe } from '../lib/hooks'
+import { mediaOptions, ofMediaType } from '../lib/media'
 import { useTitle } from '../lib/title'
 
 export const Route = createFileRoute('/discover')({
@@ -53,6 +54,7 @@ function DiscoverPage() {
   const [q, setQ] = useState(initial ?? '')
   const [query, setQuery] = useState(initial ?? '')
   const [library, setLibrary] = useState<string>('')
+  const [category, setCategory] = useState('')
   const [picked, setPicked] = useState<DiscoverResult | null>(null)
   const { data: libraries } = useQuery(librariesQuery)
   const manage = !!me?.permissions.manageShows
@@ -93,7 +95,7 @@ function DiscoverPage() {
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search AniList or TMDB for a show"
+            placeholder="Search AniList or TMDB"
             className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
           />
           {isFetching && <Spinner className="size-4 text-ink-3" />}
@@ -107,23 +109,26 @@ function DiscoverPage() {
             />
           </div>
         )}
+        <div className="sm:w-48">
+          <Select value={category} options={mediaOptions} onChange={setCategory} />
+        </div>
       </div>
 
       {me && !manage && !me.permissions.request && (
         <Empty title="You can't request shows" />
       )}
       {error && <p className="text-sm text-danger">{(error as Error).message}</p>}
-      {!query && action && (forYou.data ? forYou.data.shelves.map((row) => <DiscoverShelf key={row.key} title={row.name} results={row.results} />) : forYou.isPending && <RowSkeleton />)}
-      {!query && data && data.results.length > 0 && (
+      {!query && action && (forYou.data ? forYou.data.shelves.filter((row) => ofMediaType(row.results, category).length > 0).map((row) => <DiscoverShelf key={row.key} title={row.name} results={ofMediaType(row.results, category)} />) : forYou.isPending && <RowSkeleton />)}
+      {!query && data && ofMediaType(data.results, category).length > 0 && (
         <h2 className="mb-4 text-[15px] font-semibold tracking-tight">Popular right now</h2>
       )}
       {!data && !error && <PosterGridSkeleton count={12} />}
-      {data && data.results.length === 0 && query && <Empty title={`Nothing called “${query}”`} />}
+      {data && ofMediaType(data.results, category).length === 0 && <Empty title={query ? `Nothing called “${query}”${category ? ' of this type' : ''}` : 'No titles of this type'} />}
 
       {data && (
         <PosterGrid>
-          {data.results.map((r) => (
-            <ResultCard key={`${r.provider}${r.id}`} r={r} action={action} onPick={() => setPicked(r)} />
+          {ofMediaType(data.results, category).map((r) => (
+            <ResultCard key={`${r.provider}${r.category}${r.id}`} r={r} action={action} onPick={() => setPicked(r)} />
           ))}
         </PosterGrid>
       )}

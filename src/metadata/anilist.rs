@@ -11,8 +11,8 @@ use serde_json::json;
 use tokio::sync::Mutex;
 
 use super::{
-    Candidate, Details, EpisodeDetails, ItemKind, PartSchedule, ScheduledEpisode, SeasonDetails, SeasonSchedule,
-    ShowSchedule, strip_html,
+    Candidate, Details, EpisodeDetails, ItemKind, MediaCategory, PartSchedule, ScheduledEpisode, SeasonDetails,
+    SeasonSchedule, ShowSchedule, strip_html,
 };
 use crate::config::Provider;
 
@@ -28,6 +28,7 @@ pub struct Client {
 #[serde(rename_all = "camelCase")]
 struct Media {
     id: i64,
+    format: Option<String>,
     title: Title,
     #[serde(default)]
     synonyms: Vec<String>,
@@ -103,10 +104,10 @@ struct RelNode {
     relations: Option<Relations>,
 }
 
-const SEARCH_FIELDS: &str = "id title { english romaji } description(asHtml: false)
+const SEARCH_FIELDS: &str = "id format title { english romaji } description(asHtml: false)
     coverImage { extraLarge large } seasonYear startDate { year }";
 
-const ENTRY_FIELDS: &str = "id title { english romaji } synonyms description(asHtml: false)
+const ENTRY_FIELDS: &str = "id format title { english romaji } synonyms description(asHtml: false)
     coverImage { extraLarge large } bannerImage averageScore genres seasonYear startDate { year }
     episodes status nextAiringEpisode { episode airingAt }
     streamingEpisodes { title thumbnail }
@@ -152,6 +153,7 @@ impl Media {
 
     fn candidate(self) -> Candidate {
         Candidate {
+            category: MediaCategory::anilist(self.format.as_deref()),
             provider: Provider::Anilist,
             id: self.id.to_string(),
             title: self.title(),
@@ -419,7 +421,7 @@ impl Client {
             media: Vec<Media>,
         }
         let formats = match kind {
-            ItemKind::Show => json!(["TV", "TV_SHORT", "ONA", "OVA"]),
+            ItemKind::Show => json!(["TV", "TV_SHORT", "ONA", "OVA", "SPECIAL"]),
             ItemKind::Movie => json!(["MOVIE"]),
         };
         let q = format!(
@@ -475,7 +477,6 @@ impl Client {
         struct Recommended {
             #[serde(flatten)]
             media: Media,
-            format: Option<String>,
             #[serde(default)]
             is_adult: bool,
         }
@@ -484,14 +485,14 @@ impl Client {
             .map(|id| {
                 format!(
                     "m{id}: Media(id: {id}) {{ recommendations(sort: [RATING_DESC, ID], perPage: 20) {{
-                        nodes {{ mediaRecommendation {{ {SEARCH_FIELDS} format isAdult }} }} }} }}"
+                        nodes {{ mediaRecommendation {{ {SEARCH_FIELDS} isAdult }} }} }} }}"
                 )
             })
             .collect::<Vec<_>>()
             .join("\n");
         let data: HashMap<String, Option<Entry>> = self.query(&format!("query {{ {fields} }}"), json!({})).await?;
         let wanted = |format: Option<&str>| match kind {
-            ItemKind::Show => matches!(format, Some("TV" | "TV_SHORT" | "ONA" | "OVA")),
+            ItemKind::Show => matches!(format, Some("TV" | "TV_SHORT" | "ONA" | "OVA" | "SPECIAL")),
             ItemKind::Movie => format == Some("MOVIE"),
         };
         Ok(data
@@ -503,7 +504,7 @@ impl Client {
                     .unwrap_or_default()
                     .into_iter()
                     .filter_map(|n| n.media_recommendation)
-                    .filter(|r| !r.is_adult && wanted(r.format.as_deref()))
+                    .filter(|r| !r.is_adult && wanted(r.media.format.as_deref()))
                     .map(|r| r.media.candidate())
                     .collect();
                 (alias.trim_start_matches('m').to_string(), list)
@@ -511,7 +512,7 @@ impl Client {
             .collect())
     }
 
-    pub async fn trending(&self) -> anyhow::Result<Vec<Candidate>> {
+    pub async fn trending(&self, kind: ItemKind) -> anyhow::Result<Vec<Candidate>> {
         #[derive(Deserialize)]
         #[serde(rename_all = "PascalCase")]
         struct Data {
@@ -521,9 +522,13 @@ impl Client {
         struct Page {
             media: Vec<Media>,
         }
+        let formats = match kind {
+            ItemKind::Show => "[TV, TV_SHORT, ONA, OVA, SPECIAL]",
+            ItemKind::Movie => "[MOVIE]",
+        };
         let q = format!(
             "query {{ Page(perPage: 30) {{
-                media(type: ANIME, format_in: [TV, TV_SHORT, ONA], isAdult: false, sort: TRENDING_DESC) {{ {SEARCH_FIELDS} }} }} }}"
+                media(type: ANIME, format_in: {formats}, isAdult: false, sort: TRENDING_DESC) {{ {SEARCH_FIELDS} }} }} }}"
         );
         let data: Data = self.query(&q, json!({})).await?;
         Ok(data.page.media.into_iter().map(Media::candidate).collect())
@@ -635,6 +640,22 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn candidates_keep_the_provider_format() {
+        for (format, category) in [
+            ("TV", MediaCategory::Episodes),
+            ("OVA", MediaCategory::Specials),
+            ("SPECIAL", MediaCategory::Specials),
+            ("MOVIE", MediaCategory::Movies),
+        ] {
+            let media: Media = serde_json::from_value(json!({
+                "id": 1, "format": format, "title": { "english": "Title", "romaji": null }
+            }))
+            .unwrap();
+            assert_eq!(media.candidate().category, category);
+        }
+    }
 
     #[test]
     fn drops_the_credit_from_descriptions() {

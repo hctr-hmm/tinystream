@@ -111,6 +111,7 @@ export function shortDate(unix: number) {
 }
 
 export function episodeCode(season: number, episode: number) {
+  if (season === 0) return `Special ${episode}`
   return `S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`
 }
 

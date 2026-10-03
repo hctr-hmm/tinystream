@@ -22,10 +22,31 @@ use crate::events::Event;
 use crate::library::parse::sort_title;
 use crate::state::AppState;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, async_graphql::Enum)]
+#[serde(rename_all = "camelCase")]
+pub enum MediaCategory {
+    Episodes,
+    Specials,
+    Movies,
+    Other,
+}
+
+impl MediaCategory {
+    pub fn anilist(format: Option<&str>) -> Self {
+        match format {
+            Some("MOVIE") => Self::Movies,
+            Some("OVA" | "SPECIAL") => Self::Specials,
+            Some("TV" | "TV_SHORT" | "ONA") => Self::Episodes,
+            _ => Self::Other,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, async_graphql::SimpleObject)]
 #[graphql(name = "ProviderTitle")]
 #[serde(rename_all = "camelCase")]
 pub struct Candidate {
+    pub category: MediaCategory,
     pub provider: Provider,
     pub id: String,
     #[graphql(name = "name")]
@@ -158,7 +179,12 @@ impl MetadataService {
         unavailable()
     }
 
-    pub async fn trending(&self, _state: &AppState, _provider: Provider) -> anyhow::Result<Vec<Candidate>> {
+    pub async fn trending(
+        &self,
+        _state: &AppState,
+        _provider: Provider,
+        _kind: ItemKind,
+    ) -> anyhow::Result<Vec<Candidate>> {
         unavailable()
     }
 
@@ -244,12 +270,17 @@ impl MetadataService {
         }
     }
 
-    pub async fn trending(&self, state: &AppState, provider: Provider) -> anyhow::Result<Vec<Candidate>> {
+    pub async fn trending(
+        &self,
+        state: &AppState,
+        provider: Provider,
+        kind: ItemKind,
+    ) -> anyhow::Result<Vec<Candidate>> {
         match provider {
-            Provider::Anilist => self.anilist.trending().await,
+            Provider::Anilist => self.anilist.trending(kind).await,
             Provider::Tmdb => {
                 let config = state.config.current();
-                self.tmdb.trending(&config.metadata).await
+                self.tmdb.trending(&config.metadata, kind).await
             },
         }
     }
@@ -601,7 +632,7 @@ async fn run_once(state: &Arc<AppState>) -> anyhow::Result<()> {
 
     let stale: Vec<(i64, String, String, String)> = sqlx::query_as(
         "SELECT DISTINCT i.id, i.library, i.provider, i.provider_id FROM items i JOIN media m ON m.item_id = i.id
-         WHERE i.match_state IN ('matched', 'manual') AND i.kind = 'show' AND m.title IS NULL AND i.provider_id IS NOT NULL",
+         WHERE i.match_state IN ('matched', 'manual') AND i.kind = 'show' AND m.title IS NULL AND m.episode IS NOT NULL AND i.provider_id IS NOT NULL",
     )
     .fetch_all(&state.db)
     .await?;
@@ -655,4 +686,22 @@ pub(crate) fn strip_html(s: &str) -> String {
         collapsed.push('\n');
     }
     collapsed.trim().to_string()
+}
+
+#[cfg(test)]
+mod category_tests {
+    use super::MediaCategory;
+
+    #[test]
+    fn anilist_formats() {
+        for format in ["TV", "TV_SHORT", "ONA"] {
+            assert_eq!(MediaCategory::anilist(Some(format)), MediaCategory::Episodes);
+        }
+        for format in ["OVA", "SPECIAL"] {
+            assert_eq!(MediaCategory::anilist(Some(format)), MediaCategory::Specials);
+        }
+        assert_eq!(MediaCategory::anilist(Some("MOVIE")), MediaCategory::Movies);
+        assert_eq!(MediaCategory::anilist(Some("MUSIC")), MediaCategory::Other);
+        assert_eq!(MediaCategory::anilist(None), MediaCategory::Other);
+    }
 }

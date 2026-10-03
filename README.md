@@ -60,6 +60,39 @@ All on by default:
 
 Build with `--no-default-features` for a plain media server, or pick what you want, e.g. `--no-default-features --features web-ui,metadata`.
 
+## Specials and season extras
+
+Put special episodes in `Show/S00/`, `Show/Season 00/`, or `Show/Specials/`.
+Numbered files such as `Show S00E01.mkv` keep their episode numbers; unnumbered
+videos such as `OVA.mkv` are also playable. A single special is labelled
+**Special**; multiple videos are labelled **Specials**.
+
+Videos in subdirectories of a season are shown under **Extras** for that season:
+
+```text
+Show/
+  Season 01/
+    Show S01E01.mkv
+    extras/
+      OP.mkv
+      ED.mkv
+    extra/
+      Show S01E01 Director's cut.mkv
+  Specials/
+    OVA.mkv
+```
+
+Extras use their filenames as titles and don't take an episode number or replace
+a numbered episode. Hidden files, samples, and non-video files are ignored.
+Subdirectories are scanned recursively without following directory symlinks.
+Extras can be played and resumed, while ordinary episode playback skips them.
+
+**Add shows** and **Downloads** have filters and labels for **Episodes / Seasons**,
+**Specials**, **Movies**, and **Other / Mixed**. AniList's OVA and SPECIAL formats
+are classified as specials. Movie discovery is shown separately; automatic movie
+acquisition is not supported by the existing show downloader. Unidentified or
+mixed downloads stay in Other / Mixed instead of being assumed to be movies.
+
 ## License
 
 Released under the [AGPL-3.0-or-later](./LICENSE) open-source license.
