@@ -10,6 +10,7 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { toast, toastError } from '../components/feedback'
 import { Empty, Page, Section } from '../components/Page'
 import { Img } from '../components/Img'
+import { Overview } from '../components/Overview'
 import { Poster, morphFrom } from '../components/Poster'
 import { Row } from '../components/Row'
 import { TitleSkeleton } from '../components/Skeleton'
@@ -351,7 +352,7 @@ function TitlePage() {
           </div>
         </div>
 
-        {item.overview && <Overview text={item.overview} />}
+        {item.overview && <Overview text={item.overview} style={refreshing(3)} />}
         {can?.manageShows && features && item.kind === 'SHOW' && series !== undefined && (
           <SeriesPanel item={item} series={series && 'counts' in series ? series : null} season={season} />
         )}
@@ -585,23 +586,6 @@ function MoreLikeThis({ item, actionable }: { item: Item; actionable: boolean })
             ))}
           </Row>
         </Section>
-      )}
-    </div>
-  )
-}
-
-function Overview({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
-  const long = text.length > 420
-  return (
-    <div style={refreshing(3)} className="refreshable mt-8 max-w-[68ch]">
-      <p className={`text-[15px] leading-relaxed whitespace-pre-line text-ink-2 ${!open && long ? 'line-clamp-4' : ''}`}>
-        {text}
-      </p>
-      {long && (
-        <button className="mt-1.5 text-sm text-ink-3 hover:text-ink" onClick={() => setOpen((o) => !o)}>
-          {open ? 'Less' : 'More'}
-        </button>
       )}
     </div>
   )
