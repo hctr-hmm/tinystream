@@ -594,6 +594,13 @@ enum MatchState {
 	MANUAL
 }
 
+enum MediaCategory {
+	EPISODES
+	SPECIALS
+	MOVIES
+	OTHER
+}
+
 type MediaInfo {
 	duration: Float
 	video: VideoTrack
@@ -616,13 +623,6 @@ type MetadataConfig {
 input MetadataConfigInput {
 	tmdbApiKey: String
 	language: String!
-}
-
-enum MediaCategory {
-	EPISODES
-	SPECIALS
-	MOVIES
-	OTHER
 }
 
 enum MetadataStatus {
