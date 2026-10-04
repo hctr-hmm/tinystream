@@ -13,6 +13,7 @@ import { useStatus } from '../lib/hooks'
 import { receive, refresh as refreshNotifications } from '../lib/notifications'
 import { preload, startFetching, stopFetching } from '../lib/refreshing'
 import { useAppearance } from '../lib/appearance'
+import { useFavicon } from '../lib/logo'
 import { bootstrap } from '../lib/theme'
 import { followRemote, music, refreshFromServer, restore } from '../music/player'
 import { queryClient } from '../router'
@@ -223,6 +224,7 @@ function Gate() {
   const video = path.startsWith('/watch/') || path.startsWith('/together/')
   useLiveUpdates(!!data?.viewer)
   useAppearance(data?.viewer?.id ?? null, !isPending)
+  useFavicon()
   useEffect(() => {
     if (data?.viewer) void restore()
   }, [data?.viewer])

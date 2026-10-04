@@ -7,6 +7,23 @@ import { Card } from './SettingsKit'
 
 const contributors = __CONTRIBUTORS__
 
+const libraries = [
+  { name: 'x264', license: 'GPL-2.0-or-later', href: 'https://www.videolan.org/developers/x264.html', does: 'H.264 encoding' },
+  { name: 'dav1d', license: 'BSD-2-Clause', href: 'https://code.videolan.org/videolan/dav1d', does: 'AV1 decoding' },
+  { name: 'LAME', license: 'LGPL-2.0-or-later', href: 'https://lame.sourceforge.io', does: 'MP3 encoding' },
+  { name: 'Opus', license: 'BSD-3-Clause', href: 'https://opus-codec.org', does: 'Opus audio' },
+  { name: 'zimg', license: 'WTFPL', href: 'https://github.com/sekrit-twc/zimg', does: 'Scaling and color conversion' },
+  { name: 'libva', license: 'MIT', href: 'https://github.com/intel/libva', does: 'Hardware transcoding' },
+  { name: 'libass', license: 'ISC', href: 'https://github.com/libass/libass', does: 'Burned-in subtitles' },
+  { name: 'FreeType', license: 'FTL', href: 'https://freetype.org', does: 'Font rendering' },
+  { name: 'HarfBuzz', license: 'MIT', href: 'https://harfbuzz.github.io', does: 'Text shaping' },
+  { name: 'FriBidi', license: 'LGPL-2.1-or-later', href: 'https://github.com/fribidi/fribidi', does: 'Right-to-left text' },
+  { name: 'libtorrent', license: 'BSD-3-Clause', href: 'https://libtorrent.org', does: 'Torrent downloads' },
+  { name: 'Boost', license: 'BSL-1.0', href: 'https://www.boost.org', does: 'What libtorrent is built on' },
+  { name: 'JASSUB', license: 'MIT', href: 'https://github.com/ThaUnknown/jassub', does: 'Subtitles in the browser' },
+  { name: 'Symphonia', license: 'MPL-2.0', href: 'https://github.com/pdeljanov/Symphonia', does: 'Music decoding in the browser' },
+]
+
 export function Credits() {
   return (
     <>
@@ -40,13 +57,58 @@ export function Credits() {
           <p className="text-sm text-ink-3">This build was made without its git history, so there's no one to list.</p>
         )}
       </Card>
+      <Card
+        title="Open source"
+        description={
+          <>
+            tinystream is built on the work of these projects, and of many Rust crates and web packages besides. Every release
+            carries their full licenses in THIRD_PARTY_LICENSES; the web UI's are also{' '}
+            <a href="/third-party-licenses.txt" target="_blank" rel="noreferrer" className="text-ink-2 underline underline-offset-2 hover:text-ink">
+              here
+            </a>
+            .
+          </>
+        }
+      >
+        <a
+          href="https://ffmpeg.org"
+          target="_blank"
+          rel="noreferrer"
+          className="mb-4 flex flex-col gap-1 rounded-xl border border-line p-4 transition-colors hover:bg-hover"
+        >
+          <span className="inline-flex items-center gap-1 text-sm font-semibold">
+            A huge thank you to FFmpeg
+            <ArrowUpRight className="size-3.5 text-ink-3" />
+          </span>
+          <span className="text-xs leading-relaxed text-ink-3">
+            Every video and song tinystream plays is probed, decoded, transcoded and muxed by FFmpeg. Without it, there would be no
+            tinystream. Used under the GPL-2.0-or-later.
+          </span>
+        </a>
+        <ul className="grid gap-1 sm:grid-cols-2">
+          {libraries.map((l) => (
+            <li key={l.name}>
+              <a href={l.href} target="_blank" rel="noreferrer" className="flex items-baseline gap-3 rounded-lg p-1.5 transition-colors hover:bg-hover">
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  {l.name} <span className="text-ink-3">· {l.does}</span>
+                </span>
+                <span className="shrink-0 text-xs text-ink-3">{l.license}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 text-xs leading-relaxed text-ink-3">
+          Portions of this software are copyright © 2024 The FreeType Project (www.freetype.org). All rights reserved.
+        </p>
+      </Card>
       <Card title="Metadata" description="Titles, artwork and episode details come from these services.">
         <div className="flex flex-col gap-5">
+          <Source href="https://anilist.co" logo={<span className="text-sm font-semibold">AniList</span>}>
+            A huge thank you to AniList for all of tinystream's anime information. tinystream is not affiliated with or endorsed by
+            AniList.
+          </Source>
           <Source href="https://www.themoviedb.org" logo={<img src="/tmdb.svg" alt="TMDB" className="h-3.5" />}>
             tinystream uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
-          </Source>
-          <Source href="https://anilist.co" logo={<span className="text-sm font-semibold">AniList</span>}>
-            Anime information is provided by AniList. tinystream is not affiliated with or endorsed by AniList.
           </Source>
         </div>
       </Card>

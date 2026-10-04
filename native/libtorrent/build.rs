@@ -23,13 +23,14 @@ fn main() {
         PUBLIC_DEFINES.iter().map(|(k, v)| v.map_or_else(|| k.to_string(), |v| format!("{k}={v}"))).collect();
     let defines = defines.join(" ");
 
+    let url = format!(
+        "https://github.com/arvidn/libtorrent/releases/download/v{VERSION}/libtorrent-rasterbar-{VERSION}.tar.gz"
+    );
     b.once(&defines, |b| {
-        b.fetch(
-            &format!("https://github.com/arvidn/libtorrent/releases/download/v{VERSION}/libtorrent-rasterbar-{VERSION}.tar.gz"),
-            &[],
-        );
+        b.fetch(&url, &[]);
         compile(&b.src, &boost, &b.prefix.join("lib"));
     });
+    b.licenses(&url, &["COPYING"]);
     b.export("include", b.src.join("include"));
     b.export("boost", &boost);
     b.export("lib", b.prefix.join("lib"));

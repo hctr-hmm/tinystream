@@ -14,8 +14,10 @@ fn main() {
         "-Dpng=disabled",
         "-Dzlib=disabled",
     ];
+    let url = format!("https://download.savannah.gnu.org/releases/freetype/freetype-{VERSION}.tar.gz");
     b.once(&options.join(" "), |b| {
-        b.fetch(&format!("https://download.savannah.gnu.org/releases/freetype/freetype-{VERSION}.tar.gz"), &[]);
+        b.fetch(&url, &[]);
         b.meson(&options);
     });
+    b.licenses(&url, &["LICENSE.TXT", "docs/FTL.TXT"]);
 }

@@ -14,10 +14,12 @@ fn main() {
         "--disable-gtktest".into(),
         format!("CFLAGS={}", b.cflags()),
     ];
+    let url = format!("https://downloads.sourceforge.net/project/lame/lame/{version}/lame-{version}.tar.gz");
     b.once(&args.join(" "), |b| {
-        b.fetch(&format!("https://downloads.sourceforge.net/project/lame/lame/{version}/lame-{version}.tar.gz"), &[]);
+        b.fetch(&url, &[]);
         b.configure(&args.each_ref().map(String::as_str));
     });
+    b.licenses(&url, &["COPYING"]);
     // LAME has no pkg-config file, so FFmpeg's link line doesn't say where it is.
     println!("cargo::rustc-link-search=native={}", b.prefix.join("lib").display());
 }

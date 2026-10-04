@@ -254,7 +254,8 @@ export const cssColor = (name: TokenName | `media-${string}`) =>
   getComputedStyle(document.documentElement).getPropertyValue(`--color-${name}`).trim()
 
 const listeners = new Set<() => void>()
-const subscribe = (l: () => void) => (listeners.add(l), () => void listeners.delete(l))
+/** Calls `l` whenever a theme is put on the page. */
+export const onThemeChange = (l: () => void) => (listeners.add(l), () => void listeners.delete(l))
 
 /** Squircle corners for each style: how big, relative to Layered, and how smooth. */
 const corners: Record<string, { scale: number; smoothing: number }> = {
@@ -263,11 +264,14 @@ const corners: Record<string, { scale: number; smoothing: number }> = {
   glass: { scale: 1.25, smoothing: 0.8 },
 }
 
-export function useCorners() {
-  const style = useSyncExternalStore(
-    subscribe,
+/** The component style in use. */
+export const useStyle = () =>
+  useSyncExternalStore(
+    onThemeChange,
     () => document.documentElement.dataset.style ?? 'layered',
     () => 'layered',
   )
-  return corners[style] ?? corners.layered
+
+export function useCorners() {
+  return corners[useStyle()] ?? corners.layered
 }

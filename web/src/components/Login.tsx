@@ -8,6 +8,7 @@ import { graphql } from '../gql'
 import { request } from '../lib/api'
 import { getCredential } from '../lib/webauthn'
 import { Avatar } from './Avatar'
+import { Logo } from './Logo'
 import { Button, Field, Input, Panel, Spinner } from './ui'
 
 const LAST_USER = 'tinystream.lastUsername'
@@ -148,7 +149,7 @@ function Frame({ title, subtitle, wide, children }: { title?: string; subtitle?:
       <div className={`w-full ${wide ? 'max-w-3xl' : 'max-w-sm'}`}>
         {title && (
           <div className={`mb-7 flex items-center gap-3 ${wide ? 'justify-center' : ''}`}>
-            <img src="/favicon.svg" alt="" className="size-8" />
+            <Logo size={32} />
             <div>
               <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
               {subtitle && <p className="text-sm text-ink-2">{subtitle}</p>}

@@ -7,11 +7,10 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn main() {
     let b = Build::new("boost", VERSION, &[]);
     let dir = format!("boost_{}", VERSION.replace('.', "_"));
-    b.once("", |b| {
-        b.fetch(
-            &format!("https://archives.boost.io/release/{VERSION}/source/{dir}.tar.gz"),
-            &[&format!("{dir}/boost")],
-        );
+    let url = format!("https://archives.boost.io/release/{VERSION}/source/{dir}.tar.gz");
+    b.once("license", |b| {
+        b.fetch(&url, &[&format!("{dir}/boost"), &format!("{dir}/LICENSE_1_0.txt")]);
     });
+    b.licenses(&url, &["LICENSE_1_0.txt"]);
     b.export("include", &b.src);
 }

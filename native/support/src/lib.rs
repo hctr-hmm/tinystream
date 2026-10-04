@@ -99,6 +99,21 @@ impl Build {
         println!("cargo::metadata={key}={}", value.as_ref().to_string_lossy());
     }
 
+    /// Collects `files` from the source tree into `licenses/<name>.txt` next to the builds, for the
+    /// third-party notices that ship with a release.
+    pub fn licenses(&self, source: &str, files: &[&str]) {
+        let dir = self.work.parent().unwrap().join("licenses");
+        fs::create_dir_all(&dir).unwrap();
+        let rule = "=".repeat(80);
+        let mut out = format!("{rule}\n{} {}\n{source}\n{rule}\n", self.name, self.version);
+        for file in files {
+            let text = fs::read(self.src.join(file))
+                .unwrap_or_else(|e| panic!("{} has no {file} to take its license from: {e}", self.name));
+            out.push_str(&format!("\n--- {file} ---\n\n{}\n", String::from_utf8_lossy(&text).trim_end()));
+        }
+        fs::write(dir.join(format!("{}.txt", self.name)), out).unwrap();
+    }
+
     pub fn fetch(&self, url: &str, members: &[&str]) {
         let archive = self.downloads.join(format!("{}-{}.tar.gz", self.name, self.version));
         if !archive.exists() {

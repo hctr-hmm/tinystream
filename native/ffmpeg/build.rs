@@ -39,8 +39,10 @@ fn main() {
         "--enable-optimizations".into(),
         "--enable-runtime-cpudetect".into(),
     ];
+    let url = format!("https://ffmpeg.org/releases/ffmpeg-{version}.tar.gz");
     b.once(&args.join(" "), |b| {
-        b.fetch(&format!("https://ffmpeg.org/releases/ffmpeg-{version}.tar.gz"), &[]);
+        b.fetch(&url, &[]);
         b.configure(&args.each_ref().map(String::as_str));
     });
+    b.licenses(&url, &["LICENSE.md", "COPYING.GPLv2", "COPYING.LGPLv2.1"]);
 }

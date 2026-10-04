@@ -35,6 +35,7 @@ import { useClipsOn } from '../lib/hooks'
 import { prune, recents } from '../lib/recents'
 import { Avatar } from './Avatar'
 import { Feedback, toast, toastError } from './feedback'
+import { Logo } from './Logo'
 import { NotificationsMenu, PriorityPill, setInboxOpen } from './Notifications'
 import { Squircle } from './Squircle'
 import { Ticker } from './Ticker'
@@ -42,7 +43,7 @@ import { MusicPill } from '../music/Pill'
 import { albumTracks } from '../music/components'
 import { music, usePlayer } from '../music/player'
 import type { MusicTrack } from '../music/api'
-import { cssColor } from '../lib/theme'
+import { setIconProgress } from '../lib/logo'
 import { Dialog, Panel, Popover } from './ui'
 
 function NavLink({ to, params, icon, children, count }: {
@@ -215,51 +216,12 @@ function useTransfers(admin: boolean) {
   return { engine, active: active.length, progress: wanted > 0 ? done / wanted : null, finished }
 }
 
-/** Draws download progress onto the tab's icon, and the speed into its title. */
+/** Puts download progress on the tab's icon, and the speed into its title. */
 function useTabProgress(progress: number | null, rate: number) {
-  const original = useRef<string | null>(null)
-  const icon = useRef<HTMLImageElement | null>(null)
   const pct = progress === null ? null : Math.round(progress * 50) / 50
   useEffect(() => {
-    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-    if (!link) return
-    original.current ??= link.href
-    if (pct === null) {
-      link.href = original.current
-      link.type = 'image/svg+xml'
-      return
-    }
-    const draw = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = canvas.height = 64
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(icon.current!, 0, 0, 64, 64)
-      // A badge in the corner with the ring inside it.
-      ctx.fillStyle = cssColor('canvas')
-      ctx.beginPath()
-      ctx.arc(46, 46, 18, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.lineWidth = 6
-      ctx.lineCap = 'round'
-      ctx.strokeStyle = cssColor('glow')
-      ctx.globalAlpha = 0.2
-      ctx.beginPath()
-      ctx.arc(46, 46, 11, 0, Math.PI * 2)
-      ctx.stroke()
-      ctx.globalAlpha = 1
-      ctx.strokeStyle = cssColor('info')
-      ctx.beginPath()
-      ctx.arc(46, 46, 11, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, pct))
-      ctx.stroke()
-      link.type = 'image/png'
-      link.href = canvas.toDataURL('image/png')
-    }
-    if (icon.current?.complete) draw()
-    else {
-      icon.current = new Image()
-      icon.current.onload = draw
-      icon.current.src = '/favicon.svg'
-    }
+    setIconProgress(pct)
+    return () => setIconProgress(null)
   }, [pct])
   useEffect(() => {
     if (!rate) return
@@ -344,7 +306,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-raised/60 px-2.5 py-3 [view-transition-name:chrome] md:flex">
         <div className="flex items-center gap-2.5 pb-3 pl-2.5">
-          <img src="/favicon.svg" alt="" className="size-5" />
+          <Logo size={20} />
           <span className="flex-1 text-[15px] font-semibold tracking-tight">tinystream</span>
           {wide && <NotificationsMenu align="start" />}
         </div>
@@ -396,7 +358,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         {/* Small screens: a slim top bar, and tabs along the bottom. */}
         <header className="sticky top-0 z-30 flex h-12 items-center gap-1 material-bar border-b border-line bg-canvas/85 px-3 backdrop-blur-xl [view-transition-name:chrome-top] md:hidden">
           <Link to="/" className="flex items-center gap-2 px-1.5 text-sm font-semibold">
-            <img src="/favicon.svg" alt="" className="size-5" /> tinystream
+            <Logo size={20} /> tinystream
           </Link>
           <div className="flex-1" />
           {!wide && <NotificationsMenu />}
