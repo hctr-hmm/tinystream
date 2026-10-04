@@ -20,12 +20,14 @@ exclude = [
     "/.ffmpeg",
     "/.libtorrent",
     "/.github",
+    "/node_modules",
     "/web/node_modules",
+    "/mobile",
     "/web/dist",
 ]
 
 [workspace]
-members = ["ffmpeg-sys", "libtorrent-sys", "native/*", "web/decoder"]
+members = ["ffmpeg-sys", "libtorrent-sys", "native/*", "web/decoder", "mobile/crates/*"]
 
 [workspace.package]
 version = "0.28.3"

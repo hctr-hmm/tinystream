@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type { MediaCategory } from '../gql/graphql'
+import type { MediaCategory } from './schema'
 
 export const mediaLabels: Record<MediaCategory, string> = {
   EPISODES: 'Episodes / Seasons',

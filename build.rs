@@ -16,7 +16,9 @@ fn main() {
         "web/scripts",
         "web/package.json",
         "web/vite.config.ts",
-        "web/bun.lock",
+        "package.json",
+        "bun.lock",
+        "packages/shared",
     ] {
         println!("cargo:rerun-if-changed={p}");
     }
@@ -39,10 +41,16 @@ fn main() {
             "building the web UI needs bun or npm; install one, or build with --no-default-features for a server without the UI"
         );
     };
-    if !Path::new("web/node_modules").exists() {
-        run(runner, &["install"]);
+    // Dependencies are installed from the workspace root, but only web's (and the shared code's).
+    if !Path::new("node_modules").exists() {
+        let only_web: &[&str] = if runner == "bun" {
+            &["install", "--filter", "tinystream-web", "--filter", "@tinystream/shared"]
+        } else {
+            &["install", "--workspace", "web"]
+        };
+        run(runner, only_web, ".");
     }
-    run(runner, &["run", "build"]);
+    run(runner, &["run", "build"], "web");
 }
 
 fn version() {
@@ -75,10 +83,10 @@ fn which(bin: &str) -> bool {
     Command::new(bin).arg("--version").output().is_ok_and(|o| o.status.success())
 }
 
-fn run(bin: &str, args: &[&str]) {
+fn run(bin: &str, args: &[&str], dir: &str) {
     let status =
-        Command::new(bin).args(args).current_dir("web").status().unwrap_or_else(|e| panic!("can't run {bin}: {e}"));
+        Command::new(bin).args(args).current_dir(dir).status().unwrap_or_else(|e| panic!("can't run {bin}: {e}"));
     if !status.success() {
-        panic!("`{bin} {}` failed in ./web", args.join(" "));
+        panic!("`{bin} {}` failed in {dir}", args.join(" "));
     }
 }

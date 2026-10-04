@@ -53,7 +53,9 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: wasm-bindgen@0.2.126
-      - run: bun install --frozen-lockfile
+      # The workspace is installed from the root; web only needs its own packages.
+      - run: bun install --frozen-lockfile --filter tinystream-web --filter @tinystream/shared
+        working-directory: .
       - run: bun run typecheck
       - run: bun run build
       - uses: actions/upload-artifact@v4
@@ -61,6 +63,64 @@ jobs:
           name: web-dist
           path: web/dist
           retention-days: 1
+
+  mobile:
+    name: Mobile app
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@v1
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - name: Shared code
+        working-directory: packages/shared
+        run: |
+          bun run codegen
+          bun run typecheck
+          bun run test
+      - name: App
+        working-directory: mobile
+        run: |
+          bun run codegen
+          bun run typecheck
+          bun run test
+      - name: Generated code is current
+        run: git diff --exit-code -- packages/shared/src/schema.ts mobile/src/gql
+
+  changes:
+    name: Changes
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+    steps:
+      - uses: useblacksmith/checkout@v1
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            android:
+              - 'mobile/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'bun.lock'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - '.github/actions/android/**'
+
+  android:
+    name: Android build
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@v1
+      - uses: ./.github/actions/android
+      - name: Build
+        working-directory: mobile
+        run: |
+          bunx expo prebuild --platform android --no-install
+          cd android && ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
+      - name: Check 16 KB alignment
+        run: "$ANDROID_HOME/build-tools/36.0.0/zipalign -c -P 16 -v 4 mobile/android/app/build/outputs/apk/debug/app-debug.apk > /dev/null"
 
   rust:
     name: Build and test
