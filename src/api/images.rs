@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::{Path as FsPath, PathBuf};
+use std::path::Path as FsPath;
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
-use sha2::{Digest, Sha256};
 
 use crate::auth::User;
 use crate::error::{ApiError, ApiResult};
@@ -29,20 +28,10 @@ fn serve_upload(data: Vec<u8>) -> ApiResult<Response> {
 
 async fn serve_remote(state: &AppState, url: &str) -> ApiResult<Response> {
     let dir = state.paths.cache_dir().join("images");
-    let key = hex::encode(&Sha256::digest(url.as_bytes())[..16]);
-    let ext = url.rsplit('.').next().filter(|e| e.len() <= 4).unwrap_or("jpg");
-    let file: PathBuf = dir.join(format!("{key}.{ext}"));
-    if !file.exists() {
-        let res = state.http.get(url).send().await.and_then(|r| r.error_for_status()).map_err(|e| {
-            tracing::debug!("image {url}: {e}");
-            ApiError::not_found("image")
-        })?;
-        let bytes = res.bytes().await.map_err(|_| ApiError::not_found("image"))?;
-        tokio::fs::create_dir_all(&dir).await.map_err(|e| ApiError::from(anyhow::anyhow!(e)))?;
-        let tmp = file.with_extension("part");
-        tokio::fs::write(&tmp, &bytes).await.map_err(|e| ApiError::from(anyhow::anyhow!(e)))?;
-        tokio::fs::rename(&tmp, &file).await.map_err(|e| ApiError::from(anyhow::anyhow!(e)))?;
-    }
+    let file = super::image_cache::remote(&state.http, &dir, url).await.map_err(|e| {
+        tracing::debug!("image {url}: {e:#}");
+        if e.is::<reqwest::Error>() { ApiError::not_found("image") } else { ApiError::from(e) }
+    })?;
     serve_file(&file).await
 }
 

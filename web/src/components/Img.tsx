@@ -5,11 +5,11 @@ import { type ImgHTMLAttributes, useEffect, useLayoutEffect, useRef, useState } 
 const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 /**
- * Artwork appears as soon as it loads, without an entrance animation.
+ * Artwork that develops as it arrives: blurry and washed out, then sharp.
  * Artwork the browser already has is shown as-is, so going back to a page
- * doesn't hide it while waiting for another load event.
+ * doesn't develop it all over again.
  */
-export function Img({ className = '', decoding = 'async', onLoad, ...props }: ImgHTMLAttributes<HTMLImageElement>) {
+export function Img({ className = '', decoding = 'async', fetchPriority, onLoad, ...props }: ImgHTMLAttributes<HTMLImageElement>) {
   const ref = useRef<HTMLImageElement>(null)
   const [ready, setReady] = useState(false)
   useIsoLayoutEffect(() => {
@@ -20,12 +20,24 @@ export function Img({ className = '', decoding = 'async', onLoad, ...props }: Im
     if (done) img.dataset.ready = 'true'
     setReady(done)
   }, [props.src])
+  useIsoLayoutEffect(() => {
+    const img = ref.current
+    if (!img || fetchPriority || props.loading !== 'lazy') return
+    const rect = img.getBoundingClientRect()
+    img.fetchPriority = rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth ? 'high' : 'low'
+    const observer = new IntersectionObserver(([entry]) => {
+      img.fetchPriority = entry.isIntersecting ? 'high' : 'low'
+    })
+    observer.observe(img)
+    return () => observer.disconnect()
+  }, [props.src, props.loading, fetchPriority])
   return (
     <img
       ref={ref}
       alt=""
       {...props}
       decoding={decoding}
+      fetchPriority={fetchPriority}
       onLoad={(e) => {
         setReady(true)
         onLoad?.(e)

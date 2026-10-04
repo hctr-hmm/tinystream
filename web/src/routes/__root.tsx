@@ -29,6 +29,8 @@ export const Route = createRootRoute({
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'preconnect', href: 'https://image.tmdb.org' },
+      { rel: 'preconnect', href: 'https://s4.anilist.co' },
     ],
   }),
   shellComponent: Document,
