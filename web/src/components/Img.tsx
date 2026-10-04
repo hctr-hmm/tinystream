@@ -5,11 +5,11 @@ import { type ImgHTMLAttributes, useEffect, useLayoutEffect, useRef, useState } 
 const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 /**
- * Artwork that develops as it arrives: blurry and washed out, then sharp.
+ * Artwork appears as soon as it loads, without an entrance animation.
  * Artwork the browser already has is shown as-is, so going back to a page
- * doesn't develop it all over again.
+ * doesn't hide it while waiting for another load event.
  */
-export function Img({ className = '', onLoad, ...props }: ImgHTMLAttributes<HTMLImageElement>) {
+export function Img({ className = '', decoding = 'async', onLoad, ...props }: ImgHTMLAttributes<HTMLImageElement>) {
   const ref = useRef<HTMLImageElement>(null)
   const [ready, setReady] = useState(false)
   useIsoLayoutEffect(() => {
@@ -25,6 +25,7 @@ export function Img({ className = '', onLoad, ...props }: ImgHTMLAttributes<HTML
       ref={ref}
       alt=""
       {...props}
+      decoding={decoding}
       onLoad={(e) => {
         setReady(true)
         onLoad?.(e)

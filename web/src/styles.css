@@ -480,24 +480,17 @@
 }
 
 /*
- * Artwork develops as it arrives: blurry, washed out and
- * slightly too big, then sharp. Artwork already in the cache is just there.
+ * Artwork is visible as soon as it loads, including cached images.
  */
 .develop {
   /*
    * This replaces the element's own transition, so hover zooms (Tailwind's
    * `scale-*`, which is its own property) keep their duration and easing.
    */
-  transition:
-    filter 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 500ms ease-out,
-    transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    scale var(--tw-duration, 500ms) var(--tw-ease, ease-out);
+  transition: scale var(--tw-duration, 500ms) var(--tw-ease, ease-out);
 }
 .develop:not([data-ready]) {
-  filter: blur(14px) saturate(0.3) brightness(1.2);
   opacity: 0;
-  transform: scale(1.06);
 }
 
 /* Content replacing a skeleton sharpens in, top to bottom. */
