@@ -41,6 +41,7 @@ body:
         - Sources (Torznab / RSS)
         - Clips
         - Web UI
+        - Mobile app
         - Config
         - Other
     validations:
