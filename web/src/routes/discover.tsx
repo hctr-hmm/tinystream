@@ -89,16 +89,16 @@ function DiscoverPage() {
     <Page>
       <PageTitle>{admin ? 'Add shows' : 'Request shows'}</PageTitle>
       <div className="mb-8 flex flex-col gap-2 sm:flex-row">
-        <Squircle radius={14} edge className="flex h-12 flex-1 items-center gap-3 bg-raised px-4">
-          <Search className="size-4.5 text-ink-3" />
+        <Squircle radius={14} edge className="flex h-12 min-w-0 flex-none items-center gap-3 bg-raised px-4 sm:flex-1">
+          <Search className="size-4.5 shrink-0 text-ink-3" />
           <input
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search AniList or TMDB"
-            className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
+            className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
           />
-          {isFetching && <Spinner className="size-4 text-ink-3" />}
+          {isFetching && <Spinner className="size-4 shrink-0 text-ink-3" />}
         </Squircle>
         {libraries && libraries.length > 1 && (
           <div className="sm:w-48">
