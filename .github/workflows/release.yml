@@ -69,6 +69,7 @@ jobs:
             -e TS_BUILD_OWNER="$(id -u):$(id -g)" \
             -e TINYSTREAM_SKIP_WEB_BUILD=1 \
             -e TINYSTREAM_NATIVE_DIR=/workspace/.native-musl \
+            -e RUSTC_WRAPPER=/workspace/.github/scripts/rustc-host \
             rust:alpine sh -ec '
               apk add --no-cache \
                 build-base pkgconf curl git tar bash \

@@ -30,8 +30,8 @@ fn main() {
         .parse_callbacks(Box::new(IgnoreMacros(
             ["FP_NAN", "FP_INFINITE", "FP_ZERO", "FP_SUBNORMAL", "FP_NORMAL"].into(),
         )))
-        .allowlist_function("(av|avcodec|avformat|avfilter|avio|avutil|swr|sws|ass)_.*|avsubtitle_free")
-        .allowlist_type("(AV|Swr|Sws|ASS_).*")
+        .allowlist_function("(av|avcodec|avformat|avfilter|avio|avutil|swr|sws|ass)_.*|avsubtitle_free|vsnprintf")
+        .allowlist_type("(AV|Swr|Sws|ASS_).*|ass_message_cb")
         .allowlist_var("(AV|FF_|SWR_|SWS_|LIBAV|E[A-Z]|ASS_).*")
         .impl_debug(true)
         .prepend_enum_name(false)

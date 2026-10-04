@@ -13,5 +13,5 @@ publish = false
 ffmpeg-src = { path = "../native/ffmpeg" }
 
 [build-dependencies]
-bindgen = "0.71"
+bindgen = "0.72"
 pkg-config = "0.3"

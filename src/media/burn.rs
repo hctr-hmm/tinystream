@@ -56,15 +56,12 @@ pub struct Ass {
 
 unsafe impl Send for Ass {}
 
-unsafe extern "C" fn ass_log(level: c_int, fmt: *const c_char, args: *mut ffi::__va_list_tag, _: *mut c_void) {
-    unsafe extern "C" {
-        fn vsnprintf(s: *mut c_char, n: usize, format: *const c_char, args: *mut ffi::__va_list_tag) -> c_int;
-    }
+unsafe extern "C" fn ass_log(level: c_int, fmt: *const c_char, args: ffi::VaList, _: *mut c_void) {
     if level > 2 {
         return;
     }
     let mut buf = [0 as c_char; 512];
-    unsafe { vsnprintf(buf.as_mut_ptr(), buf.len(), fmt, args) };
+    unsafe { ffi::vsnprintf(buf.as_mut_ptr(), buf.len() as _, fmt, args) };
     let msg = unsafe { std::ffi::CStr::from_ptr(buf.as_ptr()) }.to_string_lossy();
     tracing::debug!("libass: {}", msg.trim_end());
 }
