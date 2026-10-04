@@ -114,6 +114,7 @@ webauthn-rs = { version = "0.5", features = [
     "danger-user-presence-only-security-keys",
 ] }
 hex = "0.4"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
 async-graphql = { version = "7.2.1", default-features = false, features = [
     "playground",
     "graphiql",
