@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { execFileSync } from 'node:child_process'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -35,6 +37,33 @@ function contributors(): Contributor[] {
   return [...people.values()].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name))
 }
 
+// Writes the license of every package that ends up in the client bundle to third-party-licenses.txt.
+function licenses(): Plugin {
+  return {
+    name: 'third-party-licenses',
+    apply: 'build',
+    generateBundle(_, bundle) {
+      if (this.environment.name !== 'client') return
+      // Assets count too: fonts pulled in through CSS @import never show up as modules.
+      const assets = Object.values(bundle).flatMap((f) => (f.type === 'asset' ? f.originalFileNames.map((n) => resolve(n)) : []))
+      const packages = new Set<string>()
+      for (const id of [...this.getModuleIds(), ...assets]) {
+        const m = id.match(/^(.*\/node_modules\/(?:@[^/]+\/)?[^/]+)\//)
+        if (m) packages.add(m[1])
+      }
+      const rule = '='.repeat(80)
+      const sections = [...packages].map((dir) => {
+        const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+        const file = readdirSync(dir).find((f) => /^(licen[cs]e|copying)/i.test(f))
+        const text = file ? readFileSync(join(dir, file), 'utf8').trimEnd() : `Licensed under ${pkg.license ?? 'an unknown license'}.`
+        return { name: pkg.name as string, body: `${rule}\n${pkg.name} ${pkg.version}\n${pkg.license ?? ''}\n${rule}\n\n${text}\n` }
+      })
+      sections.sort((a, b) => a.name.localeCompare(b.name))
+      this.emitFile({ type: 'asset', fileName: 'third-party-licenses.txt', source: sections.map((s) => s.body).join('\n') })
+    },
+  }
+}
+
 export default defineConfig({
   define: { __CONTRIBUTORS__: JSON.stringify(contributors()) },
   resolve: {
@@ -59,5 +88,6 @@ export default defineConfig({
       },
     }),
     react(),
+    licenses(),
   ],
 })

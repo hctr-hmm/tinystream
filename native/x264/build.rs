@@ -12,8 +12,10 @@ fn main() {
         "--disable-cli".into(),
         format!("--extra-cflags={}", b.cflags()),
     ];
+    let url = format!("https://code.videolan.org/videolan/x264/-/archive/{COMMIT}/x264-{COMMIT}.tar.gz");
     b.once(&format!("{COMMIT} {}", args.join(" ")), |b| {
-        b.fetch(&format!("https://code.videolan.org/videolan/x264/-/archive/{COMMIT}/x264-{COMMIT}.tar.gz"), &[]);
+        b.fetch(&url, &[]);
         b.configure(&args.each_ref().map(String::as_str));
     });
+    b.licenses(&url, &["COPYING"]);
 }

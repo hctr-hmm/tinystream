@@ -19,8 +19,10 @@ fn main() {
         "-Dutilities=disabled",
         "-Dintrospection=disabled",
     ];
+    let url = format!("https://github.com/harfbuzz/harfbuzz/archive/refs/tags/{VERSION}.tar.gz");
     b.once(&options.join(" "), |b| {
-        b.fetch(&format!("https://github.com/harfbuzz/harfbuzz/archive/refs/tags/{VERSION}.tar.gz"), &[]);
+        b.fetch(&url, &[]);
         b.meson(&options);
     });
+    b.licenses(&url, &["COPYING"]);
 }
