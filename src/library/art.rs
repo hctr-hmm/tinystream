@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
+
+use image::{ImageReader, Limits};
 
 pub const ARTWORK_MAX: usize = 8 * 1024 * 1024;
 const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp", "gif"];
@@ -44,6 +47,19 @@ pub fn image_type(data: &[u8]) -> Result<&'static str, &'static str> {
         [b'G', b'I', b'F', b'8', b'7' | b'9', b'a', ..] => Ok("image/gif"),
         _ => Err("pictures have to be PNG, JPEG, WebP or GIF"),
     }
+}
+
+pub fn validate_image(data: &[u8]) -> Result<(), &'static str> {
+    image_type(data)?;
+    let mut reader =
+        ImageReader::new(Cursor::new(data)).with_guessed_format().map_err(|_| "that picture could not be decoded")?;
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(8192);
+    limits.max_image_height = Some(8192);
+    limits.max_alloc = Some(64 * 1024 * 1024);
+    reader.limits(limits);
+    reader.decode().map_err(|_| "that picture is corrupt or exceeds the image limits")?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -125,5 +141,32 @@ mod tests {
         assert!(image_type(b"<svg></svg>").is_err());
         assert!(image_type(b"\x89PNG").is_err());
         assert!(image_type(&vec![0; ARTWORK_MAX + 1]).is_err());
+    }
+
+    #[test]
+    fn uploads_require_decodable_images() {
+        for header in [b"\x89PNG\r\n\x1a\n".as_slice(), b"\xff\xd8\xff", b"RIFF0000WEBP", b"GIF89a"] {
+            assert!(validate_image(header).is_err());
+        }
+        let picture = image::DynamicImage::new_rgb8(2, 2);
+        for format in
+            [image::ImageFormat::Png, image::ImageFormat::Jpeg, image::ImageFormat::WebP, image::ImageFormat::Gif]
+        {
+            let mut data = Cursor::new(Vec::new());
+            picture.write_to(&mut data, format).unwrap();
+            assert_eq!(validate_image(data.get_ref()), Ok(()));
+            let half = data.get_ref().len() / 2;
+            data.get_mut().truncate(half);
+            assert!(validate_image(data.get_ref()).is_err());
+        }
+    }
+
+    #[test]
+    fn uploads_limit_decoded_dimensions() {
+        let picture = image::DynamicImage::new_luma8(8193, 1);
+        let mut data = Cursor::new(Vec::new());
+        picture.write_to(&mut data, image::ImageFormat::Png).unwrap();
+        assert!(data.get_ref().len() < ARTWORK_MAX);
+        assert!(validate_image(data.get_ref()).is_err());
     }
 }

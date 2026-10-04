@@ -150,6 +150,7 @@ graphql(`
 graphql(`
   fragment Playback on Video {
     id
+    still
     label
     name
     position
@@ -167,6 +168,7 @@ graphql(`
     }
     next {
       id
+      still
       label
       name
     }

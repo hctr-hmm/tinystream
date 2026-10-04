@@ -176,7 +176,6 @@ export function Player({ mediaId, room, editClip, startAt }: { mediaId: number; 
   // Rooms have their own copies of the media endpoints, so guests can play.
   const apiBase = room ? `/together/${room.info.code}` : ''
   const mediaBase = `/api${apiBase}/media/${mediaId}`
-  const stillUrl = (id: number) => (room ? `/api${apiBase}/stills/${id}` : `/api/images/media/${id}`)
   const { data: pb, error: infoError } = useQuery({
     queryKey: ['playback', room?.info.code ?? null, mediaId],
     queryFn: () => playback(mediaId, room?.info.code ?? null),
@@ -635,7 +634,7 @@ export function Player({ mediaId, room, editClip, startAt }: { mediaId: number; 
       title: pb.title.kind === 'SHOW' ? [pb.label, pb.name].filter(Boolean).join(' · ') || pb.title.name : pb.title.name,
       artist: pb.title.kind === 'SHOW' ? pb.title.name : '',
       artwork: [
-        ...(pb.title.kind === 'SHOW' ? [{ src: stillUrl(pb.id), sizes: '640x360', type: 'image/jpeg' }] : []),
+        ...(pb.title.kind === 'SHOW' ? [{ src: pb.still, sizes: '640x360' }] : []),
         ...(pb.title.backdrop ? [{ src: pb.title.backdrop, sizes: '1280x720' }] : []),
       ],
     })
@@ -654,7 +653,6 @@ export function Player({ mediaId, room, editClip, startAt }: { mediaId: number; 
     return () => {
       for (const a of ['play', 'pause', 'seekbackward', 'seekforward', 'seekto', 'nexttrack', 'previoustrack'] as const) set(a, null)
     }
-    // stillUrl only depends on the room.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pb, seek, seekBy, goTo, setPlayback])
   useEffect(() => {
@@ -780,7 +778,7 @@ export function Player({ mediaId, room, editClip, startAt }: { mediaId: number; 
 
       {/* The still holds the frame until the video has one of its own; the one clicked grows into it. */}
       <img
-        src={stillUrl(mediaId)}
+        src={pb?.still}
         alt=""
         onError={(e) => (e.currentTarget.style.display = 'none')}
         style={{ viewTransitionName: 'still' }}
@@ -840,7 +838,7 @@ export function Player({ mediaId, room, editClip, startAt }: { mediaId: number; 
         {pb?.next && (nearEnd || ended) && (
           <UpNext
             next={pb.next}
-            still={stillUrl(pb.next.id)}
+            still={pb.next.still}
             countdown={controls ? countdown : null}
             onPlay={controls ? () => goTo(pb.next!.id) : undefined}
           />

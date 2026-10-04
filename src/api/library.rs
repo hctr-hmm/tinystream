@@ -14,7 +14,7 @@ use crate::auth::User;
 use crate::config::{LibraryKind, Provider};
 use crate::db::now;
 use crate::error::{ApiError, ApiResult};
-use crate::library::{BACKDROP_NAMES, POSTER_NAMES, image_type, local_art, local_still, local_version};
+use crate::library::{BACKDROP_NAMES, POSTER_NAMES, local_art, local_still, local_version, validate_image};
 use crate::media::probe::MediaInfo;
 use crate::metadata::{Candidate, ItemKind};
 use crate::state::AppState;
@@ -899,11 +899,16 @@ pub enum TitleArtwork {
     Backdrop,
 }
 
-fn artwork_upload(ctx: &Context<'_>, image: Option<Upload>) -> ApiResult<Option<Vec<u8>>> {
+async fn artwork_upload(ctx: &Context<'_>, image: Option<Upload>) -> ApiResult<Option<Vec<u8>>> {
     let Some(image) = image else { return Ok(None) };
     let value = image.value(ctx).map_err(|e| ApiError::bad_request(e.to_string()))?;
-    image_type(&value.content).map_err(ApiError::bad_request)?;
-    Ok(Some(value.content.to_vec()))
+    let content = value.content;
+    tokio::task::spawn_blocking(move || {
+        validate_image(&content).map_err(ApiError::bad_request)?;
+        Ok(Some(content.to_vec()))
+    })
+    .await
+    .map_err(|e| ApiError::from(anyhow::anyhow!(e)))?
 }
 
 async fn set_watched(state: &AppState, user: &User, media: &[(String, Option<f64>)], watched: bool) -> ApiResult<()> {
@@ -1013,7 +1018,7 @@ impl LibraryMutation {
         let (state, access) = (ctx.state(), ctx.access()?);
         let title = Title::load(state, &access, id).await?.ok_or_else(|| ApiError::not_found("title"))?;
         title.editor(ctx)?;
-        let data = artwork_upload(ctx, image)?;
+        let data = artwork_upload(ctx, image).await?;
         let sql = match kind {
             TitleArtwork::Poster => {
                 "UPDATE items SET poster_override = ?, artwork_version = artwork_version + 1 WHERE id = ?"
@@ -1032,7 +1037,7 @@ impl LibraryMutation {
         let video = Video::load(state, &access, video_id).await?.ok_or_else(|| ApiError::not_found("video"))?;
         let title = Title::load(state, &access, video.ep.item_id).await?.ok_or_else(|| ApiError::not_found("title"))?;
         title.editor(ctx)?;
-        let data = artwork_upload(ctx, image)?;
+        let data = artwork_upload(ctx, image).await?;
         sqlx::query("UPDATE media SET still_override = ?, artwork_version = artwork_version + 1 WHERE id = ?")
             .bind(data)
             .bind(video_id)

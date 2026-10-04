@@ -17,15 +17,16 @@ mod schema;
 mod settings;
 mod subsonic;
 mod together;
+mod upload;
 mod users;
 
 use std::sync::Arc;
 
 use async_graphql::Data;
-use async_graphql::http::{ALL_WEBSOCKET_PROTOCOLS, GraphiQLSource, MultipartOptions};
-use async_graphql_axum::{GraphQLProtocol, GraphQLRequest, GraphQLResponse, GraphQLWebSocket};
+use async_graphql::http::{ALL_WEBSOCKET_PROTOCOLS, GraphiQLSource};
+use async_graphql_axum::{GraphQLProtocol, GraphQLResponse, GraphQLWebSocket};
 use axum::extract::ws::WebSocketUpgrade;
-use axum::extract::{DefaultBodyLimit, FromRequest, FromRequestParts, Request, State};
+use axum::extract::{FromRequestParts, Request, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{Html, IntoResponse, Response};
@@ -45,10 +46,7 @@ struct Api {
 
 pub fn router(state: Arc<AppState>) -> Router {
     let api = Api { state: state.clone(), schema: schema::build(state.clone()) };
-    let graphql = Router::new()
-        .route("/graphql", get(graphql_get).post(graphql_post))
-        .layer(DefaultBodyLimit::max(crate::library::ARTWORK_MAX + 1024 * 1024))
-        .with_state(api);
+    let graphql = Router::new().route("/graphql", get(graphql_get).post(graphql_post)).with_state(api);
 
     let files = Router::new()
         .route("/users/{id}/avatar", get(users::avatar))
@@ -118,10 +116,9 @@ async fn session(state: &AppState, headers: HeaderMap) -> Session {
 }
 
 async fn graphql_post(State(api): State<Api>, headers: HeaderMap, req: Request) -> Response {
-    let opts = MultipartOptions::default().max_file_size(crate::library::ARTWORK_MAX).max_num_files(1);
-    let req = match GraphQLRequest::<async_graphql_axum::rejection::GraphQLRejection>::from_request(req, &opts).await {
-        Ok(r) => r.into_inner(),
-        Err(e) => return e.into_response(),
+    let req = match upload::graphql_request(req).await {
+        Ok(r) => r,
+        Err(e) => return e,
     };
     let session = session(&api.state, headers).await;
     GraphQLResponse::from(api.schema.execute(req.data(session)).await).into_response()
