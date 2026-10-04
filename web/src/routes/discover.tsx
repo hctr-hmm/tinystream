@@ -88,7 +88,7 @@ function DiscoverPage() {
   return (
     <Page>
       <PageTitle>{admin ? 'Add shows' : 'Request shows'}</PageTitle>
-      <div className="mb-8 flex flex-col gap-2 sm:flex-row">
+      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center">
         <Squircle radius={14} edge className="flex h-12 min-w-0 flex-none items-center gap-3 bg-raised px-4 sm:flex-1">
           <Search className="size-4.5 shrink-0 text-ink-3" />
           <input
