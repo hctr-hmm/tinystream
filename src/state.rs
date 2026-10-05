@@ -30,4 +30,5 @@ pub struct AppState {
     pub together: Arc<Together>,
     pub clips: Arc<crate::clips::Clips>,
     pub music: crate::music::Music,
+    pub tints: crate::tint::Tints,
 }

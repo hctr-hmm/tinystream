@@ -38,6 +38,7 @@ mod notifications;
 mod paths;
 mod state;
 mod theme;
+mod tint;
 mod together;
 #[cfg(feature = "web-ui")]
 mod web;
@@ -205,6 +206,7 @@ async fn serve(paths: Paths) -> anyhow::Result<()> {
         together: Default::default(),
         clips: Default::default(),
         music: Default::default(),
+        tints: Default::default(),
     });
 
     library::scanner::spawn_worker(state.clone(), scan_rx);

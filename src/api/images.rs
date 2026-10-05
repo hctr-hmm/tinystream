@@ -11,6 +11,7 @@ use crate::auth::User;
 use crate::error::{ApiError, ApiResult};
 use crate::library::{BACKDROP_NAMES, POSTER_NAMES, image_type, local_art, local_still};
 use crate::state::AppState;
+use crate::tint::Source;
 
 const CACHE: &str = "public, max-age=604800, immutable";
 
@@ -33,6 +34,25 @@ async fn serve_remote(state: &AppState, url: &str) -> ApiResult<Response> {
         if e.is::<reqwest::Error>() { ApiError::not_found("image") } else { ApiError::from(e) }
     })?;
     serve_file(&file).await
+}
+
+/// Where `item_art` gets the picture from, without fetching it.
+pub(super) fn item_source(
+    id: i64,
+    path: &str,
+    kind: &'static str,
+    remote: Option<&str>,
+    custom: bool,
+    version: i64,
+) -> Option<Source> {
+    let names = if kind == "poster" { POSTER_NAMES } else { BACKDROP_NAMES };
+    if custom {
+        return Some(Source::Upload { id, kind, version });
+    }
+    if let Some(local) = local_art(FsPath::new(path), names) {
+        return Some(Source::File(local));
+    }
+    remote.map(|url| Source::Remote(url.into()))
 }
 
 pub async fn item(

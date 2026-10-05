@@ -19,6 +19,10 @@ type Album {
 	Missing when there's no picture in its folder or its files.
 	"""
 	cover: String
+	"""
+	The most vivid colour of the cover as "r g b", empty until it's been worked out.
+	"""
+	coverTint: String
 	mbid: String
 	addedAt: Int!
 	starred: Boolean!
@@ -101,6 +105,10 @@ type Artist {
 	albumCount: Int!
 	trackCount: Int!
 	cover: String
+	"""
+	The most vivid colour of the cover as "r g b", empty until it's been worked out.
+	"""
+	coverTint: String
 	starred: Boolean!
 	rating: Int
 	albums: [Album!]!
@@ -156,6 +164,10 @@ type CalendarEntry {
 	state: EpisodeState!
 	video: Video
 	download: EpisodeDownload
+	"""
+	The most vivid colour of the backdrop as "r g b", empty until it's been worked out.
+	"""
+	backdropTint: String
 }
 
 enum ChangedList {
@@ -1787,6 +1799,14 @@ type Title {
 	year: Int
 	poster: String
 	backdrop: String
+	"""
+	The most vivid colour of the poster as "r g b", empty until it's been worked out.
+	"""
+	posterTint: String
+	"""
+	The same for the backdrop.
+	"""
+	backdropTint: String
 	customPoster: Boolean!
 	customBackdrop: Boolean!
 	overview: String
@@ -1905,6 +1925,10 @@ type Track {
 	"""
 	stream: String!
 	cover: String
+	"""
+	The most vivid colour of the cover as "r g b", empty until it's been worked out.
+	"""
+	coverTint: String
 	gains: Gains!
 	starred: Boolean!
 	rating: Int

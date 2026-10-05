@@ -66,6 +66,8 @@ fragment VideoRow on Video {
 
 fragment TitleDetail on Title {
   ...Card
+  posterTint
+  backdropTint
   customPoster
   customBackdrop
   overview
@@ -449,6 +451,7 @@ fragment CalendarEntryFields on CalendarEntry {
   show
   poster
   backdrop
+  backdropTint
   monitor
   season
   episode

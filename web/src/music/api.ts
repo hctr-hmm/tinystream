@@ -35,6 +35,7 @@ graphql(`
     file
     flac
     cover
+    coverTint
     gains {
       trackGain
       trackPeak

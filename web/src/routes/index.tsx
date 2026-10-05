@@ -12,7 +12,6 @@ import { HomeSkeleton, useArrived } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
 import { Ticker } from '../components/Ticker'
 import { Button } from '../components/ui'
-import { useAmbient } from '../lib/ambient'
 import { graphql } from '../gql'
 import type { AlbumCard } from '../music/api'
 import { AlbumTile } from '../music/components'
@@ -22,6 +21,7 @@ import { airs, countdown, episodeCode, useFeatures, useNow } from '../lib/downlo
 import { useMe } from '../lib/hooks'
 import { useTilt } from '../lib/tilt'
 import { useTitle } from '../lib/title'
+import { titleTint } from '../lib/tint'
 import { Img } from '../components/Img'
 
 export const Route = createFileRoute('/')({ component: HomePage })
@@ -45,6 +45,8 @@ const HomeQueryDoc = graphql(`
             name
             poster
             backdrop
+            posterTint
+            backdropTint
           }
         }
       }
@@ -198,7 +200,7 @@ function Hero({ entry: e }: { entry: ContinueEntry }) {
   const [broken, setBroken] = useState(false)
   const v = e.video
   const image = v.title.backdrop ?? v.still
-  const ambient = useAmbient(v.title.backdrop ?? v.title.poster)
+  const ambient = titleTint(v.title)
   const resuming = !e.upNext
   const progress = resuming && v.duration ? e.position / v.duration : 0
   const left = remaining(e.position, v.duration)

@@ -6,7 +6,8 @@ use async_graphql::{ComplexObject, Context, Enum, InputObject, MaybeUndefined, O
 use tokio::sync::OnceCell;
 
 use super::discovery::{RequestState, parse_monitor};
-use super::library::{Title, Video};
+use super::images;
+use super::library::{self, Title, Video};
 use super::schema::{Ctx, EpisodeNumber};
 use super::settings::Settings;
 use crate::auth::{self, User};
@@ -339,8 +340,12 @@ pub struct EpisodeDownload {
 }
 
 #[derive(SimpleObject)]
+#[graphql(complex)]
 pub struct CalendarEntry {
     series_id: i64,
+
+    #[graphql(skip)]
+    item_id: Option<i64>,
 
     title: Option<Title>,
     library: String,
@@ -375,6 +380,28 @@ pub struct WantedEpisode {
     attempts: i64,
     searched_at: Option<i64>,
     next_search: Option<i64>,
+}
+
+#[ComplexObject]
+impl CalendarEntry {
+    /// The most vivid colour of the backdrop as "r g b", empty until it's been worked out.
+    async fn backdrop_tint(&self, ctx: &Context<'_>) -> ApiResult<Option<String>> {
+        let state = ctx.state();
+        let Some(id) = self.item_id else { return Ok(None) };
+        let Some(row) = library::item_row(state, id).await? else { return Ok(None) };
+        let source = images::item_source(
+            row.id,
+            &row.path,
+            "backdrop",
+            row.backdrop.as_deref(),
+            row.custom_backdrop,
+            row.artwork_version,
+        );
+        Ok(match source {
+            Some(source) => state.tints.get(state, source).await,
+            None => None,
+        })
+    }
 }
 
 pub struct SeriesEpisode(series::EpisodeView);
@@ -1058,6 +1085,7 @@ impl AutomationQuery {
             };
             out.push(CalendarEntry {
                 series_id: id,
+                item_id,
                 poster: item_id.map(|i| format!("/api/images/item/{i}/poster")).or(poster),
                 backdrop: item_id.map(|i| format!("/api/images/item/{i}/backdrop")),
                 title,

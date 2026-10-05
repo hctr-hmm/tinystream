@@ -21,7 +21,7 @@ fn download_lock(file: &Path) -> Arc<AsyncMutex<()>> {
     lock
 }
 
-pub(super) async fn remote(http: &reqwest::Client, dir: &Path, url: &str) -> anyhow::Result<PathBuf> {
+pub(crate) async fn remote(http: &reqwest::Client, dir: &Path, url: &str) -> anyhow::Result<PathBuf> {
     let key = hex::encode(&Sha256::digest(url.as_bytes())[..16]);
     let ext = url.rsplit('.').next().filter(|e| e.len() <= 4).unwrap_or("jpg");
     let file = dir.join(format!("{key}.{ext}"));

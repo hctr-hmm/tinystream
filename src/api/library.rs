@@ -230,6 +230,15 @@ impl Title {
         })
     }
 
+    async fn tint(&self, ctx: &Context<'_>, kind: &'static str) -> Option<String> {
+        let row = &self.row;
+        let (remote, custom) =
+            if kind == "poster" { (&row.poster, row.custom_poster) } else { (&row.backdrop, row.custom_backdrop) };
+        let source =
+            super::images::item_source(row.id, &row.path, kind, remote.as_deref(), custom, row.artwork_version)?;
+        ctx.state().tints.get(ctx.state(), source).await
+    }
+
     pub(super) fn poster_url(&self) -> Option<String> {
         self.art("poster", POSTER_NAMES, &self.row.poster)
     }
@@ -270,6 +279,16 @@ impl Title {
 
     async fn backdrop(&self) -> Option<String> {
         self.art("backdrop", BACKDROP_NAMES, &self.row.backdrop)
+    }
+
+    /// The most vivid colour of the poster as "r g b", empty until it's been worked out.
+    async fn poster_tint(&self, ctx: &Context<'_>) -> Option<String> {
+        self.tint(ctx, "poster").await
+    }
+
+    /// The same for the backdrop.
+    async fn backdrop_tint(&self, ctx: &Context<'_>) -> Option<String> {
+        self.tint(ctx, "backdrop").await
     }
 
     async fn custom_poster(&self) -> bool {
@@ -1027,6 +1046,7 @@ impl LibraryMutation {
                 "UPDATE items SET backdrop_override = ?, artwork_version = artwork_version + 1 WHERE id = ?"
             },
         };
+        state.tints.forget_uploads(state, id).await?;
         sqlx::query(sql).bind(data).bind(id).execute(&state.db).await?;
         state.events.send(crate::events::Event::MetadataUpdated { item_id: id });
         Title::load(state, &access, id).await?.ok_or_else(|| ApiError::not_found("title"))

@@ -25,6 +25,7 @@ use crate::music::catalog::{self, Album, AlbumFilter, AlbumOrder, Artist, Kind, 
 use crate::music::queue::{self, Playing, Repeat};
 use crate::music::{art, lyrics};
 use crate::state::AppState;
+use crate::tint::Source;
 
 /// Where a track's files and pictures come from: the music API, or a room's.
 #[derive(Clone)]
@@ -181,6 +182,14 @@ impl TrackView {
         self.t.has_cover().then(|| format!("{}/tracks/{}/cover", self.base.0, self.t.id))
     }
 
+    /// The most vivid colour of the cover as "r g b", empty until it's been worked out.
+    async fn cover_tint(&self, ctx: &Context<'_>) -> Option<String> {
+        if !self.t.has_cover() {
+            return None;
+        }
+        tint(ctx.state(), track_cover_file(ctx.state(), &self.t).await).await
+    }
+
     async fn gains(&self) -> Gains {
         let g = self.t.gains();
         Gains {
@@ -326,6 +335,11 @@ impl AlbumView {
         found.then(|| format!("/api/music/albums/{}/cover", self.a.id))
     }
 
+    /// The most vivid colour of the cover as "r g b", empty until it's been worked out.
+    async fn cover_tint(&self, ctx: &Context<'_>) -> Option<String> {
+        tint(ctx.state(), art::album_cover(ctx.state(), &self.a).await).await
+    }
+
     async fn mbid(&self) -> Option<&str> {
         self.a.mbid.as_deref()
     }
@@ -413,6 +427,11 @@ impl ArtistView {
 
     async fn cover(&self) -> Option<String> {
         self.r.cover_album.map(|_| format!("/api/music/artists/{}/cover", self.r.id))
+    }
+
+    /// The most vivid colour of the cover as "r g b", empty until it's been worked out.
+    async fn cover_tint(&self, ctx: &Context<'_>) -> ApiResult<Option<String>> {
+        Ok(tint(ctx.state(), artist_cover_file(ctx.state(), &self.r).await?).await)
     }
 
     async fn starred(&self) -> bool {
@@ -1249,12 +1268,27 @@ pub(super) async fn image(state: &AppState, file: Option<PathBuf>, size: Option<
     Ok(([(header::CONTENT_TYPE, mime), (header::CACHE_CONTROL, "private, max-age=86400".into())], data).into_response())
 }
 
+async fn tint(state: &Arc<AppState>, file: Option<PathBuf>) -> Option<String> {
+    state.tints.get(state, Source::File(file?)).await
+}
+
 pub(super) async fn track_cover_file(state: &AppState, t: &Track) -> Option<PathBuf> {
     let album = match t.album_id {
         Some(id) => catalog::album(&state.db, id).await.ok().flatten(),
         None => None,
     };
     art::track_cover(state, FsPath::new(&t.path), t.embedded_art, album.as_ref()).await
+}
+
+async fn artist_cover_file(state: &AppState, r: &Artist) -> ApiResult<Option<PathBuf>> {
+    let album = match r.cover_album {
+        Some(a) => catalog::album(&state.db, a).await?,
+        None => None,
+    };
+    Ok(match album {
+        Some(a) => art::album_cover(state, &a).await,
+        None => None,
+    })
 }
 
 pub async fn track_cover(
@@ -1284,13 +1318,5 @@ pub async fn artist_cover(
     Query(q): Query<CoverQuery>,
 ) -> ApiResult<Response> {
     let r = visible_artist(&state, &user, id).await?;
-    let album = match r.cover_album {
-        Some(a) => catalog::album(&state.db, a).await?,
-        None => None,
-    };
-    let file = match album {
-        Some(a) => art::album_cover(&state, &a).await,
-        None => None,
-    };
-    image(&state, file, q.size).await
+    image(&state, artist_cover_file(&state, &r).await?, q.size).await
 }

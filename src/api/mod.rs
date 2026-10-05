@@ -7,7 +7,7 @@ mod automation;
 mod clips;
 mod discovery;
 mod events;
-mod image_cache;
+pub(crate) mod image_cache;
 mod images;
 mod library;
 mod listen;

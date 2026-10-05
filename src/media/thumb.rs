@@ -19,6 +19,19 @@ pub fn picture(path: &Path, width: i32) -> anyhow::Result<Vec<u8>> {
     grab(path, width, Some(0.0), 3, None)
 }
 
+/// A picture squashed to `size`×`size`, as packed RGB.
+pub fn pixels(path: &Path, size: i32) -> anyhow::Result<Vec<u8>> {
+    let (mut frame, tb) = decode(path, Some(0.0), true)?;
+    let mut graph = FilterGraph::video(frame.get(), tb, &format!("scale={size}:{size}:flags=area,format=rgb24"), None)?;
+    graph.push(Some(&mut frame))?;
+    let mut out = Frame::new();
+    anyhow::ensure!(graph.pull(&mut out)?, "scaling failed");
+    let f = out.get();
+    let row = size as usize * 3;
+    let data = unsafe { std::slice::from_raw_parts(f.data[0], f.linesize[0] as usize * size as usize) };
+    Ok(data.chunks(f.linesize[0] as usize).flat_map(|line| &line[..row]).copied().collect())
+}
+
 pub fn still(
     path: &Path,
     at: f64,

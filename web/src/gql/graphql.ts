@@ -532,7 +532,7 @@ export type CardFragment = { id: number, kind: TitleKind, library: string, name:
 
 export type VideoRowFragment = { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null };
 
-export type TitleDetailFragment = { customPoster: boolean, customBackdrop: boolean, overview: string | null, genres: Array<string>, rating: number | null, path: string | null, matchState: MatchState, provider: Provider | null, providerId: string | null, libraryProvider: Provider | null, id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number, seasons: Array<{ number: number, name: string, title: string | null, overview: string | null, poster: string | null, episodes: Array<{ id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null }> }>, movie: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } | null, nextUp: { resuming: boolean, video: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } } | null };
+export type TitleDetailFragment = { posterTint: string | null, backdropTint: string | null, customPoster: boolean, customBackdrop: boolean, overview: string | null, genres: Array<string>, rating: number | null, path: string | null, matchState: MatchState, provider: Provider | null, providerId: string | null, libraryProvider: Provider | null, id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number, seasons: Array<{ number: number, name: string, title: string | null, overview: string | null, poster: string | null, episodes: Array<{ id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null }> }>, movie: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } | null, nextUp: { resuming: boolean, video: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } } | null };
 
 export type PlaybackFragment = { id: number, still: string, label: string | null, name: string | null, position: number | null, finished: boolean | null, title: { id: number, kind: TitleKind, name: string, backdrop: string | null }, previous: { id: number, label: string | null, name: string | null } | null, next: { id: number, still: string, label: string | null, name: string | null } | null, media: { duration: number | null, video: { index: number, codec: string, codecString: string | null, width: number, height: number, fps: number, bitDepth: number, hdr: boolean } | null, audio: Array<{ index: number, codec: string, codecString: string | null, channels: number, language: string | null, title: string | null, default: boolean }>, subtitles: Array<{ id: string, codec: string, language: string | null, title: string | null, default: boolean, forced: boolean, supported: boolean }>, fonts: Array<{ index: number, filename: string }>, chapters: Array<{ start: number, end: number, title: string | null }> } };
 
@@ -558,7 +558,7 @@ export type SeriesFieldsFragment = { id: number, monitor: Monitor, status: strin
 
 export type ReleaseCandidateFieldsFragment = { batch: boolean, release: { title: string, source: string, link: string, infoHash: string | null, size: number | null, seeders: number | null, leechers: number | null, published: number | null, page: string | null }, attributes: { group: string | null, resolution: number | null, codec: string | null, source: string | null, dualAudio: boolean, version: number, proper: boolean, tenBit: boolean }, episodes: Array<{ season: number, episode: number }>, verdict: { accepted: boolean, score: number, rejections: Array<string>, warnings: Array<string>, nonstandard: boolean } };
 
-export type CalendarEntryFieldsFragment = { seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null };
+export type CalendarEntryFieldsFragment = { seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, backdropTint: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null };
 
 export type SettingsFieldsFragment = { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, music: { onlineLyrics: boolean, lyricsUrl: string, analyzeLoudness: boolean }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, signIn: { style: SignInStyle }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, kind: LibraryKind, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } };
 
@@ -990,7 +990,7 @@ export type SearchQueryVariables = Exact<{
 }>;
 
 
-export type SearchQuery = { musicSearch: { artists: Array<{ id: number, name: string, cover: string | null, albumCount: number }>, albums: Array<{ id: number, name: string, artist: string, cover: string | null, year: number | null }>, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> }, search: { titles: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }>, videos: Array<{ id: number, label: string | null, name: string | null, title: { name: string } }> } };
+export type SearchQuery = { musicSearch: { artists: Array<{ id: number, name: string, cover: string | null, albumCount: number }>, albums: Array<{ id: number, name: string, artist: string, cover: string | null, year: number | null }>, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> }, search: { titles: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }>, videos: Array<{ id: number, label: string | null, name: string | null, title: { name: string } }> } };
 
 export type RecentTitlesQueryVariables = Exact<{
   ids: Array<number> | number;
@@ -1135,14 +1135,14 @@ export type LibrarySongsQueryVariables = Exact<{
 }>;
 
 
-export type LibrarySongsQuery = { songs: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> };
+export type LibrarySongsQuery = { songs: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> };
 
 export type PlaylistsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type PlaylistsQuery = { playlists: Array<{ id: number, name: string, comment: string | null, public: boolean, mine: boolean, trackCount: number, duration: number, covers: Array<string>, owner: { id: number, username: string } }> };
 
-export type MusicTrackFragment = { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } };
+export type MusicTrackFragment = { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } };
 
 export type AlbumCardFragment = { id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, artists: Array<{ id: number, name: string }> };
 
@@ -1153,14 +1153,14 @@ export type PlaylistCardFragment = { id: number, name: string, comment: string |
 export type PlayQueueQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PlayQueueQuery = { playQueue: { current: number, position: number, shuffled: boolean, repeat: Repeat, changedBy: string | null, updatedAt: number, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } };
+export type PlayQueueQuery = { playQueue: { current: number, position: number, shuffled: boolean, repeat: Repeat, changedBy: string | null, updatedAt: number, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } };
 
 export type TrackQueryVariables = Exact<{
   id: number;
 }>;
 
 
-export type TrackQuery = { track: { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } } | null };
+export type TrackQuery = { track: { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } } | null };
 
 export type SavePlayQueueMutationVariables = Exact<{
   input: QueueInput;
@@ -1174,7 +1174,7 @@ export type MeasureLoudnessMutationVariables = Exact<{
 }>;
 
 
-export type MeasureLoudnessMutation = { measureLoudness: { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } } };
+export type MeasureLoudnessMutation = { measureLoudness: { id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } } };
 
 export type PlayedMutationVariables = Exact<{
   trackId: number;
@@ -1214,14 +1214,14 @@ export type SimilarTracksQueryVariables = Exact<{
 }>;
 
 
-export type SimilarTracksQuery = { similarTracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> };
+export type SimilarTracksQuery = { similarTracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> };
 
 export type AlbumTracksQueryVariables = Exact<{
   id: number;
 }>;
 
 
-export type AlbumTracksQuery = { album: { tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } | null };
+export type AlbumTracksQuery = { album: { tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } | null };
 
 export type PlaylistNamesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1362,7 +1362,7 @@ export type AlbumQueryVariables = Exact<{
 }>;
 
 
-export type AlbumQuery = { album: { library: string, releaseDate: string | null, originalDate: string | null, genres: Array<string>, releaseTypes: Array<string>, labels: Array<string>, id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, discTitles: Array<{ disc: number, title: string }>, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }>, artists: Array<{ id: number, name: string }> } | null };
+export type AlbumQuery = { album: { coverTint: string | null, library: string, releaseDate: string | null, originalDate: string | null, genres: Array<string>, releaseTypes: Array<string>, labels: Array<string>, id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, discTitles: Array<{ disc: number, title: string }>, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }>, artists: Array<{ id: number, name: string }> } | null };
 
 export type MoreByArtistQueryVariables = Exact<{
   id: number;
@@ -1376,7 +1376,7 @@ export type ArtistQueryVariables = Exact<{
 }>;
 
 
-export type ArtistQuery = { artist: { id: number, name: string, albumCount: number, trackCount: number, cover: string | null, starred: boolean, albums: Array<{ releaseTypes: Array<string>, id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, artists: Array<{ id: number, name: string }> }>, appearsOn: Array<{ id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, artists: Array<{ id: number, name: string }> }>, topTracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } | null };
+export type ArtistQuery = { artist: { coverTint: string | null, id: number, name: string, albumCount: number, trackCount: number, cover: string | null, starred: boolean, albums: Array<{ releaseTypes: Array<string>, id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, artists: Array<{ id: number, name: string }> }>, appearsOn: Array<{ id: number, name: string, artist: string, year: number | null, cover: string | null, trackCount: number, duration: number, compilation: boolean, starred: boolean, playCount: number, addedAt: number, artists: Array<{ id: number, name: string }> }>, topTracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } | null };
 
 export type CalendarQueryVariables = Exact<{
   from: number;
@@ -1384,7 +1384,7 @@ export type CalendarQueryVariables = Exact<{
 }>;
 
 
-export type CalendarQuery = { calendar: Array<{ seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null }> };
+export type CalendarQuery = { calendar: Array<{ seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, backdropTint: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null }> };
 
 export type ClipsQueryVariables = Exact<{
   scope: ClipScope;
@@ -1502,7 +1502,7 @@ export type RemoveDownloadsMutation = { removeDownloads: Array<number> };
 export type HomeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type HomeQuery = { home: { continueWatching: Array<{ position: number, upNext: boolean, newEpisode: boolean, watchedAt: number | null, video: { id: number, label: string | null, name: string | null, still: string, duration: number | null, title: { id: number, name: string, poster: string | null, backdrop: string | null } } }>, recentlyAdded: Array<{ library: string, titles: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }> }>, popularHere: Array<{ people: number, title: { id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number } }> } };
+export type HomeQuery = { home: { continueWatching: Array<{ position: number, upNext: boolean, newEpisode: boolean, watchedAt: number | null, video: { id: number, label: string | null, name: string | null, still: string, duration: number | null, title: { id: number, name: string, poster: string | null, backdrop: string | null, posterTint: string | null, backdropTint: string | null } } }>, recentlyAdded: Array<{ library: string, titles: Array<{ id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number }> }>, popularHere: Array<{ people: number, title: { id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number } }> } };
 
 export type ComingUpQueryVariables = Exact<{
   from: number;
@@ -1510,7 +1510,7 @@ export type ComingUpQueryVariables = Exact<{
 }>;
 
 
-export type ComingUpQuery = { calendar: Array<{ seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null }> };
+export type ComingUpQuery = { calendar: Array<{ seriesId: number, library: string, show: string, poster: string | null, backdrop: string | null, backdropTint: string | null, monitor: Monitor, season: number, episode: number, absolute: number | null, name: string | null, airAt: number, state: EpisodeState, title: { id: number } | null, video: { id: number } | null, download: { stage: TorrentStage, progress: number, downloadRate: number, eta: number | null } | null }> };
 
 export type MusicHomeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1529,14 +1529,14 @@ export type ListenRoomQueryVariables = Exact<{
 }>;
 
 
-export type ListenRoomQuery = { listenRoom: { code: string, hostName: string, signedIn: boolean, isHost: boolean, canShare: boolean, canInvite: boolean, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } };
+export type ListenRoomQuery = { listenRoom: { code: string, hostName: string, signedIn: boolean, isHost: boolean, canShare: boolean, canInvite: boolean, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }> } };
 
 export type PlaylistQueryVariables = Exact<{
   id: number;
 }>;
 
 
-export type PlaylistQuery = { playlist: { id: number, name: string, comment: string | null, public: boolean, mine: boolean, trackCount: number, duration: number, covers: Array<string>, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }>, owner: { id: number, username: string } } | null };
+export type PlaylistQuery = { playlist: { id: number, name: string, comment: string | null, public: boolean, mine: boolean, trackCount: number, duration: number, covers: Array<string>, tracks: Array<{ id: number, title: string, artist: string, album: string, albumId: number | null, albumArtist: string | null, library: string, disc: number | null, number: number | null, year: number | null, duration: number, codec: string, suffix: string, lossless: boolean, bitrate: number | null, sampleRate: number | null, bitDepth: number | null, channels: number | null, size: number, file: string, flac: string, cover: string | null, coverTint: string | null, starred: boolean, rating: number | null, playCount: number, artists: Array<{ id: number, name: string }>, gains: { trackGain: number | null, trackPeak: number | null, albumGain: number | null, albumPeak: number | null, pending: boolean } }>, owner: { id: number, username: string } } | null };
 
 export type UpdatePlaylistMutationVariables = Exact<{
   id: number;
@@ -1674,7 +1674,7 @@ export type TitleQueryVariables = Exact<{
 }>;
 
 
-export type TitleQuery = { title: { customPoster: boolean, customBackdrop: boolean, overview: string | null, genres: Array<string>, rating: number | null, path: string | null, matchState: MatchState, provider: Provider | null, providerId: string | null, libraryProvider: Provider | null, id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number, seasons: Array<{ number: number, name: string, title: string | null, overview: string | null, poster: string | null, episodes: Array<{ id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null }> }>, movie: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } | null, nextUp: { resuming: boolean, video: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } } | null } | null };
+export type TitleQuery = { title: { posterTint: string | null, backdropTint: string | null, customPoster: boolean, customBackdrop: boolean, overview: string | null, genres: Array<string>, rating: number | null, path: string | null, matchState: MatchState, provider: Provider | null, providerId: string | null, libraryProvider: Provider | null, id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number, seasons: Array<{ number: number, name: string, title: string | null, overview: string | null, poster: string | null, episodes: Array<{ id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null }> }>, movie: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } | null, nextUp: { resuming: boolean, video: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } } | null } | null };
 
 export type SimilarQueryVariables = Exact<{
   id: number;
@@ -1845,6 +1845,8 @@ export const VideoRowFragmentDoc = new TypedDocumentString(`
 export const TitleDetailFragmentDoc = new TypedDocumentString(`
     fragment TitleDetail on Title {
   ...Card
+  posterTint
+  backdropTint
   customPoster
   customBackdrop
   overview
@@ -2276,6 +2278,7 @@ export const CalendarEntryFieldsFragmentDoc = new TypedDocumentString(`
   show
   poster
   backdrop
+  backdropTint
   monitor
   season
   episode
@@ -2529,6 +2532,7 @@ export const MusicTrackFragmentDoc = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -3667,6 +3671,7 @@ fragment MusicTrack on Track {
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -4295,6 +4300,7 @@ export const LibrarySongsDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -4367,6 +4373,7 @@ export const PlayQueueDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -4411,6 +4418,7 @@ export const TrackDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -4462,6 +4470,7 @@ export const MeasureLoudnessDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -4533,6 +4542,7 @@ export const SimilarTracksDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -4579,6 +4589,7 @@ export const AlbumTracksDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -5198,6 +5209,7 @@ export const AlbumDocument = new TypedDocumentString(`
     query Album($id: Int!) {
   album(id: $id) {
     ...AlbumCard
+    coverTint
     library
     releaseDate
     originalDate
@@ -5240,6 +5252,7 @@ export const AlbumDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -5297,6 +5310,7 @@ export const ArtistDocument = new TypedDocumentString(`
     query Artist($id: Int!) {
   artist(id: $id) {
     ...ArtistCard
+    coverTint
     albums {
       ...AlbumCard
       releaseTypes
@@ -5336,6 +5350,7 @@ export const ArtistDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -5387,6 +5402,7 @@ export const CalendarDocument = new TypedDocumentString(`
   show
   poster
   backdrop
+  backdropTint
   monitor
   season
   episode
@@ -5924,6 +5940,8 @@ export const HomeDocument = new TypedDocumentString(`
           name
           poster
           backdrop
+          posterTint
+          backdropTint
         }
       }
     }
@@ -5969,6 +5987,7 @@ export const ComingUpDocument = new TypedDocumentString(`
   show
   poster
   backdrop
+  backdropTint
   monitor
   season
   episode
@@ -6076,6 +6095,7 @@ export const ListenRoomDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -6123,6 +6143,7 @@ export const PlaylistDocument = new TypedDocumentString(`
   file
   flac
   cover
+  coverTint
   gains {
     trackGain
     trackPeak
@@ -6342,6 +6363,8 @@ fragment VideoRow on Video {
 }
 fragment TitleDetail on Title {
   ...Card
+  posterTint
+  backdropTint
   customPoster
   customBackdrop
   overview

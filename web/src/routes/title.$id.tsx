@@ -18,13 +18,13 @@ import { Row } from '../components/Row'
 import { TitleSkeleton } from '../components/Skeleton'
 import { Squircle } from '../components/Squircle'
 import { Button, IconButton, Input, Panel, Spinner, Tip } from '../components/ui'
-import { useAmbient } from '../lib/ambient'
 import { graphql } from '../gql'
 import { type Download, type Episode, type Item, type Provider, type SeriesEpisode, request } from '../lib/api'
 import { airs, duration, shortDate, speed, useFeatures } from '../lib/downloads'
 import { useMe } from '../lib/hooks'
 import { remember } from '../lib/recents'
 import { preload, useFetching } from '../lib/refreshing'
+import { awaitTint, tintPending, titleTint } from '../lib/tint'
 import { useTitle } from '../lib/title'
 import { queryClient } from '../router'
 
@@ -113,6 +113,7 @@ const MatchTitle = graphql(`
 export const titleQuery = (id: number) => ({
   queryKey: ['item', id],
   queryFn: async (): Promise<Item | null> => (await request(TitleQuery, { id })).title,
+  refetchInterval: awaitTint<Item | null>(tintPending),
 })
 
 export const Route = createFileRoute('/title/$id')({
@@ -194,7 +195,7 @@ function TitlePage() {
   useEffect(() => {
     if (item) remember({ id: item.id, title: item.name, poster: item.poster, kind: item.kind === 'SHOW' ? 'show' : 'movie' })
   }, [item])
-  const ambient = useAmbient(item?.backdrop ?? item?.poster)
+  const ambient = titleTint(item)
   const can = me?.permissions
   const { data: downloads } = useQuery({
     queryKey: ['downloads'],

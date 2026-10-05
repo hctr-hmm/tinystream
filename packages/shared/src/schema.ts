@@ -21,6 +21,8 @@ export type Album = {
   compilation: Scalars['Boolean']['output'];
   /** Missing when there's no picture in its folder or its files. */
   cover?: Maybe<Scalars['String']['output']>;
+  /** The most vivid colour of the cover as "r g b", empty until it's been worked out. */
+  coverTint?: Maybe<Scalars['String']['output']>;
   discTitles: Array<DiscTitle>;
   duration: Scalars['Float']['output'];
   genres: Array<Scalars['String']['output']>;
@@ -99,6 +101,8 @@ export type Artist = {
   /** Albums by others that this artist is on. */
   appearsOn: Array<Album>;
   cover?: Maybe<Scalars['String']['output']>;
+  /** The most vivid colour of the cover as "r g b", empty until it's been worked out. */
+  coverTint?: Maybe<Scalars['String']['output']>;
   id: Scalars['Int']['output'];
   library: Scalars['String']['output'];
   mbid?: Maybe<Scalars['String']['output']>;
@@ -148,6 +152,8 @@ export type CalendarEntry = {
   absolute?: Maybe<Scalars['Int']['output']>;
   airAt: Scalars['Int']['output'];
   backdrop?: Maybe<Scalars['String']['output']>;
+  /** The most vivid colour of the backdrop as "r g b", empty until it's been worked out. */
+  backdropTint?: Maybe<Scalars['String']['output']>;
   download?: Maybe<EpisodeDownload>;
   episode: Scalars['Int']['output'];
   library: Scalars['String']['output'];
@@ -2354,6 +2360,8 @@ export type SubtitleTrack = {
 
 export type Title = {
   backdrop?: Maybe<Scalars['String']['output']>;
+  /** The same for the backdrop. */
+  backdropTint?: Maybe<Scalars['String']['output']>;
   customBackdrop: Scalars['Boolean']['output'];
   customPoster: Scalars['Boolean']['output'];
   freshCount: Scalars['Int']['output'];
@@ -2370,6 +2378,8 @@ export type Title = {
   overview?: Maybe<Scalars['String']['output']>;
   path?: Maybe<Scalars['String']['output']>;
   poster?: Maybe<Scalars['String']['output']>;
+  /** The most vivid colour of the poster as "r g b", empty until it's been worked out. */
+  posterTint?: Maybe<Scalars['String']['output']>;
   progress?: Maybe<Scalars['Float']['output']>;
   provider?: Maybe<Provider>;
   providerId?: Maybe<Scalars['String']['output']>;
@@ -2451,6 +2461,8 @@ export type Track = {
   codec: Scalars['String']['output'];
   composers: Array<ArtistRef>;
   cover?: Maybe<Scalars['String']['output']>;
+  /** The most vivid colour of the cover as "r g b", empty until it's been worked out. */
+  coverTint?: Maybe<Scalars['String']['output']>;
   disc?: Maybe<Scalars['Int']['output']>;
   duration: Scalars['Float']['output'];
   /** The file as it is. */
