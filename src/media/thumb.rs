@@ -109,6 +109,10 @@ pub(super) fn decode(path: &Path, at: Option<f64>, keyframe: bool) -> anyhow::Re
             frame.unref();
         }
     }
+    if !got {
+        dec.send_packet(None)?;
+        got = dec.receive_frame(&mut frame)?;
+    }
     anyhow::ensure!(got, "no frame found");
     Ok((frame, tb))
 }
