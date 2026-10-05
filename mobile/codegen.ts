@@ -17,7 +17,7 @@ const config: CodegenConfig = {
         enumsAsTypes: true,
         useTypeImports: true,
         skipTypename: true,
-        scalars: { Duration: 'string', JSON: 'unknown', Upload: 'Blob' },
+        scalars: { Duration: 'string', JSON: 'unknown', Upload: "import('../lib/graphql').UploadFile" },
       },
     },
   },

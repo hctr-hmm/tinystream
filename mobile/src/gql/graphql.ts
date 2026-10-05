@@ -1,5 +1,7 @@
 /* eslint-disable */
 /** Internal type. DO NOT USE DIRECTLY. */
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+/** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type ClipState =
@@ -8,6 +10,11 @@ export type ClipState =
   | 'QUEUED'
   | 'READY'
   | 'RENDERING';
+
+export type ComponentStyle =
+  | 'FLAT'
+  | 'GLASS'
+  | 'LAYERED';
 
 export type DownloadState =
   | 'DONE'
@@ -88,6 +95,11 @@ export type RequestState =
   | 'DECLINED'
   | 'PENDING';
 
+export type SchemeMode =
+  | 'SINGLE'
+  /** One scheme for the system's light mode, one for its dark mode. */
+  | 'SYSTEM';
+
 export type SeedAction =
   | 'PAUSE'
   | 'REMOVE';
@@ -114,6 +126,48 @@ export type TorrentStage =
   | 'DOWNLOADING'
   | 'METADATA'
   | 'SEEDING';
+
+export type SignInServerQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SignInServerQuery = { server: { setupRequired: boolean, signInStyle: SignInStyle } };
+
+export type SignInProfilesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SignInProfilesQuery = { signInProfiles: Array<{ key: string, avatar: string | null, passkey: boolean }> };
+
+export type SetupMutationVariables = Exact<{
+  username: string;
+  password: string;
+}>;
+
+
+export type SetupMutation = { setup: { token: string, user: { id: number, username: string, avatar: string | null } } };
+
+export type SignInMutationVariables = Exact<{
+  username?: string | null | undefined;
+  profile?: string | null | undefined;
+  password: string;
+}>;
+
+
+export type SignInMutation = { signIn: { token: string, user: { id: number, username: string, avatar: string | null } } };
+
+export type StatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StatusQuery = { server: { version: string, setupRequired: boolean, clips: boolean, downloads: boolean, sources: number }, viewer: { isAdmin: boolean, id: number, username: string, avatar: string | null, permissions: { allLibraries: boolean, libraries: Array<string>, request: boolean, autoApprove: boolean, requestLimit: number, manageRequests: boolean, manageShows: boolean, downloads: boolean, editMetadata: boolean, watchTogether: boolean, shareLinks: boolean, clip: boolean, clipMaxLength: number, clipLimit: number, clipStorage: number, clipLinks: boolean } } | null };
+
+export type AppearanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AppearanceQuery = { appearance: { mode: SchemeMode, style: ComponentStyle, mediaTint: boolean, light: { id: string, palette: { tokens: Array<{ name: string, value: string }> } }, dark: { id: string, palette: { tokens: Array<{ name: string, value: string }> } } } };
+
+export type SignOutMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SignOutMutation = { signOut: boolean };
 
 export type PersonFragment = { id: number, username: string, avatar: string | null };
 
@@ -860,3 +914,123 @@ export const SettingsFieldsFragmentDoc = new TypedDocumentString(`
   idle
   then
 }`, {"fragmentName":"SettingsFields"}) as unknown as TypedDocumentString<SettingsFieldsFragment, unknown>;
+export const SignInServerDocument = new TypedDocumentString(`
+    query SignInServer {
+  server {
+    setupRequired
+    signInStyle
+  }
+}
+    `) as unknown as TypedDocumentString<SignInServerQuery, SignInServerQueryVariables>;
+export const SignInProfilesDocument = new TypedDocumentString(`
+    query SignInProfiles {
+  signInProfiles {
+    key
+    avatar
+    passkey
+  }
+}
+    `) as unknown as TypedDocumentString<SignInProfilesQuery, SignInProfilesQueryVariables>;
+export const SetupDocument = new TypedDocumentString(`
+    mutation Setup($username: String!, $password: String!) {
+  setup(username: $username, password: $password) {
+    user {
+      ...Person
+    }
+    token
+  }
+}
+    fragment Person on User {
+  id
+  username
+  avatar
+}`) as unknown as TypedDocumentString<SetupMutation, SetupMutationVariables>;
+export const SignInDocument = new TypedDocumentString(`
+    mutation SignIn($username: String, $profile: String, $password: String!) {
+  signIn(username: $username, profile: $profile, password: $password) {
+    user {
+      ...Person
+    }
+    token
+  }
+}
+    fragment Person on User {
+  id
+  username
+  avatar
+}`) as unknown as TypedDocumentString<SignInMutation, SignInMutationVariables>;
+export const StatusDocument = new TypedDocumentString(`
+    query Status {
+  server {
+    version
+    setupRequired
+    clips
+    downloads
+    sources
+  }
+  viewer {
+    ...Viewer
+  }
+}
+    fragment Person on User {
+  id
+  username
+  avatar
+}
+fragment PermissionsFields on Permissions {
+  allLibraries
+  libraries
+  request
+  autoApprove
+  requestLimit
+  manageRequests
+  manageShows
+  downloads
+  editMetadata
+  watchTogether
+  shareLinks
+  clip
+  clipMaxLength
+  clipLimit
+  clipStorage
+  clipLinks
+}
+fragment Viewer on User {
+  ...Person
+  isAdmin
+  permissions {
+    ...PermissionsFields
+  }
+}`) as unknown as TypedDocumentString<StatusQuery, StatusQueryVariables>;
+export const AppearanceDocument = new TypedDocumentString(`
+    query Appearance {
+  appearance {
+    mode
+    style
+    mediaTint
+    light {
+      id
+      palette {
+        tokens {
+          name
+          value
+        }
+      }
+    }
+    dark {
+      id
+      palette {
+        tokens {
+          name
+          value
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AppearanceQuery, AppearanceQueryVariables>;
+export const SignOutDocument = new TypedDocumentString(`
+    mutation SignOut {
+  signOut
+}
+    `) as unknown as TypedDocumentString<SignOutMutation, SignOutMutationVariables>;

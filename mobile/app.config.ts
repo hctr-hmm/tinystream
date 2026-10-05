@@ -64,6 +64,7 @@ const config: ExpoConfig = {
     ['./plugins/ndk', { version: NDK }],
     './plugins/signing',
     './plugins/scrollbars',
+    './plugins/network',
   ],
   experiments: {
     typedRoutes: true,

@@ -4,6 +4,7 @@
 // view's style; `useMotion` gives none of them when animations are off.
 
 import { useMemo } from 'react'
+import type { ViewStyle } from 'react-native'
 import { type CSSAnimationKeyframes, type CSSAnimationProperties, cubicBezier, useReducedMotion } from 'react-native-reanimated'
 import { useTheme } from '../theme/ThemeProvider'
 import { type Material, withAlpha } from '../theme/materials'
@@ -15,9 +16,9 @@ export const glide = cubicBezier(0.2, 0.8, 0.2, 1)
 /** cubic-bezier(.65, 0, .35, 1): wipes and folds. */
 export const wipe = cubicBezier(0.65, 0, 0.35, 1)
 
-type Motion = CSSAnimationProperties
+type Motion = CSSAnimationProperties<ViewStyle>
 
-const once = (animationName: CSSAnimationKeyframes, animationDuration: number, animationTimingFunction: Motion['animationTimingFunction'], rest: Partial<Motion> = {}): Motion => ({
+const once = (animationName: CSSAnimationKeyframes<ViewStyle>, animationDuration: number, animationTimingFunction: Motion['animationTimingFunction'], rest: Partial<Motion> = {}): Motion => ({
   animationName,
   animationDuration,
   animationTimingFunction,

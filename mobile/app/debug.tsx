@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A placeholder until there's a server to connect to (#42): every effect and
-// haptic the screens are built from, to try them out on a device.
+// The debug screen: every effect and haptic the screens are built from, to
+// try them out on a device, and versions to pretend to be, to see the
+// mismatch banner and the update sheet.
 
 import { Canvas, LinearGradient, Rect, vec } from '@shopify/react-native-skia'
 import type { ComponentStyle } from '@tinystream/shared/theme'
 import Constants from 'expo-constants'
 import { type ReactNode, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { nativeVersion } from '../modules/about'
@@ -17,7 +18,9 @@ import { Squircle } from '../src/effects/Squircle'
 import { Ticker } from '../src/effects/Ticker'
 import { Tilt } from '../src/effects/Tilt'
 import { type Motions, useMotion } from '../src/effects/motion'
+import { Field, Input } from '../src/components/ui'
 import { useTheme } from '../src/theme/ThemeProvider'
+import { checkForUpdates, fakeVersions } from '../src/updates'
 
 const EVENTS: HapticEvent[] = [
   'tick',
@@ -38,7 +41,7 @@ const EVENTS: HapticEvent[] = [
 
 const MOTIONS = ['pop', 'fade', 'rise', 'sheet', 'pageIn', 'developIn', 'unfold', 'resolve', 'flash', 'hush'] as const
 
-export default function Placeholder() {
+export default function Debug() {
   const insets = useSafeAreaInsets()
   const { tokens, look, setLook } = useTheme()
   const [count, setCount] = useState(7)
@@ -48,11 +51,15 @@ export default function Placeholder() {
       <BlurArea style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: insets.bottom + 120, paddingHorizontal: 20, gap: 28 }}>
           <View>
-            <Text className="font-sans text-3xl font-semibold text-ink">tinystream</Text>
+            <Text className="font-sans text-3xl font-semibold text-ink">Debug</Text>
             <Text className="font-sans mt-1 text-sm text-ink-2">
               app {Constants.expoConfig?.version} · rust {nativeVersion()}
             </Text>
           </View>
+
+          <Section title="Versions">
+            <Versions />
+          </Section>
 
           <Section title="Style">
             <Segmented<ComponentStyle>
@@ -122,6 +129,43 @@ export default function Placeholder() {
         </Glass>
       </View>
     </GlassScope>
+  )
+}
+
+/** Pretend versions apply as they're typed; the update sheet looks again on the next start. */
+function Versions() {
+  const fake = fakeVersions.use()
+  const check = checkForUpdates.use()
+  const { tokens } = useTheme()
+  const field = (key: keyof typeof fake, label: string, placeholder: string) => (
+    <Field label={label}>
+      <Input
+        value={fake[key] ?? ''}
+        placeholder={placeholder}
+        autoCapitalize="none"
+        autoCorrect={false}
+        onChangeText={(v) => fakeVersions.set({ ...fakeVersions.get(), [key]: v.trim() || undefined })}
+      />
+    </Field>
+  )
+  return (
+    <View className="gap-3">
+      {field('app', 'This app', Constants.expoConfig?.version ?? '')}
+      {field('server', 'The server', 'as it says')}
+      {field('latest', 'Latest release', 'as GitHub says')}
+      <View className="flex-row items-center justify-between">
+        <Text className="font-sans text-sm text-ink">Check for updates</Text>
+        <Switch
+          value={check}
+          trackColor={{ true: tokens.accent, false: tokens.press }}
+          thumbColor={tokens.canvas}
+          onValueChange={(on) => {
+            haptic(on ? 'toggleOn' : 'toggleOff')
+            checkForUpdates.set(on)
+          }}
+        />
+      </View>
+    </View>
   )
 }
 
