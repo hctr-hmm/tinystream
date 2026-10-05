@@ -8,6 +8,7 @@ mod clips;
 mod discovery;
 mod events;
 mod images;
+mod invites;
 mod library;
 mod listen;
 mod media;
