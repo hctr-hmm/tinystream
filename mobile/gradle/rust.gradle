@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Builds a crate from the Cargo workspace into the Android module that applies
-// this: the library for every ABI the app is built for (cargo-ndk, with the
-// NDK pinned in app.config.ts), and its Kotlin bindings (uniffi). In the
-// module's build.gradle:
+// Builds a crate from the app's Cargo workspace (mobile/Cargo.toml) into the
+// Android module that applies this: the library for every ABI the app is
+// built for (cargo-ndk, with the NDK pinned in app.config.ts), and its Kotlin
+// bindings (uniffi). In the module's build.gradle:
 //
 //   apply from: '../../../gradle/rust.gradle'
 //   rust.crate('tinystream-about')
 
-def workspace = buildscript.sourceFile.parentFile.parentFile.parentFile
-def targetDir = new File(workspace, 'target/android')
+def workspace = buildscript.sourceFile.parentFile.parentFile
+def targetDir = new File(workspace, 'target')
 def jniLibs = layout.buildDirectory.dir('rust/jniLibs')
 def kotlin = layout.buildDirectory.dir('rust/kotlin')
 def abis = (findProperty('reactNativeArchitectures') ?: 'arm64-v8a').split(',').collect { it.trim() }.findAll()

@@ -25,8 +25,46 @@ env:
   RUSTUP_TOOLCHAIN: stable
 
 jobs:
+  # The server (Rust), web UI and app build independently: each only when its own files change. The
+  # server embeds the web UI, so its jobs take the UI from the web job, but a UI change alone doesn't
+  # rebuild the server.
+  changes:
+    name: Changes
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      web: ${{ steps.filter.outputs.web }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: useblacksmith/checkout@v1
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          predicate-quantifier: every
+          filters: |
+            server:
+              - '**'
+              - '!mobile/**'
+              - '!web/**'
+              - '!packages/**/!(schema.graphql)'
+              - '!package.json'
+              - '!bun.lock'
+              - '!bunfig.toml'
+              - '!.github/actions/android/**'
+            web:
+              - '{web,packages}/**'
+              - '{package.json,bun.lock,bunfig.toml}'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - '{mobile,packages}/**'
+              - '{package.json,bun.lock,bunfig.toml}'
+              - '.github/actions/android/**'
+              - '.github/workflows/ci.yml'
+
   fmt:
     name: Format
+    needs: changes
+    if: needs.changes.outputs.server == 'true' || needs.changes.outputs.mobile == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       RUSTUP_TOOLCHAIN: nightly
@@ -36,9 +74,12 @@ jobs:
         with:
           components: rustfmt
       - run: cargo fmt --check
+      - run: cargo fmt --check --manifest-path mobile/Cargo.toml
 
   web:
     name: Web UI
+    needs: changes
+    if: needs.changes.outputs.server == 'true' || needs.changes.outputs.web == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:
       run:
@@ -66,6 +107,8 @@ jobs:
 
   mobile:
     name: Mobile app
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: useblacksmith/checkout@v1
@@ -86,30 +129,10 @@ jobs:
       - name: Generated code is current
         run: git diff --exit-code -- packages/shared/src/schema.ts mobile/src/gql
 
-  changes:
-    name: Changes
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    outputs:
-      android: ${{ steps.filter.outputs.android }}
-    steps:
-      - uses: useblacksmith/checkout@v1
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            android:
-              - 'mobile/**'
-              - 'packages/**'
-              - 'package.json'
-              - 'bun.lock'
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - '.github/actions/android/**'
-
   android:
     name: Android build
     needs: changes
-    if: needs.changes.outputs.android == 'true'
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: useblacksmith/checkout@v1
@@ -124,7 +147,8 @@ jobs:
 
   rust:
     name: Build and test
-    needs: web
+    needs: [changes, web]
+    if: needs.changes.outputs.server == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       TINYSTREAM_SKIP_WEB_BUILD: "1"
@@ -142,7 +166,8 @@ jobs:
 
   features:
     name: Features (${{ matrix.features.name }})
-    needs: web
+    needs: [changes, web]
+    if: needs.changes.outputs.server == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       fail-fast: false
@@ -169,7 +194,8 @@ jobs:
 
   msrv:
     name: MSRV
-    needs: web
+    needs: [changes, web]
+    if: needs.changes.outputs.server == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       TINYSTREAM_SKIP_WEB_BUILD: "1"

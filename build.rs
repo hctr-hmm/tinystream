@@ -16,8 +16,6 @@ fn main() {
         "web/scripts",
         "web/package.json",
         "web/vite.config.ts",
-        "package.json",
-        "bun.lock",
         "packages/shared",
     ] {
         println!("cargo:rerun-if-changed={p}");
