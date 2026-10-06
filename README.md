@@ -2,6 +2,8 @@
 
 # tinystream
 
+<img src="assets/logos/logo.svg" alt="tinystream logo" width="128">
+
 A small self-hosted media server for your shows, movies and music.
 
 [![CI](https://github.com/tinystream-dev/tinystream/actions/workflows/ci.yml/badge.svg)](https://github.com/tinystream-dev/tinystream/actions/workflows/ci.yml)
