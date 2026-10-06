@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import '../global.css'
+import '../src/background'
 import { QueryClientProvider, focusManager } from '@tanstack/react-query'
 import { Stack, useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { Feedback } from '../src/components/Feedback'
+import { LiveUpdates } from '../src/components/LiveUpdates'
 import { ServerSync } from '../src/components/ServerSync'
 import { SwitcherProvider } from '../src/components/Switcher'
+import { useTabBarSpace } from '../src/components/TabBar'
 import { UpdateSheet } from '../src/components/UpdateSheet'
+import { startBackgroundChecks } from '../src/background'
 import { installLogging } from '../src/log'
 import { apiOf, cacheOf, tokenOf, useServers } from '../src/servers'
 import { SessionProvider } from '../src/session'
@@ -43,9 +48,14 @@ function App() {
   const { active, signedIn } = useServers()
   const token = active && signedIn.has(active.id) ? tokenOf(active.id) : null
   const router = useRouter()
+  const bar = useTabBarSpace()
 
   // A new stack starts where the URL was (say, signing in to the server just added), and losing the
   // token leaves whatever unguarded screens were under it: go where the app should be instead.
+  useEffect(() => {
+    if (token) void startBackgroundChecks().catch((e) => console.warn('background checks:', e))
+  }, [token])
+
   const at = `${active?.id}:${!!token}`
   const shown = useRef(at)
   useEffect(() => {
@@ -60,8 +70,10 @@ function App() {
       <Stack.Protected guard={!!token}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="debug" />
+        <Stack.Screen name="watch/[id]" options={{ animation: 'fade_from_bottom' }} />
       </Stack.Protected>
       <Stack.Screen name="sign-in" />
+      <Stack.Screen name="open" />
       <Stack.Screen name="connect" />
     </Stack>
   )
@@ -70,7 +82,9 @@ function App() {
     <QueryClientProvider key={active.id} client={cacheOf(active.id)}>
       <SessionProvider server={active} api={apiOf(active)} token={token}>
         <ServerSync />
+        {token && <LiveUpdates />}
         {stack}
+        <Feedback bottom={bar + 10} />
       </SessionProvider>
     </QueryClientProvider>
   )

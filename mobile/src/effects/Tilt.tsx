@@ -4,7 +4,7 @@
 // can also lean with the phone, with a glint where the light would catch.
 
 import { useFocusEffect } from 'expo-router'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -83,16 +83,32 @@ export function Tilt({ max = 7, gyro = false, onPress, onLongPress, radius = 14,
       if (success && onPress) scheduleOnRN(onPress)
     })
     .onFinalize(release)
+  // A finger resting on a card that has a menu is felt starting to build, before the menu opens.
+  const building = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startBuilding = () => {
+    building.current = setTimeout(() => haptic('longPressStart'), 180)
+  }
+  const stopBuilding = () => {
+    if (building.current) clearTimeout(building.current)
+    building.current = null
+  }
   const hold = Gesture.LongPress()
     .enabled(onLongPress != null)
     .maxDistance(12)
-    .onBegin((e) => press(e.x, e.y))
+    .onBegin((e) => {
+      press(e.x, e.y)
+      scheduleOnRN(startBuilding)
+    })
     .onStart(() => {
       if (!onLongPress) return
+      scheduleOnRN(stopBuilding)
       scheduleOnRN(haptic, 'longPressOpen')
       scheduleOnRN(onLongPress)
     })
-    .onFinalize(release)
+    .onFinalize(() => {
+      scheduleOnRN(stopBuilding)
+      release()
+    })
 
   // The sensor only runs while the screen is in focus.
   const [focused, setFocused] = useState(false)

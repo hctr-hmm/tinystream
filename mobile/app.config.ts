@@ -31,6 +31,8 @@ const config: ExpoConfig = {
     ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#191919' }],
     'expo-secure-store',
     'expo-sqlite',
+    'expo-background-task',
+    ['expo-image-picker', { cameraPermission: false, microphonePermission: false }],
     [
       'expo-build-properties',
       {

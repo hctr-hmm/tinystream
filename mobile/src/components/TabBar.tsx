@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../../modules/haptics'
 import { Glass } from '../effects/Glass'
+import { useMotion } from '../effects/motion'
 import { useTheme } from '../theme/ThemeProvider'
 import { withAlpha } from '../theme/materials'
 import type { Pager, TabEvents, TabOptions } from './Tabs'
@@ -181,6 +182,7 @@ export function TabBar({ state, descriptors, navigation, pager }: Props) {
                   label={options.title ?? route.name}
                   focused={focused}
                   icon={options.tabBarIcon?.({ focused, color, size: 24 })}
+                  badge={options.tabBarBadge}
                   color={color}
                   onPress={() => press(i)}
                 />
@@ -197,15 +199,18 @@ function Tab({
   label,
   focused,
   icon,
+  badge,
   color,
   onPress,
 }: {
   label: string
   focused: boolean
   icon: ReactNode
+  badge?: number | boolean
   color: string
   onPress: () => void
 }) {
+  const motion = useMotion()
   const scale = useSharedValue(1)
   const pressed = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
   return (
@@ -219,7 +224,22 @@ function Tab({
       onPressOut={() => (scale.value = withTiming(1, { duration: 200 }))}
     >
       <Animated.View className="flex-1 items-center justify-center gap-0.5" style={pressed}>
-        {icon}
+        <View>
+          {icon}
+          {!!badge && (
+            <Animated.View
+              key={String(badge)}
+              style={motion.pop}
+              className={`absolute -right-2 -top-1 items-center justify-center rounded-full bg-ink ${badge === true ? 'h-2 w-2' : 'h-4 min-w-4 px-1'}`}
+            >
+              {badge !== true && (
+                <Text className="font-sans text-[10px] font-semibold text-canvas" style={{ lineHeight: 12 }}>
+                  {badge > 99 ? '99+' : badge}
+                </Text>
+              )}
+            </Animated.View>
+          )}
+        </View>
         <Text className="font-sans text-2xs font-medium" style={{ color }} numberOfLines={1}>
           {label}
         </Text>

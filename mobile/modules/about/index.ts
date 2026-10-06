@@ -3,7 +3,10 @@
 
 import { requireNativeModule } from 'expo'
 
-const About = requireNativeModule<{ version(): string }>('TinystreamAbout')
+const About = requireNativeModule<{ version(): string; licenses(): Promise<string | null> }>('TinystreamAbout')
 
 /** The version the Rust crates were built as; the same as the app's. */
 export const nativeVersion = () => About.version()
+
+/** The THIRD_PARTY_LICENSES the APK carries; null in debug builds, which have none. */
+export const thirdPartyLicenses = () => About.licenses()

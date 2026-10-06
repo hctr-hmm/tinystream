@@ -38,6 +38,8 @@ export type TabOptions = {
   tabBarIcon?: (props: { focused: boolean; color: string; size: number }) => ReactNode
   /** What resting a finger on the tab does. Without it, a rest is just the start of a slide. */
   tabBarOnLongPress?: () => void
+  /** A count on the tab's icon, or a dot for `true`. */
+  tabBarBadge?: number | boolean
 }
 
 export type TabEvents = {
@@ -146,10 +148,13 @@ function TabsNavigator({ id, initialRouteName, backBehavior, children, layout, s
 
   const pager: Pager = { pos, to, drag, grab, land, load }
 
+  // Past a tab's first screen, a sideways swipe is the page's own (or going back), not the tabs'.
+  const deep = (state.routes[state.index].state?.index ?? 0) > 0
   const start = useSharedValue(0)
   const swipe = useMemo(
     () =>
       Gesture.Pan()
+        .enabled(!deep)
         .activeOffsetX([-16, 16])
         .failOffsetY([-12, 12])
         .onStart(() => {
@@ -171,7 +176,7 @@ function TabsNavigator({ id, initialRouteName, backBehavior, children, layout, s
         .onFinalize((_, success) => {
           if (!success && drag.value) land(to.value)
         }),
-    [count, width, pos, to, drag, start, grab, land, load],
+    [deep, count, width, pos, to, drag, start, grab, land, load],
   )
 
   return (
@@ -217,6 +222,7 @@ function Page({
     <Animated.View
       style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, width }, place]}
       importantForAccessibility={focused ? 'auto' : 'no-hide-descendants'}
+      pointerEvents={focused ? 'auto' : 'none'}
     >
       {children}
     </Animated.View>
