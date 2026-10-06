@@ -4,12 +4,15 @@ use native_support::Build;
 
 fn main() {
     let version = env!("CARGO_PKG_VERSION").strip_suffix(".0").unwrap_or(env!("CARGO_PKG_VERSION"));
+
     let b = Build::new(
         "ffmpeg",
         version,
         &["nasm", "va", "dav1d", "x264", "zimg", "freetype", "fribidi", "harfbuzz", "ass", "opus", "mp3lame"],
     );
+
     let lame = std::env::var("DEP_MP3LAME_PREFIX").expect("no metadata from lame-src");
+
     let args = [
         "--pkg-config-flags=--static".to_string(),
         format!("--extra-cflags={} -I{lame}/include", b.cflags()),
@@ -39,10 +42,13 @@ fn main() {
         "--enable-optimizations".into(),
         "--enable-runtime-cpudetect".into(),
     ];
+
     let url = format!("https://ffmpeg.org/releases/ffmpeg-{version}.tar.gz");
+
     b.once(&args.join(" "), |b| {
         b.fetch(&url, &[]);
         b.configure(&args.each_ref().map(String::as_str));
     });
+
     b.licenses(&url, &["LICENSE.md", "COPYING.GPLv2", "COPYING.LGPLv2.1"]);
 }

@@ -440,6 +440,7 @@ impl Default for Automation {
             every: Span(Duration::from_secs(every)),
             until: Span(Duration::from_secs(until)),
         };
+
         Self {
             default_monitor: Monitor::None,
             rss_interval: Span(Duration::from_secs(15 * 60)),
@@ -593,56 +594,73 @@ impl Config {
 
     fn validate(&self) -> Result<(), String> {
         let mut seen = std::collections::HashSet::new();
+
         for lib in &self.libraries {
             let name = lib.name.trim();
+
             if name.is_empty() {
                 return Err("every [[library]] needs a non-empty `name`".into());
             }
+
             if !seen.insert(name.to_lowercase()) {
                 return Err(format!("two libraries are called {name:?}; names must be unique"));
             }
+
             if lib.path.trim().is_empty() {
                 return Err(format!("library {name:?} needs a `path`"));
             }
+
             if lib.is_music() && (lib.managed || lib.metadata_provider.is_some() || lib.profile.is_some()) {
                 return Err(format!(
                     "library {name:?} is a music library; `managed`, `metadata-provider` and `profile` are for video"
                 ));
             }
         }
+
         let mut seen = std::collections::HashSet::new();
+
         for source in &self.sources {
             let name = source.name.trim();
+
             if name.is_empty() {
                 return Err("every [[source]] needs a non-empty `name`".into());
             }
+
             if !seen.insert(name.to_lowercase()) {
                 return Err(format!("two sources are called {name:?}; names must be unique"));
             }
+
             if url::Url::parse(source.url.replace("{query}", "x").trim()).is_err() {
                 return Err(format!("source {name:?}: {:?} isn't a URL", source.url));
             }
+
             if source.kind == SourceKind::Rss && !source.url.contains("{query}") && source.feed.is_none() {
                 return Err(format!(
                     "source {name:?}: an RSS source's `url` needs `{{query}}` where the search goes (or set only `feed`)"
                 ));
             }
         }
+
         let mut seen = std::collections::HashSet::new();
+
         for profile in &self.profiles {
             let name = profile.name.trim();
+
             if name.is_empty() {
                 return Err("every [[profile]] needs a non-empty `name`".into());
             }
+
             if !seen.insert(name.to_lowercase()) {
                 return Err(format!("two profiles are called {name:?}; names must be unique"));
             }
+
             for pattern in profile.require.iter().chain(&profile.reject) {
                 if let Err(e) = regex::RegexBuilder::new(pattern).case_insensitive(true).build() {
                     return Err(format!("profile {name:?}: {pattern:?} isn't a valid pattern: {e}"));
                 }
             }
         }
+
         for lib in &self.libraries {
             if let Some(p) = &lib.profile
                 && self.profile(p).is_none()
@@ -653,35 +671,43 @@ impl Config {
                 ));
             }
         }
+
         for t in [&self.downloads.slow_from, &self.downloads.slow_to].into_iter().flatten() {
             if parse_clock(t).is_none() {
                 return Err(format!("{t:?} isn't a time of day; write it like \"08:00\""));
             }
         }
+
         if let Some(proxy) = &self.downloads.proxy
             && !proxy.trim().is_empty()
         {
             let url =
                 url::Url::parse(proxy).map_err(|_| format!("proxy {proxy:?} isn't a URL like socks5://host:1080"))?;
+
             if !matches!(url.scheme(), "socks5" | "http") || url.host_str().is_none() {
                 return Err(format!("proxy {proxy:?} must look like socks5://host:1080 or http://host:8080"));
             }
         }
+
         if self.music.online_lyrics && url::Url::parse(self.music.lyrics_url.trim()).is_err() {
             return Err(format!("`[music] lyrics-url = {:?}` isn't a URL", self.music.lyrics_url));
         }
+
         if self.clips.concurrency == 0 {
             return Err("`[clips] concurrency` has to be at least 1".into());
         }
+
         if self.automation.retry.iter().any(|s| s.every.is_zero()) {
             return Err("every [automation] retry step needs a non-zero `every`".into());
         }
+
         if self.log.level.parse::<tracing::Level>().is_err() {
             return Err(format!(
                 "`[log] level = {:?}` isn't a level; use one of trace, debug, info, warn, error",
                 self.log.level
             ));
         }
+
         Ok(())
     }
 

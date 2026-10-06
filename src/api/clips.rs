@@ -80,6 +80,7 @@ async fn row(state: &AppState, me: i64, id: i64) -> ApiResult<Row> {
 
 async fn watchable(state: &AppState, user: &User, id: i64) -> ApiResult<Row> {
     let r = row(state, user.id, id).await?;
+
     if r.owner_id == user.id || r.shared_at.is_some() || user.is_admin {
         Ok(r)
     } else {
@@ -159,6 +160,7 @@ impl ClipSource<'_> {
         else {
             return Ok(None);
         };
+
         Video::load(ctx.state(), &Arc::new(Access::User(self.0.viewer.clone())), id).await
     }
 
@@ -309,18 +311,23 @@ impl Clip {
         if !self.manage() {
             return Ok(Vec::new());
         }
+
         let state = ctx.state();
+
         let rows: Vec<(i64, i64, bool)> =
             sqlx::query_as("SELECT user_id, shared_at, hidden FROM clip_shares WHERE clip_id = ? ORDER BY shared_at")
                 .bind(self.r.id)
                 .fetch_all(&state.db)
                 .await?;
+
         let mut out = Vec::new();
+
         for (user_id, shared_at, hidden) in rows {
             if let Some(user) = auth::load_user(state, user_id).await? {
                 out.push(ClipRecipient { user, shared_at, hidden });
             }
         }
+
         Ok(out)
     }
 
@@ -374,8 +381,10 @@ async fn allowance(state: &AppState, user: &User) -> ApiResult<ClipAllowance> {
     .bind(user.id)
     .fetch_one(&state.db)
     .await?;
+
     let p = &user.permissions;
     let config = state.config.current();
+
     Ok(ClipAllowance {
         can_clip: p.clip,
         can_link: config.clips.public_links && p.clip_links,
@@ -422,6 +431,7 @@ impl ClipQuery {
     ) -> ApiResult<Vec<Clip>> {
         let (state, user) = (ctx.state(), ctx.user()?);
         enabled(state)?;
+
         let filter = match scope {
             ClipScope::Received => "WHERE s.user_id = ?1 AND s.hidden = 0 ORDER BY s.shared_at DESC",
             ClipScope::Sent => {
@@ -432,16 +442,19 @@ impl ClipQuery {
                 "WHERE c.owner_id = ?1 AND c.screenshot = 0 AND c.state IN ('queued', 'rendering') ORDER BY c.created_at"
             },
         };
+
         let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} {filter} LIMIT 500")))
             .bind(user.id)
             .fetch_all(&state.db)
             .await?;
+
         Ok(rows.into_iter().map(|r| Clip { r, viewer: user.clone() }).collect())
     }
 
     async fn clip(&self, ctx: &Context<'_>, id: i64) -> ApiResult<Option<Clip>> {
         let (state, user) = (ctx.state(), ctx.user()?);
         enabled(state)?;
+
         match watchable(state, user, id).await {
             Ok(r) => Ok(Some(Clip { r, viewer: user.clone() })),
             Err(e) if e.status == StatusCode::NOT_FOUND => Ok(None),
@@ -458,6 +471,7 @@ impl ClipQuery {
     async fn clip_storage(&self, ctx: &Context<'_>) -> ApiResult<ClipStorage> {
         let (state, admin) = (ctx.state(), ctx.admin()?);
         let defaults = auth::permissions::defaults(state).await?;
+
         let rows: Vec<(i64, bool, String, i64, i64, i64)> = sqlx::query_as(
             "SELECT u.id, u.is_admin, u.permissions,
                     COALESCE(SUM(CASE WHEN c.state = 'ready' THEN c.bytes END), 0),
@@ -467,22 +481,29 @@ impl ClipQuery {
         )
         .fetch_all(&state.db)
         .await?;
+
         let mut usage = Vec::new();
+
         for (id, is_admin, overrides, bytes, rendered, clips) in rows {
             let p = auth::permissions::effective(is_admin, &auth::permissions::Overrides::parse(&overrides), &defaults);
+
             if let Some(user) = auth::load_user(state, id).await? {
                 usage.push(ClipUsage { user, bytes, rendered, clips, storage: p.clip_storage, limit: p.clip_limit });
             }
         }
+
         let public: Vec<Row> =
             sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE c.public = 1 ORDER BY c.created_at DESC")))
                 .bind(admin.id)
                 .fetch_all(&state.db)
                 .await?;
+
         let config = state.config.current();
+
         let bytes: i64 = sqlx::query_scalar("SELECT COALESCE(SUM(bytes), 0) FROM clips WHERE state = 'ready'")
             .fetch_one(&state.db)
             .await?;
+
         Ok(ClipStorage {
             usage,
             public_clips: public.into_iter().map(|r| Clip { r, viewer: admin.clone() }).collect(),
@@ -532,8 +553,10 @@ async fn source(state: &AppState, user: &User, media_id: i64, room: Option<(&str
         .bind(media_id)
         .fetch_optional(&state.db)
         .await?;
+
     let (path, item_id, library, show_title, kind, year, season, episode, episode_end) =
         row.ok_or_else(|| ApiError::not_found("video"))?;
+
     if user.can_access(state, &library).await.is_err() {
         let in_room = match room {
             Some((code, headers)) => super::together::enter(state, code, headers)
@@ -541,12 +564,15 @@ async fn source(state: &AppState, user: &User, media_id: i64, room: Option<(&str
                 .is_ok_and(|(r, u)| r.info().item_id == item_id && u.is_some_and(|u| u.id == user.id)),
             None => false,
         };
+
         if !in_room {
             return Err(ApiError::not_found("video"));
         }
     }
+
     let path = PathBuf::from(path);
     let (size, mtime) = clips::fingerprint(&path).ok_or_else(|| ApiError::not_found("video"))?;
+
     Ok(Source {
         media_id,
         item_id,
@@ -565,49 +591,61 @@ async fn check_recipe(state: &AppState, owner: &User, src: &Source, r: &RecipeIn
     if !owner.permissions.clip {
         return Err(ApiError::forbidden());
     }
+
     if !(r.start.is_finite() && r.end.is_finite()) || r.start < 0.0 || r.end - r.start < 0.5 {
         return Err(ApiError::bad_request("pick a range at least half a second long"));
     }
+
     let max = owner.permissions.clip_max_length;
+
     if max > 0 && r.end - r.start > max as f64 + 0.05 {
         return Err(ApiError::bad_request(format!("clips can be up to {max} seconds long")));
     }
+
     if !HEIGHTS.contains(&r.height) {
         return Err(ApiError::bad_request("pick 1080p, 720p or 480p"));
     }
+
     let info = state
         .media
         .probe(&src.path)
         .await
         .map_err(|e| ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, format!("can't read this file: {e:#}")))?;
+
     if let Some(d) = info.duration
         && r.end > d + 0.5
     {
         return Err(ApiError::bad_request("the clip runs past the end of the video"));
     }
+
     if let Some(a) = r.audio
         && !info.audio.iter().any(|t| t.index as i64 == a)
     {
         return Err(ApiError::bad_request("there's no such audio track"));
     }
+
     if let Some(s) = &r.subtitles {
         let t = info
             .subtitles
             .iter()
             .find(|t| &t.id == s)
             .ok_or_else(|| ApiError::bad_request("there's no such subtitle track"))?;
+
         if !t.supported && !BITMAP_SUBTITLES.contains(&t.codec.as_str()) {
             return Err(ApiError::bad_request(format!("{} subtitles can't be burned in", t.codec)));
         }
     }
+
     Ok(())
 }
 
 async fn check_space(state: &AppState, owner: &User) -> ApiResult<()> {
     let p = &owner.permissions;
+
     if !clips::pinned(state, owner.id).await || (p.clip_storage == 0 && p.clip_limit == 0) {
         return Ok(());
     }
+
     let (bytes, count): (i64, i64) = sqlx::query_as(
         "SELECT COALESCE(SUM(bytes), 0), COUNT(CASE WHEN screenshot = 0 THEN 1 END) FROM clips
          WHERE owner_id = ? AND state = 'ready' AND public = 1",
@@ -615,13 +653,16 @@ async fn check_space(state: &AppState, owner: &User) -> ApiResult<()> {
     .bind(owner.id)
     .fetch_one(&state.db)
     .await?;
+
     let full = (p.clip_storage > 0 && bytes as u64 >= p.clip_storage as u64 * 1024 * 1024)
         || (p.clip_limit > 0 && count as u64 >= p.clip_limit as u64);
+
     if full {
         return Err(ApiError::conflict(
             "your public clips and screenshots take up all your clip space; turn off some links or delete some first",
         ));
     }
+
     Ok(())
 }
 
@@ -680,10 +721,13 @@ impl ClipMutation {
         let src = source(state, user, input.video_id, input.room.as_deref().map(|r| (r, headers))).await?;
         check_recipe(state, user, &src, &input.recipe).await?;
         check_space(state, user).await?;
+
         if input.public && !clips::pinned(state, user.id).await {
             return Err(ApiError::new(StatusCode::FORBIDDEN, "you can't make public links"));
         }
+
         let r = &input.recipe;
+
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO clips (code, owner_id, title, media_id, item_id, library, source_path, source_size, source_mtime,
                 show_title, kind, label, year, range_start, range_end, audio, subtitles, height, half_rate, public, created_at)
@@ -712,6 +756,7 @@ impl ClipMutation {
         .bind(now())
         .fetch_one(&state.db)
         .await?;
+
         tracing::info!(
             "{} clipped {:.1}s of {} {}",
             user.username,
@@ -719,10 +764,13 @@ impl ClipMutation {
             src.show_title,
             src.label.as_deref().unwrap_or_default()
         );
+
         state.clips.enqueue(state, id, user.id);
+
         if !input.recipients.is_empty() {
             share_with(state, user, id, &input.recipients).await?;
         }
+
         clips::changed(state, id).await;
         clip(state, user, id).await
     }
@@ -730,35 +778,44 @@ impl ClipMutation {
     async fn take_screenshot(&self, ctx: &Context<'_>, input: NewScreenshot) -> ApiResult<Clip> {
         let (state, user) = (ctx.state(), ctx.user()?);
         enabled(state)?;
+
         if !user.permissions.clip {
             return Err(ApiError::forbidden());
         }
+
         let headers = &ctx.session().headers;
         let src = source(state, user, input.video_id, input.room.as_deref().map(|r| (r, headers))).await?;
+
         if !input.at.is_finite() || input.at < 0.0 {
             return Err(ApiError::bad_request("pick a moment in the video"));
         }
+
         let info = state
             .media
             .probe(&src.path)
             .await
             .map_err(|e| ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, format!("can't read this file: {e:#}")))?;
+
         if info.video.is_none() {
             return Err(ApiError::bad_request("this file has no picture"));
         }
 
         let at = info.duration.map_or(input.at, |d| input.at.min((d - 0.1).max(0.0)));
+
         if let Some(sub) = &input.subtitles {
             let t = info
                 .subtitles
                 .iter()
                 .find(|t| &t.id == sub)
                 .ok_or_else(|| ApiError::bad_request("there's no such subtitle track"))?;
+
             if !t.supported && !BITMAP_SUBTITLES.contains(&t.codec.as_str()) {
                 return Err(ApiError::bad_request(format!("{} subtitles can't be burned in", t.codec)));
             }
         }
+
         check_space(state, user).await?;
+
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO clips (code, owner_id, media_id, item_id, library, source_path, source_size, source_mtime,
                 show_title, kind, label, year, range_start, range_end, subtitles, height, screenshot, created_at)
@@ -782,16 +839,19 @@ impl ClipMutation {
         .bind(now())
         .fetch_one(&state.db)
         .await?;
+
         if let Err(e) = state.clips.shoot(state, id).await {
             clips::delete(state, id, user.id).await?;
             return Err(ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, format!("couldn't take a screenshot: {e:#}")));
         }
+
         tracing::info!(
             "{} took a screenshot of {} {}",
             user.username,
             src.show_title,
             src.label.as_deref().unwrap_or_default()
         );
+
         clip(state, user, id).await
     }
 
@@ -800,6 +860,7 @@ impl ClipMutation {
         enabled(state)?;
         let r = manageable(state, user, id).await?;
         let owner = auth::load_user(state, r.owner_id).await?.ok_or_else(|| ApiError::not_found("clip"))?;
+
         if let Some(t) = &input.name {
             sqlx::query("UPDATE clips SET title = ? WHERE id = ?")
                 .bind(clean_title(t))
@@ -807,19 +868,23 @@ impl ClipMutation {
                 .execute(&state.db)
                 .await?;
         }
+
         if let Some(public) = input.public {
             if public && !clips::pinned(state, owner.id).await {
                 return Err(ApiError::new(StatusCode::FORBIDDEN, "public links aren't allowed for this clip's owner"));
             }
+
             sqlx::query("UPDATE clips SET public = ? WHERE id = ?").bind(public).bind(id).execute(&state.db).await?;
 
             if public && r.state == "evicted" {
                 queue(state, &r).await?;
             }
+
             if !public {
                 clips::make_room(state, owner.id).await?;
             }
         }
+
         if let Some(recipe) = &input.recipe {
             if r.screenshot {
                 return Err(ApiError::bad_request("a screenshot can't be changed; take another"));
@@ -837,11 +902,14 @@ impl ClipMutation {
             let src = source(state, &owner, media_id, None)
                 .await
                 .map_err(|_| ApiError::conflict("the clip's owner can't see this video anymore"))?;
+
             check_recipe(state, &owner, &src, recipe).await?;
             state.clips.cancel(id);
+
             if let Ok(f) = clips::file(state, owner.id, id) {
                 clips::remove_files(&f);
             }
+
             sqlx::query(
                 "UPDATE clips SET media_id = ?, source_path = ?, source_size = ?, source_mtime = ?, range_start = ?,
                     range_end = ?, audio = ?, subtitles = ?, height = ?, half_rate = ?, state = 'queued', error = NULL,
@@ -860,8 +928,10 @@ impl ClipMutation {
             .bind(id)
             .execute(&state.db)
             .await?;
+
             state.clips.enqueue(state, id, owner.id);
         }
+
         clips::changed(state, id).await;
         clip(state, user, id).await
     }
@@ -870,9 +940,11 @@ impl ClipMutation {
         let (state, user) = (ctx.state(), ctx.user()?);
         let r = manageable(state, user, id).await?;
         clips::delete(state, id, r.owner_id).await?;
+
         if r.owner_id != user.id {
             tracing::info!("{} deleted a clip of {}'s", user.username, r.owner_name);
         }
+
         Ok(id)
     }
 
@@ -882,6 +954,7 @@ impl ClipMutation {
         let r = watchable(state, user, id).await?;
         let manage = r.owner_id == user.id || user.is_admin;
         let missing = r.state == "evicted" || (r.state == "ready" && on_disk(state, &r).is_none());
+
         if missing || (r.state == "failed" && manage) {
             match source_status(state, &r).await? {
                 SourceStatus::Gone => {
@@ -901,27 +974,34 @@ impl ClipMutation {
                 },
                 SourceStatus::Ok => {},
             }
+
             let owner = auth::load_user(state, r.owner_id).await?.ok_or_else(|| ApiError::not_found("clip"))?;
+
             if !owner.permissions.clip {
                 return Err(ApiError::conflict(
                     "this clip's owner can't make clips anymore, so it can't be rendered again",
                 ));
             }
+
             queue(state, &r).await?;
         }
+
         clip(state, user, id).await
     }
 
     async fn cancel_clip_render(&self, ctx: &Context<'_>, id: i64) -> ApiResult<Clip> {
         let (state, user) = (ctx.state(), ctx.user()?);
         manageable(state, user, id).await?;
+
         if !state.clips.cancel(id) {
             sqlx::query("UPDATE clips SET state = 'failed', error = 'Stopped' WHERE id = ? AND state IN ('queued', 'rendering')")
                 .bind(id)
                 .execute(&state.db)
                 .await?;
+
             clips::changed(state, id).await;
         }
+
         clip(state, user, id).await
     }
 
@@ -937,56 +1017,68 @@ impl ClipMutation {
     async fn unshare_clip(&self, ctx: &Context<'_>, id: i64, user_id: i64) -> ApiResult<Clip> {
         let (state, user) = (ctx.state(), ctx.user()?);
         manageable(state, user, id).await?;
+
         sqlx::query("DELETE FROM clip_shares WHERE clip_id = ? AND user_id = ?")
             .bind(id)
             .bind(user_id)
             .execute(&state.db)
             .await?;
+
         sqlx::query("DELETE FROM notifications WHERE user_id = ? AND link = ?")
             .bind(user_id)
             .bind(format!("/clips?clip={id}"))
             .execute(&state.db)
             .await?;
+
         state.events.send(Event::NotificationsChanged { user_id });
+
         state.events.send(Event::ClipChanged {
             clip_id: id,
             users: vec![user_id],
             state: "deleted".into(),
             progress: None,
         });
+
         clips::changed(state, id).await;
         clip(state, user, id).await
     }
 
     async fn hide_clip(&self, ctx: &Context<'_>, id: i64) -> ApiResult<i64> {
         let (state, user) = (ctx.state(), ctx.user()?);
+
         sqlx::query("UPDATE clip_shares SET hidden = 1 WHERE clip_id = ? AND user_id = ?")
             .bind(id)
             .bind(user.id)
             .execute(&state.db)
             .await?;
+
         state.events.send(Event::ClipChanged {
             clip_id: id,
             users: vec![user.id],
             state: "hidden".into(),
             progress: None,
         });
+
         Ok(id)
     }
 
     async fn drop_clip_renders(&self, ctx: &Context<'_>) -> ApiResult<usize> {
         let (state, admin) = (ctx.state(), ctx.admin()?);
+
         let rows: Vec<(i64, i64)> = sqlx::query_as(
             "UPDATE clips SET state = 'evicted', bytes = NULL WHERE state = 'ready' RETURNING id, owner_id",
         )
         .fetch_all(&state.db)
         .await?;
+
         for &(id, owner) in &rows {
             if let Ok(f) = clips::file(state, owner, id) {
                 clips::remove_files(&f);
             }
+
             clips::changed(state, id).await;
         }
+
         tracing::info!("{} dropped all {} clip renders", admin.username, rows.len());
         Ok(rows.len())
     }
@@ -1018,17 +1110,22 @@ pub async fn still(
     headers: HeaderMap,
 ) -> ApiResult<Response> {
     enabled(&state)?;
+
     if !user.permissions.clip {
         return Err(ApiError::forbidden());
     }
+
     let src = source(&state, &user, media_id, q.room.as_deref().map(|r| (r, &headers))).await?;
+
     let sub = clips::subtitle_source(&state, &src.path, &q.subtitles)
         .await
         .map_err(|e| ApiError::bad_request(format!("{e:#}")))?;
+
     let (dir, default) = clips::fonts(&state)?;
     let info = state.media.probe(&src.path).await?;
     let (w, h) = info.video.as_ref().map(|v| (v.width, v.height)).ok_or_else(|| ApiError::not_found("video"))?;
     let (path, at) = (src.path.clone(), q.at.max(0.0));
+
     let jpeg = tokio::task::spawn_blocking(move || {
         const WIDTH: i32 = 960;
         let fonts = burn::Fonts { dir: dir.as_deref(), default: &default };
@@ -1038,6 +1135,7 @@ pub async fn still(
     })
     .await
     .map_err(|e| ApiError::from(anyhow::anyhow!(e)))??;
+
     Ok(([(header::CONTENT_TYPE, "image/jpeg"), (header::CACHE_CONTROL, "private, max-age=3600")], jpeg).into_response())
 }
 
@@ -1047,7 +1145,9 @@ async fn share_with(state: &AppState, user: &User, id: i64, users: &[i64]) -> Ap
             .bind(id)
             .fetch_one(&state.db)
             .await?;
+
     let mut added = Vec::new();
+
     for &u in users.iter().filter(|&&u| u != owner) {
         let inserted = sqlx::query(
             "INSERT INTO clip_shares (clip_id, user_id, shared_at) SELECT ?, id, ? FROM users WHERE id = ?
@@ -1059,6 +1159,7 @@ async fn share_with(state: &AppState, user: &User, id: i64, users: &[i64]) -> Ap
         .execute(&state.db)
         .await?
         .rows_affected();
+
         if inserted > 0 {
             added.push(u);
         } else {
@@ -1072,8 +1173,10 @@ async fn share_with(state: &AppState, user: &User, id: i64, users: &[i64]) -> Ap
             .await?;
         }
     }
+
     if !added.is_empty() {
         let about = [show, label.unwrap_or_default()].join(" ").trim().to_string();
+
         notifications::send(
             state,
             &added,
@@ -1089,8 +1192,10 @@ async fn share_with(state: &AppState, user: &User, id: i64, users: &[i64]) -> Ap
             },
         )
         .await;
+
         tracing::info!("{} sent clip #{id} to {} people", user.username, added.len());
     }
+
     Ok(())
 }
 
@@ -1125,9 +1230,11 @@ async fn serve_file(
 
     let first =
         req.headers().get(header::RANGE).and_then(|v| v.to_str().ok()).is_none_or(|v| v.starts_with("bytes=0-"));
+
     if first {
         sqlx::query("UPDATE clips SET viewed_at = ? WHERE id = ?").bind(now()).bind(r.id).execute(&state.db).await?;
     }
+
     let Ok(res) = ServeFile::new(file).oneshot(req).await;
     let mut res = res.map(Body::new);
     let h = res.headers_mut();
@@ -1135,9 +1242,11 @@ async fn serve_file(
     h.insert(header::CACHE_CONTROL, HeaderValue::from_str(&format!("{cache}, max-age=3600")).unwrap());
     h.insert("cross-origin-resource-policy", HeaderValue::from_static("cross-origin"));
     let disposition = if download { "attachment" } else { "inline" };
+
     if let Ok(v) = HeaderValue::from_str(&content_disposition(disposition, &filename(r))) {
         h.insert(header::CONTENT_DISPOSITION, v);
     }
+
     Ok(res)
 }
 
@@ -1149,6 +1258,7 @@ pub async fn poster(State(state): State<Arc<AppState>>, user: User, Path(id): Pa
 async fn serve_poster(state: &AppState, r: &Row, cache: &str) -> ApiResult<Response> {
     let file = clips::file(state, r.owner_id, r.id)?.with_extension("jpg");
     let data = tokio::fs::read(&file).await.map_err(|_| ApiError::not_found("picture"))?;
+
     Ok((
         [
             (header::CONTENT_TYPE, "image/jpeg".to_string()),
@@ -1166,6 +1276,7 @@ fn filename(r: &Row) -> String {
         (_, Some(y)) if r.kind == "movie" => format!("{} ({y})", r.show_title),
         _ => r.show_title.clone(),
     };
+
     let what = if r.title.is_empty() {
         let s = r.range_start as i64;
         let kind = if r.screenshot { "Screenshot" } else { "Clip" };
@@ -1173,6 +1284,7 @@ fn filename(r: &Row) -> String {
     } else {
         r.title.clone()
     };
+
     let name: String =
         format!("{source} - {what}")
             .chars()
@@ -1184,6 +1296,7 @@ fn filename(r: &Row) -> String {
                 }
             })
             .collect();
+
     let ext = if r.screenshot { "png" } else { "mp4" };
     format!("{}.{ext}", name.split_whitespace().collect::<Vec<_>>().join(" "))
 }
@@ -1191,6 +1304,7 @@ fn filename(r: &Row) -> String {
 fn content_disposition(kind: &str, name: &str) -> String {
     let ascii: String = name.chars().map(|c| if c.is_ascii() && c != '"' && c != '\\' { c } else { '_' }).collect();
     let mut encoded = String::new();
+
     for b in name.bytes() {
         if b.is_ascii_alphanumeric() || b"-._~".contains(&b) {
             encoded.push(b as char);
@@ -1198,26 +1312,31 @@ fn content_disposition(kind: &str, name: &str) -> String {
             encoded.push_str(&format!("%{b:02X}"));
         }
     }
+
     format!("{kind}; filename=\"{ascii}\"; filename*=UTF-8''{encoded}")
 }
 
 async fn public_clip(state: &AppState, code: &str) -> Option<Row> {
     let config = state.config.current();
+
     if !config.clips.enabled || !config.clips.public_links {
         return None;
     }
+
     let r: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE c.code = ?2 AND c.public = 1")))
         .bind(0)
         .bind(code)
         .fetch_optional(&state.db)
         .await
         .ok()??;
+
     clips::pinned(state, r.owner_id).await.then_some(r)
 }
 
 async fn revive(state: &Arc<AppState>, r: &Row) {
     if r.state == "evicted" || (r.state == "ready" && on_disk(state, r).is_none()) {
         let can = auth::load_user(state, r.owner_id).await.ok().flatten().is_some_and(|u| u.permissions.clip);
+
         if can
             && let Ok(src) = clips::source_file(state, r.media_id, &r.source_path).await
             && src.as_deref().and_then(clips::fingerprint) == Some((r.source_size, r.source_mtime))
@@ -1231,6 +1350,7 @@ fn origin(headers: &HeaderMap) -> String {
     let get = |k: &str| {
         headers.get(k).and_then(|v| v.to_str().ok()).map(|v| v.split(',').next().unwrap_or(v).trim().to_string())
     };
+
     let proto = get("x-forwarded-proto").unwrap_or_else(|| "http".into());
     let host = get("x-forwarded-host").or_else(|| get("host")).unwrap_or_else(|| "localhost".into());
     format!("{proto}://{host}")
@@ -1257,6 +1377,7 @@ pub async fn page(
     headers: HeaderMap,
 ) -> Response {
     let theme = super::appearance::public_head(&state).await.unwrap_or_default();
+
     let Some(r) = public_clip(&state, &code).await else {
         return (
             StatusCode::NOT_FOUND,
@@ -1264,6 +1385,7 @@ pub async fn page(
         )
             .into_response();
     };
+
     revive(&state, &r).await;
     let base = origin(&headers);
     let page_url = format!("{base}/c/{code}");
@@ -1285,6 +1407,7 @@ pub async fn page(
             escape(&video),
             escape(&poster)
         );
+
         return Html(format!(
             "<!doctype html><html><head><meta charset=utf-8><meta name=robots content=noindex><title>{}</title></head>\
              <body style=\"margin:0;background:#000\">{body}</body></html>",
@@ -1327,6 +1450,7 @@ pub async fn page(
             String::new()
         },
     );
+
     let body = if ready {
         format!(
             r#"<video src="{video}" poster="{poster}" controls playsinline preload="metadata"></video>
@@ -1342,6 +1466,7 @@ pub async fn page(
             escape(&title)
         )
     };
+
     let refresh = if ready { "" } else { r#"<meta http-equiv="refresh" content="5">"# };
     Html(shell(&title, &format!("{meta}\n{theme}\n{refresh}"), &body)).into_response()
 }
@@ -1350,12 +1475,15 @@ fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, re
     let page_url = format!("{base}/c/{code}");
     let image = format!("{base}/c/{code}/image.png");
     let at = r.range_start as i64;
+
     let at = if at >= 3600 {
         format!("{}:{:02}:{:02}", at / 3600, at / 60 % 60, at % 60)
     } else {
         format!("{}:{:02}", at / 60, at % 60)
     };
+
     let (w, h) = (r.width_px.unwrap_or(1920), r.height_px.unwrap_or(1080));
+
     let meta = format!(
         r##"<meta name="robots" content="noindex">
 <meta property="og:site_name" content="tinystream">
@@ -1380,6 +1508,7 @@ fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, re
             String::new()
         },
     );
+
     let body = if ready {
         format!(
             r#"<a href="{image}"><img src="{image}" alt="{title}" width="{w}" height="{h}"></a>
@@ -1394,6 +1523,7 @@ fn screenshot_page(r: &Row, base: &str, code: &str, title: &str, about: &str, re
             escape(title)
         )
     };
+
     let refresh = if ready { "" } else { r#"<meta http-equiv="refresh" content="3">"# };
     shell(title, &format!("{meta}\n{theme}\n{refresh}"), &body)
 }
@@ -1445,10 +1575,12 @@ pub async fn public_file(
 ) -> ApiResult<Response> {
     let r = public_clip(&state, &code).await.ok_or_else(|| ApiError::not_found("clip"))?;
     revive(&state, &r).await;
+
     match serve_file(&state, &r, q.download.is_some(), req, "public").await {
         Err(e) if e.status == StatusCode::CONFLICT => {
             let mut res =
                 (StatusCode::SERVICE_UNAVAILABLE, "this clip is being prepared; try again in a moment").into_response();
+
             res.headers_mut().insert(header::RETRY_AFTER, HeaderValue::from_static("5"));
             Ok(res)
         },
@@ -1471,39 +1603,48 @@ fn buckets() -> &'static Mutex<HashMap<IpAddr, (f64, Instant)>> {
 
 fn client(req: &Request) -> Option<IpAddr> {
     let peer = req.extensions().get::<ConnectInfo<SocketAddr>>()?.0.ip();
+
     let local = match peer {
         IpAddr::V4(v4) => v4.is_loopback() || v4.is_private() || v4.is_link_local(),
         IpAddr::V6(v6) => v6.is_loopback() || v6.is_unique_local() || v6.is_unicast_link_local(),
     };
+
     if local {
         let forwarded = req.headers().get("x-forwarded-for").and_then(|v| v.to_str().ok());
+
         if let Some(ip) = forwarded.and_then(|v| v.rsplit(',').next()).and_then(|v| v.trim().parse().ok()) {
             return Some(ip);
         }
+
         if let Some(ip) =
             req.headers().get("x-real-ip").and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse().ok())
         {
             return Some(ip);
         }
     }
+
     Some(peer)
 }
 
 pub async fn rate_limit(req: Request, next: Next) -> Response {
     if let Some(ip) = client(&req) {
         let mut b = buckets().lock().unwrap();
+
         if b.len() > 50_000 {
             b.retain(|_, (tokens, at)| *tokens + at.elapsed().as_secs_f64() * PER_SECOND < BURST);
         }
+
         let (tokens, at) = b.entry(ip).or_insert((BURST, Instant::now()));
         *tokens = (*tokens + at.elapsed().as_secs_f64() * PER_SECOND).min(BURST);
         *at = Instant::now();
+
         if *tokens < 1.0 {
             drop(b);
             let mut res = (StatusCode::TOO_MANY_REQUESTS, "slow down a little").into_response();
             res.headers_mut().insert(header::RETRY_AFTER, HeaderValue::from_static("10"));
             return res;
         }
+
         *tokens -= 1.0;
     }
     next.run(req).await

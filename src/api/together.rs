@@ -27,16 +27,20 @@ use crate::together::{Command, ENDED, Room, Tracks, now_ms};
 pub(super) async fn enter(state: &AppState, code: &str, headers: &HeaderMap) -> ApiResult<(Arc<Room>, Option<User>)> {
     let room = state.together.open(&state.db, code).await?.ok_or_else(|| ApiError::not_found("room"))?;
     let info = room.info();
+
     let user = match auth::token_from(headers) {
         Some(t) => auth::user_from_token(state, &t).await?,
         None => None,
     };
 
     let host = auth::load_user(state, info.host_id).await?.ok_or_else(|| ApiError::not_found("room"))?;
+
     if !host.permissions.watch_together {
         return Err(ApiError::not_found("room"));
     }
+
     let public = info.public && host.permissions.share_links;
+
     let allowed = public
         || match &user {
             Some(u) => {
@@ -46,6 +50,7 @@ pub(super) async fn enter(state: &AppState, code: &str, headers: &HeaderMap) -> 
             },
             None => false,
         };
+
     if !allowed {
         return Err(match user {
             None => ApiError::new(StatusCode::UNAUTHORIZED, "sign in to join this room"),
@@ -54,6 +59,7 @@ pub(super) async fn enter(state: &AppState, code: &str, headers: &HeaderMap) -> 
             },
         });
     }
+
     Ok((room, user))
 }
 
@@ -63,9 +69,11 @@ async fn room_media(state: &AppState, room: &Room, id: i64) -> ApiResult<(PathBu
         .fetch_optional(&state.db)
         .await?
         .ok_or_else(|| ApiError::not_found("video"))?;
+
     if item_id != room.info().item_id {
         return Err(ApiError::not_found("video"));
     }
+
     Ok((PathBuf::from(path), item_id))
 }
 
@@ -166,18 +174,23 @@ impl RoomMutation {
     async fn start_room(&self, ctx: &Context<'_>, input: NewRoom) -> ApiResult<RoomView> {
         let state = ctx.state();
         let user = ctx.allowed(|p| p.watch_together)?;
+
         let (item_id, library): (i64, String) =
             sqlx::query_as("SELECT m.item_id, i.library FROM media m JOIN items i ON i.id = m.item_id WHERE m.id = ?")
                 .bind(input.video_id)
                 .fetch_optional(&state.db)
                 .await?
                 .ok_or_else(|| ApiError::not_found("video"))?;
+
         user.can_access(state, &library).await?;
+
         if input.public && !user.permissions.share_links {
             return Err(ApiError::new(StatusCode::FORBIDDEN, "you can't make public links"));
         }
+
         let position = if input.position.is_finite() { input.position } else { 0.0 };
         let t = input.tracks;
+
         let room = state
             .together
             .create(
@@ -201,6 +214,7 @@ impl RoomMutation {
                 },
             )
             .await?;
+
         tracing::info!("{} started watching together", user.username);
         Ok(RoomView { room, user: Some(user.clone()), host: user.clone() })
     }
@@ -224,6 +238,7 @@ pub async fn socket(
     ws: WebSocketUpgrade,
 ) -> ApiResult<Response> {
     let (room, user) = enter(&state, &code, &headers).await?;
+
     let name = match &user {
         Some(u) => u.username.clone(),
         None => q
@@ -232,6 +247,7 @@ pub async fn socket(
             .filter(|n| !n.is_empty() && !n.chars().any(char::is_control))
             .unwrap_or_else(|| format!("Guest {}", GUEST_NAMES.choose(&mut rand::rng()).unwrap_or(&"Guest"))),
     };
+
     Ok(ws.on_upgrade(move |socket| connection(state, room, user, name, socket)))
 }
 
@@ -240,8 +256,10 @@ async fn connection(state: Arc<AppState>, room: Arc<Room>, user: Option<User>, n
     let me = room.join(name, user.as_ref().map(|u| u.id), user.as_ref().and_then(|u| u.avatar));
     let (mut out, mut incoming) = socket.split();
     let welcome = json!({ "type": "welcome", "you": me, "serverTime": now_ms() }).to_string();
+
     let mut ok = out.send(Message::Text(welcome.into())).await.is_ok()
         && out.send(Message::Text(room.current().to_string().into())).await.is_ok();
+
     while ok {
         tokio::select! {
             msg = incoming.next() => match msg {
@@ -256,6 +274,7 @@ async fn connection(state: Arc<AppState>, room: Arc<Room>, user: Option<User>, n
             update = updates.recv() => match update {
                 Ok(snapshot) => {
                     ok = out.send(Message::Text(snapshot.to_string().into())).await.is_ok();
+
                     if &*snapshot == ENDED {
                         break;
                     }
@@ -266,6 +285,7 @@ async fn connection(state: Arc<AppState>, room: Arc<Room>, user: Option<User>, n
             },
         }
     }
+
     if room.leave(me)
         && let Err(e) = state.together.save(&state.db, &room).await
     {
@@ -281,8 +301,10 @@ async fn handle(state: &AppState, room: &Arc<Room>, me: u64, user: Option<&User>
     let Ok(cmd) = serde_json::from_str::<Command>(text) else {
         return Some(error("didn't understand that"));
     };
+
     let info = room.info();
     let is_host = user.is_some_and(|u| u.id == info.host_id);
+
     let result = match cmd {
         Command::Ping { id, c } => return Some(json!({ "type": "pong", "id": id, "c": c, "s": now_ms() }).to_string()),
         Command::Media { id, from } => {
@@ -322,6 +344,7 @@ async fn handle(state: &AppState, room: &Arc<Room>, me: u64, user: Option<&User>
                 if let Err(e) = state.together.end(&state.db, &room.code).await {
                     tracing::warn!("can't end the room: {e}");
                 }
+
                 notifications::withdraw(state, &format!("/together/{}", room.code)).await;
                 Ok(())
             } else {
@@ -330,6 +353,7 @@ async fn handle(state: &AppState, room: &Arc<Room>, me: u64, user: Option<&User>
         },
         other => room.command(me, other),
     };
+
     result.err().map(error)
 }
 
@@ -440,8 +464,10 @@ pub async fn avatar(
     headers: HeaderMap,
 ) -> ApiResult<Response> {
     let (room, _) = enter(&state, &code, &headers).await?;
+
     if !room.has_user(user_id) {
         return Err(ApiError::not_found("picture"));
     }
+
     Ok(users::avatar_image(&state, user_id).await?.into_response())
 }

@@ -208,11 +208,14 @@ mod tests {
     fn schema_file_is_current() {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/packages/shared/schema.graphql");
         let sdl = super::sdl();
+
         if std::env::var_os("TINYSTREAM_WRITE_SCHEMA").is_some() {
             std::fs::write(path, &sdl).unwrap();
             return;
         }
+
         let current = std::fs::read_to_string(path).unwrap_or_default();
+
         assert!(
             current == sdl,
             "packages/shared/schema.graphql is out of date; run `TINYSTREAM_WRITE_SCHEMA=1 cargo test schema_file_is_current`, \

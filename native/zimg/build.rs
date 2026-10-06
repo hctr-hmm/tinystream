@@ -13,11 +13,14 @@ fn main() {
         "--with-pic".into(),
         format!("CXXFLAGS={}", b.cflags()),
     ];
+
     let (url, branch) = ("https://github.com/sekrit-twc/zimg.git", format!("release-{VERSION}"));
+
     b.once(&args.join(" "), |b| {
         b.git(url, &branch);
         b.exec(&mut b.cmd("./autogen.sh"));
         b.configure(&args.each_ref().map(String::as_str));
     });
+
     b.licenses(&format!("{url} ({branch})"), &["COPYING"]);
 }

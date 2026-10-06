@@ -9,6 +9,7 @@ fn main() {
 
     let dep = |key: &str| env::var(format!("DEP_TORRENT_RASTERBAR_{key}")).unwrap();
     let mut shim = cxx_build::bridge("src/lib.rs");
+
     shim.file("src/shim.cpp")
         .std("c++17")
         .include(dep("INCLUDE"))
@@ -23,6 +24,7 @@ fn main() {
             None => shim.define(define, None),
         };
     }
+
     shim.compile("tinystream-libtorrent-shim");
 
     println!("cargo:rustc-link-search=native={}", dep("LIB"));

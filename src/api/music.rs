@@ -192,6 +192,7 @@ impl TrackView {
 
     async fn gains(&self) -> Gains {
         let g = self.t.gains();
+
         Gains {
             track_gain: g.track_gain,
             track_peak: g.track_peak,
@@ -230,6 +231,7 @@ pub(super) async fn track_views(
 ) -> ApiResult<Vec<TrackView>> {
     let ids: Vec<i64> = tracks.iter().map(|t| t.id).collect();
     let artists = catalog::track_artists(&state.db, &ids).await?;
+
     let data = match user_id {
         Some(u) => {
             let paths: Vec<String> = tracks.iter().map(|t| t.path.clone()).collect();
@@ -237,6 +239,7 @@ pub(super) async fn track_views(
         },
         None => HashMap::new(),
     };
+
     Ok(tracks
         .into_iter()
         .map(|t| TrackView {
@@ -332,6 +335,7 @@ impl AlbumView {
     async fn cover(&self) -> Option<String> {
         let found = self.a.cover_track.is_some()
             || crate::library::local_art(FsPath::new(&self.a.dir), crate::library::music::COVER_NAMES).is_some();
+
         found.then(|| format!("/api/music/albums/{}/cover", self.a.id))
     }
 
@@ -377,6 +381,7 @@ pub(super) async fn album_views(state: &AppState, user_id: i64, albums: Vec<Albu
     let mut data = catalog::user_data(&state.db, user_id, Kind::Album, &targets).await?;
     let plays = catalog::album_plays(&state.db, user_id, &ids).await?;
     let mut artists = catalog::album_artists(&state.db, &ids).await?;
+
     Ok(albums
         .into_iter()
         .map(|a| AlbumView {
@@ -466,6 +471,7 @@ impl ArtistView {
 pub(super) async fn artist_views(state: &AppState, user_id: i64, artists: Vec<Artist>) -> ApiResult<Vec<ArtistView>> {
     let targets: Vec<String> = artists.iter().map(Artist::target).collect();
     let mut data = catalog::user_data(&state.db, user_id, Kind::Artist, &targets).await?;
+
     Ok(artists
         .into_iter()
         .map(|r| ArtistView { data: data.remove(&r.target()).unwrap_or_default(), user_id, r })
@@ -530,6 +536,7 @@ impl PlaylistView {
         .bind(self.p.id)
         .fetch_all(&ctx.state().db)
         .await?;
+
         Ok(ids.into_iter().map(|id| format!("/api/music/albums/{id}/cover")).collect())
     }
 
@@ -664,6 +671,7 @@ pub struct NewAppPassword {
 
 pub(super) fn libraries(state: &AppState, user: &User, library: Option<&str>) -> ApiResult<Vec<String>> {
     let all = crate::music::libraries(state, user);
+
     match library {
         Some(l) if all.iter().any(|x| x == l) => Ok(vec![l.to_string()]),
         Some(_) => Err(ApiError::not_found("library")),
@@ -673,25 +681,31 @@ pub(super) fn libraries(state: &AppState, user: &User, library: Option<&str>) ->
 
 async fn visible_track(state: &AppState, user: &User, id: i64) -> ApiResult<Track> {
     let t = catalog::track(&state.db, id).await?.ok_or_else(|| ApiError::not_found("track"))?;
+
     if !crate::music::libraries(state, user).contains(&t.library) {
         return Err(ApiError::not_found("track"));
     }
+
     Ok(t)
 }
 
 async fn visible_album(state: &AppState, user: &User, id: i64) -> ApiResult<Album> {
     let a = catalog::album(&state.db, id).await?.ok_or_else(|| ApiError::not_found("album"))?;
+
     if !crate::music::libraries(state, user).contains(&a.library) {
         return Err(ApiError::not_found("album"));
     }
+
     Ok(a)
 }
 
 async fn visible_artist(state: &AppState, user: &User, id: i64) -> ApiResult<Artist> {
     let r = catalog::artist(&state.db, id).await?.ok_or_else(|| ApiError::not_found("artist"))?;
+
     if !crate::music::libraries(state, user).contains(&r.library) {
         return Err(ApiError::not_found("artist"));
     }
+
     Ok(r)
 }
 
@@ -708,17 +722,20 @@ pub(super) async fn play_queue(state: &AppState, user: &User) -> ApiResult<PlayQ
     let libs = crate::music::libraries(state, user);
     let found = catalog::tracks(&state.db, &libs, &q.tracks).await?;
     let by_id: HashMap<i64, Track> = found.into_iter().map(|t| (t.id, t)).collect();
-    // The same track may be queued twice, and some may be gone since.
+
     let mut current = 0;
     let mut kept = Vec::new();
+
     for (i, id) in q.tracks.iter().enumerate() {
         if let Some(t) = by_id.get(id) {
             if i == q.current {
                 current = kept.len();
             }
+
             kept.push(t.clone());
         }
     }
+
     Ok(PlayQueue {
         tracks: track_views(state, Some(user.id), kept, &Base::api()).await?,
         current: current as i64,
@@ -753,9 +770,11 @@ impl MusicQuery {
         let (state, user) = (ctx.state(), ctx.user()?);
         let libs = libraries(state, user, library.as_deref())?;
         let filter = AlbumFilter { genre, ..Default::default() };
+
         let albums =
             catalog::albums(&state.db, &libs, user.id, sort.into(), &filter, offset.max(0), limit.clamp(1, 5000))
                 .await?;
+
         album_views(state, user.id, albums).await
     }
 
@@ -809,6 +828,7 @@ impl MusicQuery {
     async fn genres(&self, ctx: &Context<'_>, library: Option<String>) -> ApiResult<Vec<Genre>> {
         let (state, user) = (ctx.state(), ctx.user()?);
         let libs = libraries(state, user, library.as_deref())?;
+
         Ok(catalog::genres(&state.db, &libs)
             .await?
             .into_iter()
@@ -825,12 +845,15 @@ impl MusicQuery {
         let (state, user) = (ctx.state(), ctx.user()?);
         let libs = crate::music::libraries(state, user);
         let limit = limit.clamp(1, 100);
+
         if query.trim().is_empty() {
             return Ok(MusicSearch { artists: Vec::new(), albums: Vec::new(), tracks: Vec::new() });
         }
+
         let artists = catalog::search_artists(&state.db, &libs, &query, 0, limit).await?;
         let albums = catalog::search_albums(&state.db, &libs, &query, 0, limit).await?;
         let tracks = catalog::search_tracks(&state.db, &libs, &query, 0, limit).await?;
+
         Ok(MusicSearch {
             artists: artist_views(state, user.id, artists).await?,
             albums: album_views(state, user.id, albums).await?,
@@ -866,6 +889,7 @@ impl MusicQuery {
         let added = catalog::albums(&state.db, &libs, user.id, AlbumOrder::Newest, &none, 0, 24).await?;
         let played = catalog::recently_played_albums(&state.db, &libs, user.id, 24).await?;
         let random = catalog::albums(&state.db, &libs, user.id, AlbumOrder::Random, &none, 0, 12).await?;
+
         Ok(MusicHome {
             recently_added: album_views(state, user.id, added).await?,
             recently_played: album_views(state, user.id, played).await?,
@@ -884,6 +908,7 @@ impl MusicQuery {
         let (state, user) = (ctx.state(), ctx.user()?);
         let t = visible_track(state, user, track_id).await?;
         let libs = crate::music::libraries(state, user);
+
         let artists: Vec<i64> = catalog::track_artists(&state.db, &[t.id])
             .await?
             .remove(&t.id)
@@ -891,21 +916,26 @@ impl MusicQuery {
             .into_iter()
             .map(|a| a.0)
             .collect();
+
         let mut exclude = exclude;
         exclude.push(t.id);
+
         let tracks =
             catalog::similar_tracks(&state.db, &libs, &artists, &t.genres(), &exclude, count.clamp(1, 200)).await?;
+
         track_views(state, Some(user.id), tracks, &Base::api()).await
     }
 
     async fn app_passwords(&self, ctx: &Context<'_>) -> ApiResult<Vec<AppPassword>> {
         let (state, user) = (ctx.state(), ctx.user()?);
+
         let rows: Vec<(i64, String, i64, Option<i64>, Option<String>)> = sqlx::query_as(
             "SELECT id, name, created_at, last_used, client FROM app_passwords WHERE user_id = ? ORDER BY created_at DESC",
         )
         .bind(user.id)
         .fetch_all(&state.db)
         .await?;
+
         Ok(rows
             .into_iter()
             .map(|(id, name, created_at, last_used, client)| AppPassword { id, name, created_at, last_used, client })
@@ -936,9 +966,11 @@ pub struct PlaylistInput {
 
 async fn own_playlist(state: &AppState, user: &User, id: i64) -> ApiResult<Playlist> {
     let p = catalog::playlist(&state.db, user.id, id).await?.ok_or_else(|| ApiError::not_found("playlist"))?;
+
     if p.owner_id != user.id {
         return Err(ApiError::forbidden());
     }
+
     Ok(p)
 }
 
@@ -987,9 +1019,11 @@ impl MusicMutation {
         #[graphql(default)] paused: bool,
     ) -> ApiResult<bool> {
         let (state, user) = (ctx.state(), ctx.user()?);
+
         let playing = match track_id {
             Some(id) => {
                 let t = visible_track(state, user, id).await?;
+
                 Some(Playing {
                     track_id: id,
                     client: "tinystream".into(),
@@ -1001,12 +1035,14 @@ impl MusicMutation {
             },
             None => None,
         };
+
         state.music.playing.set(user.id, playing);
         Ok(true)
     }
 
     async fn save_play_queue(&self, ctx: &Context<'_>, input: QueueInput) -> ApiResult<PlayQueue> {
         let (state, user) = (ctx.state(), ctx.user()?);
+
         let q = queue::Queue {
             tracks: input.tracks,
             current: input.current.max(0) as usize,
@@ -1016,6 +1052,7 @@ impl MusicMutation {
             changed_by: Some("tinystream".into()),
             updated_at: 0,
         };
+
         queue::save(state, user.id, q).await?;
         play_queue(state, user).await
     }
@@ -1037,9 +1074,11 @@ impl MusicMutation {
     ) -> ApiResult<PlaylistView> {
         let (state, user) = (ctx.state(), ctx.user()?);
         let name = name.trim();
+
         if name.is_empty() || name.chars().count() > 200 {
             return Err(ApiError::bad_request("give the playlist a name"));
         }
+
         let paths = paths_of(state, user, &tracks).await?;
         let id = catalog::create_playlist(&state.db, user.id, name, &paths).await?;
         state.events.send(Event::PlaylistsChanged);
@@ -1051,10 +1090,13 @@ impl MusicMutation {
         let (state, user) = (ctx.state(), ctx.user()?);
         let p = own_playlist(state, user, id).await?;
         let name = input.name.as_deref().map(str::trim).unwrap_or(&p.name).to_string();
+
         if name.is_empty() {
             return Err(ApiError::bad_request("give the playlist a name"));
         }
+
         let mut tx = state.db.begin().await?;
+
         sqlx::query("UPDATE playlists SET name = ?, comment = ?, public = ?, updated_at = ? WHERE id = ?")
             .bind(&name)
             .bind(input.comment.or(p.comment).filter(|c| !c.trim().is_empty()))
@@ -1063,10 +1105,12 @@ impl MusicMutation {
             .bind(id)
             .execute(&mut *tx)
             .await?;
+
         if let Some(ids) = input.tracks {
             let paths = paths_of(state, user, &ids).await?;
             catalog::set_playlist_paths(&mut tx, id, &paths).await?;
         }
+
         tx.commit().await?;
         state.events.send(Event::PlaylistsChanged);
         let p = catalog::playlist(&state.db, user.id, id).await?.ok_or_else(|| ApiError::not_found("playlist"))?;
@@ -1097,11 +1141,14 @@ impl MusicMutation {
     async fn create_app_password(&self, ctx: &Context<'_>, name: String) -> ApiResult<NewAppPassword> {
         let (state, user) = (ctx.state(), ctx.user()?);
         let name = name.trim();
+
         if name.is_empty() || name.chars().count() > 80 {
             return Err(ApiError::bad_request("name it after the app or device it's for"));
         }
+
         let secret = new_secret();
         let created_at = now();
+
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO app_passwords (user_id, name, secret, created_at) VALUES (?, ?, ?, ?) RETURNING id",
         )
@@ -1111,7 +1158,9 @@ impl MusicMutation {
         .bind(created_at)
         .fetch_one(&state.db)
         .await?;
+
         tracing::info!("{} made an app password for {name:?}", user.username);
+
         Ok(NewAppPassword {
             password: AppPassword { id, name: name.to_string(), created_at, last_used: None, client: None },
             secret,
@@ -1120,12 +1169,14 @@ impl MusicMutation {
 
     async fn delete_app_password(&self, ctx: &Context<'_>, id: i64) -> ApiResult<bool> {
         let (state, user) = (ctx.state(), ctx.user()?);
+
         let n = sqlx::query("DELETE FROM app_passwords WHERE id = ? AND user_id = ?")
             .bind(id)
             .bind(user.id)
             .execute(&state.db)
             .await?
             .rows_affected();
+
         Ok(n > 0)
     }
 }
@@ -1133,9 +1184,11 @@ impl MusicMutation {
 pub(super) fn file_response(res: Response, track: &Track) -> Response {
     let mut res = res;
     let h = res.headers_mut();
+
     if let Ok(v) = HeaderValue::from_str(track.content_type()) {
         h.insert(header::CONTENT_TYPE, v);
     }
+
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, max-age=3600"));
     res
 }
@@ -1143,9 +1196,11 @@ pub(super) fn file_response(res: Response, track: &Track) -> Response {
 /// The file itself, in whatever range was asked for.
 pub(super) async fn serve_track(track: &Track, req: Request) -> ApiResult<Response> {
     let Ok(res) = ServeFile::new(&track.path).oneshot(req).await;
+
     if res.status() == StatusCode::NOT_FOUND {
         return Err(ApiError::not_found("file"));
     }
+
     Ok(file_response(res.map(Body::new), track))
 }
 
@@ -1172,10 +1227,12 @@ pub(super) fn transcoded(
         format.suffix(),
         bitrate.filter(|_| !format.lossless()).map(|b| format!(" at {b} kbit/s")).unwrap_or_default(),
     );
+
     let rx = audio::spawn(
         Transcode { path: PathBuf::from(&track.path), start: start.max(0.0), format, bitrate },
         state.media.busy.hold(),
     );
+
     let mut res = Body::from_stream(ReceiverStream(rx)).into_response();
     let h = res.headers_mut();
     h.insert(header::CONTENT_TYPE, HeaderValue::from_static(format.mime()));
@@ -1200,26 +1257,33 @@ pub(super) async fn flac_copy(state: &AppState, track: &Track) -> ApiResult<Trac
     let key = hex::encode(&Sha256::digest(format!("{}\0{}\0{}", track.path, track.size, track.mtime))[..12]);
     let file = state.paths.cache_dir().join("music").join(format!("{key}.flac"));
     let cell = state.music.copies.lock().unwrap().entry(file.clone()).or_default().clone();
+
     let made = cell
         .get_or_init(|| async {
             if file.exists() {
                 return Ok(());
             }
+
             let rx = audio::spawn(
                 Transcode { path: PathBuf::from(&track.path), start: 0.0, format: Format::Flac, bitrate: None },
                 state.media.busy.hold(),
             );
+
             let tmp = file.with_extension("part");
+
             let write = async {
                 tokio::fs::create_dir_all(file.parent().unwrap()).await?;
                 let mut out = tokio::fs::File::create(&tmp).await?;
                 let mut rx = rx;
+
                 while let Some(chunk) = rx.recv().await {
                     tokio::io::AsyncWriteExt::write_all(&mut out, &chunk?).await?;
                 }
+
                 tokio::io::AsyncWriteExt::flush(&mut out).await?;
                 tokio::fs::rename(&tmp, &file).await
             };
+
             write.await.map_err(|e: std::io::Error| {
                 let _ = std::fs::remove_file(&tmp);
                 format!("{e}")
@@ -1227,6 +1291,7 @@ pub(super) async fn flac_copy(state: &AppState, track: &Track) -> ApiResult<Trac
         })
         .await
         .clone();
+
     state.music.copies.lock().unwrap().remove(&file);
     made.map_err(|e| ApiError::from(anyhow::anyhow!("can't convert {}: {e}", track.path)))?;
     let size = tokio::fs::metadata(&file).await.map(|m| m.len() as i64).unwrap_or(0);
@@ -1277,6 +1342,7 @@ pub(super) async fn track_cover_file(state: &AppState, t: &Track) -> Option<Path
         Some(id) => catalog::album(&state.db, id).await.ok().flatten(),
         None => None,
     };
+
     art::track_cover(state, FsPath::new(&t.path), t.embedded_art, album.as_ref()).await
 }
 
@@ -1285,6 +1351,7 @@ async fn artist_cover_file(state: &AppState, r: &Artist) -> ApiResult<Option<Pat
         Some(a) => catalog::album(&state.db, a).await?,
         None => None,
     };
+
     Ok(match album {
         Some(a) => art::album_cover(state, &a).await,
         None => None,

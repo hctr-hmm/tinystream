@@ -47,6 +47,7 @@ impl Source {
                     "poster" => "SELECT poster_override FROM items WHERE id = ?",
                     _ => "SELECT backdrop_override FROM items WHERE id = ?",
                 };
+
                 let data: Option<Vec<u8>> = sqlx::query_scalar(sql).bind(id).fetch_optional(&state.db).await?.flatten();
                 let data = data.ok_or_else(|| anyhow::anyhow!("the picture is gone"))?;
                 let dir = state.paths.cache_dir().join("tints");
@@ -70,6 +71,7 @@ impl Tints {
     /// `"r g b"`, or nothing while it's being worked out.
     pub async fn get(&self, state: &Arc<AppState>, source: Source) -> Option<String> {
         let key = source.key();
+
         match sqlx::query_scalar("SELECT tint FROM image_tints WHERE key = ?")
             .bind(&key)
             .fetch_optional(&state.db)
@@ -82,17 +84,21 @@ impl Tints {
                 return None;
             },
         }
+
         if !self.pending.lock().unwrap_or_else(|e| e.into_inner()).insert(key.clone()) {
             return None;
         }
+
         let task = tokio::spawn({
             let state = state.clone();
+
             async move {
                 let tint = work(&state, &source, &key).await;
                 state.tints.pending.lock().unwrap_or_else(|e| e.into_inner()).remove(&key);
                 tint.map_err(|e| tracing::debug!("tint {key}: {e:#}")).ok()
             }
         });
+
         tokio::time::timeout(GRACE, task).await.ok()?.ok()?
     }
 
@@ -103,26 +109,32 @@ impl Tints {
             .bind(format!("upload:{id}:%"))
             .execute(&state.db)
             .await?;
+
         Ok(())
     }
 }
 
 async fn work(state: &AppState, source: &Source, key: &str) -> anyhow::Result<String> {
     let (file, temporary) = source.file(state).await?;
+
     let tint = tokio::task::spawn_blocking({
         let file = file.clone();
         move || compute(&file)
     })
     .await?;
+
     if temporary {
         let _ = tokio::fs::remove_file(&file).await;
     }
+
     let tint = tint?;
+
     sqlx::query("INSERT OR REPLACE INTO image_tints (key, tint) VALUES (?, ?)")
         .bind(key)
         .bind(&tint)
         .execute(&state.db)
         .await?;
+
     Ok(tint)
 }
 
@@ -134,6 +146,7 @@ fn compute(file: &Path) -> anyhow::Result<String> {
 /// whites.
 fn average(rgb: &[u8]) -> String {
     let (mut r, mut g, mut b, mut total) = (0.0, 0.0, 0.0, 0.0);
+
     for px in rgb.chunks_exact(3) {
         let (pr, pg, pb) = (px[0] as f64, px[1] as f64, px[2] as f64);
         let max = pr.max(pg).max(pb);
@@ -146,6 +159,7 @@ fn average(rgb: &[u8]) -> String {
         b += pb * w;
         total += w;
     }
+
     format!("{} {} {}", (r / total).round(), (g / total).round(), (b / total).round())
 }
 
