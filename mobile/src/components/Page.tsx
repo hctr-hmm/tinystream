@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A screen in a tab's stack: a large title (or a hero) that scrolls away
-// under a glass bar, which then shows the title small; a back button when
-// there's somewhere to go back to; pull to refresh; and back to the top when
-// the tab is tapped again. Content is a scroll view, or a list for long ones.
+// under a fade of the canvas, which then shows the title small, between
+// floating glass buttons: back, when there's somewhere to go back to, and
+// the screen's own; pull to refresh; and back to the top when the tab is
+// tapped again. Content is a scroll view, or a list for long ones.
 
 import { useScrollToTop } from 'expo-router/react-navigation'
 import { useIsFocused, useNavigation, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { type ReactNode, createContext, useCallback, useContext, useRef, useState } from 'react'
-import { type FlatListProps, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native'
+import { type FlatListProps, type LayoutChangeEvent, Pressable, Text, View, type ViewStyle } from 'react-native'
 import { FlatList as GestureFlatList, Gesture, GestureDetector, ScrollView as GestureScrollView } from 'react-native-gesture-handler'
 import Animated, {
   type SharedValue,
@@ -24,11 +25,13 @@ import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../../modules/haptics'
 import { BlurArea, Glass } from '../effects/Glass'
 import { useMotion } from '../effects/motion'
+import { withAlpha } from '../theme/materials'
 import { useTheme } from '../theme/ThemeProvider'
 import { useTabBarSpace } from './TabBar'
 import { Spinner } from './ui'
 
 export const BAR = 56
+const FADE = 32
 
 const AnimatedScroll = Animated.createAnimatedComponent(GestureScrollView)
 const AnimatedList = Animated.createAnimatedComponent(GestureFlatList) as unknown as typeof GestureFlatList
@@ -171,18 +174,18 @@ function Bar({
 }) {
   const router = useRouter()
   const { tokens } = useTheme()
-  const glass = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [solidAt, solidAt + 24], [0, 1], 'clamp') }))
+  const fade = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [solidAt, solidAt + 24], [0, 1], 'clamp') }))
+  const height = top + BAR + (pinned ? pinnedHeight : 0)
   const name = useAnimatedStyle(() => ({
     opacity: interpolate(y.value, [collapse - 12, collapse + 12], [0, 1], 'clamp'),
     transform: [{ translateY: interpolate(y.value, [collapse - 12, collapse + 12], [6, 0], 'clamp') }],
   }))
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: top + BAR + (pinned ? pinnedHeight : 0) }}>
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, glass]}>
-        <Glass bar style={StyleSheet.absoluteFill} />
-        <View className="absolute bottom-0 left-0 right-0 h-px bg-line" />
+    <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height }}>
+      <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, fade]}>
+        <TopFade height={height} />
       </Animated.View>
-      <View pointerEvents="box-none" style={{ marginTop: top, height: BAR, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 4 }}>
+      <View pointerEvents="box-none" style={{ marginTop: top, height: BAR, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 4 }}>
         {back && (
           <Pressable
             accessibilityLabel="Back"
@@ -191,19 +194,35 @@ function Bar({
               haptic('tick')
               router.back()
             }}
-            style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
           >
-            <ArrowLeft size={22} color={tokens.ink} />
+            <Glass radius={20} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+              <ArrowLeft size={20} color={tokens.ink} />
+            </Glass>
           </Pressable>
         )}
-        <Animated.View style={[{ flex: 1, paddingHorizontal: back ? 4 : 12 }, name]} pointerEvents="none">
+        <Animated.View style={[{ flex: 1, paddingHorizontal: back ? 4 : 8 }, name]} pointerEvents="none">
           <Text className="font-sans text-[17px] font-semibold tracking-tight text-ink" numberOfLines={1}>
             {title}
           </Text>
         </Animated.View>
-        <View className="flex-row items-center gap-1">{right}</View>
+        {right && (
+          <Glass radius={20} style={{ height: 40, flexDirection: 'row', alignItems: 'center' }}>
+            {right}
+          </Glass>
+        )}
       </View>
       {pinned && <View style={{ height: pinnedHeight }}>{pinned}</View>}
+    </View>
+  )
+}
+
+/** The canvas under what floats at the top of a screen, `height` tall, then fading out so content scrolls away under it softly. */
+export function TopFade({ height }: { height: number }) {
+  const { tokens } = useTheme()
+  return (
+    <View pointerEvents="none">
+      <View style={{ height, backgroundColor: tokens.canvas }} />
+      <View style={{ height: FADE, experimental_backgroundImage: `linear-gradient(to bottom, ${tokens.canvas}, ${withAlpha(tokens.canvas, 0)})` } as ViewStyle} />
     </View>
   )
 }

@@ -18,7 +18,6 @@ import { Ambient, Shade } from '../../../src/components/media'
 import { Page } from '../../../src/components/Page'
 import { ListSkeleton, useArrived } from '../../../src/components/Skeleton'
 import { Empty, IconButton, Progress } from '../../../src/components/ui'
-import { Glass } from '../../../src/effects/Glass'
 import { Squircle } from '../../../src/effects/Squircle'
 import { Ticker } from '../../../src/effects/Ticker'
 import { Tilt } from '../../../src/effects/Tilt'
@@ -116,7 +115,7 @@ export default function Calendar() {
   )
 
   const pinned = (
-    <Glass bar style={{ flex: 1, paddingHorizontal: 12, paddingTop: 2 }}>
+    <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 2 }}>
       <View className="flex-row items-center">
         <IconButton label="Earlier" size={34} onPress={() => setOffset((o) => o - 1)}>
           <ChevronLeft size={18} color={tokens['ink-2']} />
@@ -145,8 +144,7 @@ export default function Calendar() {
           )
         })}
       </View>
-      <View className="absolute bottom-0 left-0 right-0 h-px bg-line" />
-    </Glass>
+    </View>
   )
 
   return (

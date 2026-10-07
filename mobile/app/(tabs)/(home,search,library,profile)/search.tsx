@@ -37,7 +37,7 @@ import { haptic } from '../../../modules/haptics'
 import { DiscoverShelf, PickSheet, ResultCard, useAction } from '../../../src/components/Discover'
 import { toast, toastError } from '../../../src/components/Feedback'
 import { Img } from '../../../src/components/Img'
-import { BAR } from '../../../src/components/Page'
+import { BAR, TopFade } from '../../../src/components/Page'
 import { PosterGridSkeleton, RowSkeleton, useColumnWidth } from '../../../src/components/Skeleton'
 import { useTabBarSpace } from '../../../src/components/TabBar'
 import { Chip, Empty, ErrorText, Select, Spinner } from '../../../src/components/ui'
@@ -226,9 +226,12 @@ export default function Search() {
           )}
         </ScrollView>
       </BlurArea>
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-        <Glass bar style={{ paddingTop: insets.top + 8, paddingBottom: 10, paddingHorizontal: 16 }}>
-          <Squircle radius={14} edge className="bg-raised" style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+          <TopFade height={insets.top + 40} />
+        </View>
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16 }}>
+          <Glass radius={24} style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 10 }}>
             <SearchIcon size={18} color={tokens['ink-3']} />
             <TextInput
               ref={input}
@@ -255,9 +258,8 @@ export default function Search() {
                 <X size={18} color={tokens['ink-3']} />
               </Pressable>
             )}
-          </Squircle>
-        </Glass>
-        <View className="h-px bg-line" />
+          </Glass>
+        </View>
       </View>
     </>
   )
