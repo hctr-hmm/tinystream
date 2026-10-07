@@ -2,7 +2,10 @@
 
 # tinystream
 
-<img src="assets/logos/logo.svg" alt="tinystream logo" width="128">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logos/logo-inverted.svg">
+  <img src="assets/logos/logo.svg" alt="tinystream logo" width="128">
+</picture>
 
 A small self-hosted media server for your shows, movies and music.
 
