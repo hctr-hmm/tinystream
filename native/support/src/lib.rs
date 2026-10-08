@@ -133,6 +133,12 @@ impl Build {
         if !archive.exists() {
             let part = archive.with_extension("part");
             self.exec(Command::new("curl").args(["-fL", "--retry", "3", "-o"]).arg(&part).arg(url));
+
+            if !fs::read(&part).is_ok_and(|bytes| bytes.starts_with(&[0x1F, 0x8B])) {
+                let _ = fs::remove_file(&part);
+                panic!("{url} didn't serve a gzip archive (maybe a bot check page) for {}", self.name);
+            }
+
             fs::rename(&part, &archive).unwrap();
         }
 
@@ -149,13 +155,23 @@ impl Build {
         );
     }
 
-    pub fn git(&self, url: &str, branch: &str) {
+    /// Checks out `rev` (a branch, tag or commit) of `url`.
+    pub fn git(&self, url: &str, rev: &str) {
         let clone = self.downloads.join(format!("{}-{}", self.name, self.version));
 
         if !clone.exists() {
             let part = clone.with_extension("part");
             let _ = fs::remove_dir_all(&part);
-            self.exec(Command::new("git").args(["clone", "--depth", "1", "--recursive", "-b", branch, url]).arg(&part));
+            let git = || {
+                let mut cmd = Command::new("git");
+                cmd.arg("-C").arg(&part);
+                cmd
+            };
+
+            self.exec(Command::new("git").args(["init", "-q"]).arg(&part));
+            self.exec(git().args(["fetch", "--depth", "1", url, rev]));
+            self.exec(git().args(["checkout", "-q", "FETCH_HEAD"]));
+            self.exec(git().args(["submodule", "update", "--init", "--recursive", "--depth", "1"]));
             fs::rename(&part, &clone).unwrap();
         }
 
