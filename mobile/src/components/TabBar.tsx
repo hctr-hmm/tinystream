@@ -2,7 +2,8 @@
 // The tab bar: a glass pill floating over the page, with web's `Segmented`
 // thumb sliding between the tabs (its leading edge springs ahead, the
 // trailing one catches up). Slid along, it scrubs through the pages, ticking
-// at each tab's middle; flicked sideways, it moves a tab over.
+// at each tab's middle; flicked sideways, it moves a tab over. The thumb is a
+// lens: whatever's under it is drawn focused, and while held, magnified.
 
 import { Canvas, RoundedRect } from '@shopify/react-native-skia'
 import type { NavigationHelpers, ParamListBase, TabNavigationState } from 'expo-router/react-navigation'
@@ -11,6 +12,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   clamp,
+  type SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
@@ -40,6 +42,9 @@ const FLICK = 3
 export function useTabBarSpace() {
   return useSafeAreaInsets().bottom + GAP + HEIGHT
 }
+
+/** How much bigger the lens shows the tab under it while a finger holds it. */
+const MAGNIFY = 0.14
 
 /** Stiff enough to keep up with a finger, soft enough to smooth its jitter (a tab's width is a page's). */
 const FOLLOW = { stiffness: 420, damping: 42, mass: 1 }
@@ -106,6 +111,22 @@ export function TabBar({ state, descriptors, navigation, pager }: Props) {
   // The leading edge's overshoot stops at the row's ends, where the canvas would cut it off flat.
   const x = useDerivedValue(() => Math.max(0, left.value) * width.value)
   const span = useDerivedValue(() => (count - Math.max(0, right.value)) * width.value - x.value)
+  const clip = useAnimatedStyle(() => ({ left: x.value, width: span.value }))
+  const shift = useAnimatedStyle(() => ({ left: -x.value, width: count * width.value }))
+
+  // The lens's middle, in tabs, and how far it's lifted off the bar.
+  const lens = useDerivedValue(() => (left.value + count - right.value) / 2 - 0.5)
+  const lift = useSharedValue(0)
+  useAnimatedReaction(
+    () => drag.value,
+    (now) => {
+      if (reduced) return
+      lift.value = withSpring(now ? 1 : 0, { stiffness: 380, damping: 30, mass: 1 })
+    },
+    [reduced],
+  )
+  const pressed = useSharedValue(-1)
+  const squeeze = useSharedValue(1)
 
   const loadAll = useCallback(() => latest.current.state.routes.forEach((_, i) => load(i)), [load])
   const holds = state.routes.map((r) => !!descriptors[r.key].options.tabBarOnLongPress).join()
@@ -171,19 +192,57 @@ export function TabBar({ state, descriptors, navigation, pager }: Props) {
             {state.routes.map((route, i) => {
               const { options } = descriptors[route.key]
               const focused = i === state.index
-              const color = focused ? tokens.ink : tokens['ink-2']
+              const label = options.title ?? route.name
               return (
-                <Tab
+                <Pressable
                   key={route.key}
-                  label={options.title ?? route.name}
-                  focused={focused}
-                  icon={options.tabBarIcon?.({ focused, color, size: 24 })}
-                  badge={options.tabBarBadge}
-                  color={color}
+                  className="flex-1"
+                  accessibilityRole="tab"
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: focused }}
                   onPress={() => press(i)}
-                />
+                  onPressIn={() => {
+                    pressed.value = i
+                    squeeze.value = withTiming(0.96, { duration: 200 })
+                  }}
+                  onPressOut={() => (squeeze.value = withTiming(1, { duration: 200 }))}
+                >
+                  <Face
+                    index={i}
+                    label={label}
+                    icon={options.tabBarIcon?.({ focused, color: tokens['ink-2'], size: 24 })}
+                    badge={options.tabBarBadge}
+                    color={tokens['ink-2']}
+                    lens={lens}
+                    lift={lift}
+                    pressed={pressed}
+                    squeeze={squeeze}
+                  />
+                </Pressable>
               )
             })}
+            <Animated.View pointerEvents="none" importantForAccessibility="no-hide-descendants" style={[styles.clip, clip]}>
+              <Animated.View className="flex-row" style={[styles.clip, shift]}>
+                {state.routes.map((route, i) => {
+                  const { options } = descriptors[route.key]
+                  return (
+                    <View key={route.key} className="flex-1">
+                      <Face
+                        index={i}
+                        label={options.title ?? route.name}
+                        icon={options.tabBarIcon?.({ focused: true, color: tokens.ink, size: 24 })}
+                        badge={options.tabBarBadge}
+                        color={tokens.ink}
+                        lens={lens}
+                        lift={lift}
+                        pressed={pressed}
+                        squeeze={squeeze}
+                      />
+                    </View>
+                  )
+                })}
+              </Animated.View>
+            </Animated.View>
           </View>
         </GestureDetector>
       </Glass>
@@ -191,55 +250,56 @@ export function TabBar({ state, descriptors, navigation, pager }: Props) {
   )
 }
 
-function Tab({
+const styles = StyleSheet.create({ clip: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden' } })
+
+/** A tab's icon and label, grown as the lens passes over it and shrunk while pressed. */
+function Face({
+  index,
   label,
-  focused,
   icon,
   badge,
   color,
-  onPress,
+  lens,
+  lift,
+  pressed,
+  squeeze,
 }: {
+  index: number
   label: string
-  focused: boolean
   icon: ReactNode
   badge?: number | boolean
   color: string
-  onPress: () => void
+  lens: SharedValue<number>
+  lift: SharedValue<number>
+  pressed: SharedValue<number>
+  squeeze: SharedValue<number>
 }) {
   const motion = useMotion()
-  const scale = useSharedValue(1)
-  const pressed = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const style = useAnimatedStyle(() => {
+    const grow = 1 + MAGNIFY * lift.value * Math.max(0, 1 - Math.abs(lens.value - index))
+    return { transform: [{ scale: grow * (pressed.value === index ? squeeze.value : 1) }] }
+  })
   return (
-    <Pressable
-      className="flex-1"
-      accessibilityRole="tab"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: focused }}
-      onPress={onPress}
-      onPressIn={() => (scale.value = withTiming(0.96, { duration: 200 }))}
-      onPressOut={() => (scale.value = withTiming(1, { duration: 200 }))}
-    >
-      <Animated.View className="flex-1 items-center justify-center gap-0.5" style={pressed}>
-        <View>
-          {icon}
-          {!!badge && (
-            <Animated.View
-              key={String(badge)}
-              style={motion.pop}
-              className={`absolute -right-2 -top-1 items-center justify-center rounded-full bg-ink ${badge === true ? 'h-2 w-2' : 'h-4 min-w-4 px-1'}`}
-            >
-              {badge !== true && (
-                <Text className="font-sans text-[10px] font-semibold text-canvas" style={{ lineHeight: 12 }}>
-                  {badge > 99 ? '99+' : badge}
-                </Text>
-              )}
-            </Animated.View>
-          )}
-        </View>
-        <Text className="font-sans text-2xs font-medium" style={{ color }} numberOfLines={1}>
-          {label}
-        </Text>
-      </Animated.View>
-    </Pressable>
+    <Animated.View className="flex-1 items-center justify-center gap-0.5" style={style}>
+      <View>
+        {icon}
+        {!!badge && (
+          <Animated.View
+            key={String(badge)}
+            style={motion.pop}
+            className={`absolute -right-2 -top-1 items-center justify-center rounded-full bg-ink ${badge === true ? 'h-2 w-2' : 'h-4 min-w-4 px-1'}`}
+          >
+            {badge !== true && (
+              <Text className="font-sans text-[10px] font-semibold text-canvas" style={{ lineHeight: 12 }}>
+                {badge > 99 ? '99+' : badge}
+              </Text>
+            )}
+          </Animated.View>
+        )}
+      </View>
+      <Text className="font-sans text-2xs font-medium" style={{ color }} numberOfLines={1}>
+        {label}
+      </Text>
+    </Animated.View>
   )
 }
