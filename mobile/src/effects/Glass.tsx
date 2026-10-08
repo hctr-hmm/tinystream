@@ -8,6 +8,7 @@
 // BlurAreas (one per tab); its glass blurs the active one.
 
 import { BlurTargetView, BlurView } from 'expo-blur'
+import { useIsFocused } from 'expo-router'
 import { type ReactNode, type RefObject, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 import { useTheme } from '../theme/ThemeProvider'
@@ -46,6 +47,11 @@ export function BlurArea({ active = true, children, ...rest }: ViewProps & { act
       </BlurTargetView>
     </Inside.Provider>
   )
+}
+
+/** A screen's BlurArea, active while the screen is in focus. Only it follows focus, not the whole screen. */
+export function ScreenBlurArea(props: ViewProps & { children?: ReactNode }) {
+  return <BlurArea active={useIsFocused()} {...props} />
 }
 
 export type GlassProps = SquircleProps & {

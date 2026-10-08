@@ -27,7 +27,7 @@ import { useMotion } from '../../../src/effects/motion'
 import { graphql } from '../../../src/gql'
 import type { HomeQuery } from '../../../src/gql/graphql'
 import { titleTint } from '../../../src/lib/tint'
-import { useGo } from '../../../src/nav'
+import { useGo, useWatch } from '../../../src/nav'
 import { type CalendarEntry, useFeatures, useLibraries, useMe, useNow } from '../../../src/queries'
 import { useApi } from '../../../src/session'
 import { useTheme } from '../../../src/theme/ThemeProvider'
@@ -228,7 +228,7 @@ function MusicShelves() {
 
 /** The one thing to watch next, big, leaning with the phone. */
 function Hero({ entry: e }: { entry: ContinueEntry }) {
-  const router = useRouter()
+  const watch = useWatch()
   const { tokens } = useTheme()
   const [broken, setBroken] = useState(false)
   const v = e.video
@@ -238,7 +238,7 @@ function Hero({ entry: e }: { entry: ContinueEntry }) {
   const left = remaining(e.position, v.duration)
   const label = e.newEpisode ? 'New episode' : resuming ? 'Continue watching' : 'Up next'
   return (
-    <Tilt gyro max={4} radius={22} style={{ minHeight: 280 }} onPress={() => router.push(`/watch/${v.id}` as Href)}>
+    <Tilt gyro max={4} radius={22} style={{ minHeight: 280 }} onPress={() => watch(v.id)}>
       <View className="flex-1 bg-raised">
         {image && !broken && <Img src={image} style={[{ position: 'absolute', inset: 0, opacity: 0.6 }]} onError={() => setBroken(true)} />}
         <Ambient tint={titleTint(v.title)} />
@@ -279,14 +279,14 @@ function Hero({ entry: e }: { entry: ContinueEntry }) {
 }
 
 function ContinueCard({ entry }: { entry: ContinueEntry }) {
-  const router = useRouter()
+  const watch = useWatch()
   const { tokens } = useTheme()
   const [broken, setBroken] = useState(false)
   const v = entry.video
   const image = v.still ?? v.title.backdrop
   const progress = v.duration && !entry.upNext ? entry.position / v.duration : 0
   return (
-    <Tilt max={4} radius={16} style={{ width: 280, aspectRatio: 16 / 9 }} onPress={() => router.push(`/watch/${v.id}` as Href)}>
+    <Tilt max={4} radius={16} style={{ width: 280, aspectRatio: 16 / 9 }} onPress={() => watch(v.id)}>
       <View className="flex-1 bg-panel">{image && !broken && <Img src={image} style={{ flex: 1 }} onError={() => setBroken(true)} />}</View>
       <Shade to="top" media stops={[0.75, 0.1, 0]} />
       {entry.newEpisode && (

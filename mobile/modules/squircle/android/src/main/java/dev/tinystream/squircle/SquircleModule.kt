@@ -2,6 +2,7 @@
 
 package dev.tinystream.squircle
 
+import android.graphics.Color
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -10,8 +11,10 @@ class SquircleModule : Module() {
     Name("TinystreamSquircle")
 
     View(SquircleView::class) {
-      Prop("path") { view: SquircleView, path: String? -> view.setPath(path) }
       Prop("radius") { view: SquircleView, radius: Float -> view.setRadius(radius) }
+      Prop("smoothing") { view: SquircleView, smoothing: Float -> view.setSmoothing(smoothing) }
+      Prop("edge") { view: SquircleView, colors: List<Color>? -> view.setEdge(colors) }
+      Prop("dashed") { view: SquircleView, color: Color? -> view.setDashed(color) }
     }
   }
 }

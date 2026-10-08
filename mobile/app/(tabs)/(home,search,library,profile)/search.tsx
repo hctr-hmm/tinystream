@@ -6,7 +6,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { mediaOptions, ofMediaType } from '@tinystream/shared/media'
 import { useScrollToTop } from 'expo-router/react-navigation'
-import { type Href, useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
+import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import {
   ArrowDownToLine,
   Bell,
@@ -41,11 +41,11 @@ import { BAR, TopFade } from '../../../src/components/Page'
 import { PosterGridSkeleton, RowSkeleton, useColumnWidth } from '../../../src/components/Skeleton'
 import { useTabBarSpace } from '../../../src/components/TabBar'
 import { Chip, Empty, ErrorText, Select, Spinner } from '../../../src/components/ui'
-import { BlurArea, Glass } from '../../../src/effects/Glass'
+import { Glass, ScreenBlurArea } from '../../../src/effects/Glass'
 import { Squircle } from '../../../src/effects/Squircle'
 import { useMotion } from '../../../src/effects/motion'
 import { graphql } from '../../../src/gql'
-import { useGo } from '../../../src/nav'
+import { useGo, useWatch } from '../../../src/nav'
 import { type DiscoverResult, useClipsOn, useFeatures, useLibraries, useMe } from '../../../src/queries'
 import { prune, recents } from '../../../src/recents'
 import { useApi, useSession } from '../../../src/session'
@@ -203,7 +203,7 @@ export default function Search() {
   const top = insets.top + BAR + 8
   return (
     <>
-      <BlurArea active={useIsFocused()} style={{ flex: 1 }}>
+      <ScreenBlurArea style={{ flex: 1 }}>
         <ScrollView
           ref={scroll}
           keyboardShouldPersistTaps="handled"
@@ -225,7 +225,7 @@ export default function Search() {
             <Results q={debounced} onDiscover={() => setDiscover(true)} />
           )}
         </ScrollView>
-      </BlurArea>
+      </ScreenBlurArea>
       <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
           <TopFade height={insets.top + 40} />
@@ -269,6 +269,7 @@ export default function Search() {
 function Results({ q, onDiscover }: { q: string; onDiscover: () => void }) {
   const api = useApi()
   const go = useGo()
+  const watch = useWatch()
   const router = useRouter()
   const me = useMe()
   const features = useFeatures()
@@ -300,7 +301,7 @@ function Results({ q, onDiscover }: { q: string; onDiscover: () => void }) {
       title: e.name ?? e.label ?? '',
       meta: `${e.title.name} · ${e.label ?? ''}`,
       icon: Clapperboard,
-      go: () => router.push(`/watch/${e.id}` as Href),
+      go: () => watch(e.id),
     })),
     ...(data?.music.artists ?? []).map((a) => ({
       key: `ar${a.id}`,

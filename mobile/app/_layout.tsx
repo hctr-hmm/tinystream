@@ -17,7 +17,7 @@ import { startBackgroundChecks } from '../src/background'
 import { installLogging } from '../src/log'
 import { apiOf, cacheOf, tokenOf, useServers } from '../src/servers'
 import { SessionProvider } from '../src/session'
-import { ThemeProvider } from '../src/theme/ThemeProvider'
+import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider'
 
 installLogging()
 
@@ -49,6 +49,7 @@ function App() {
   const token = active && signedIn.has(active.id) ? tokenOf(active.id) : null
   const router = useRouter()
   const bar = useTabBarSpace()
+  const { tokens } = useTheme()
 
   // A new stack starts where the URL was (say, signing in to the server just added), and losing the
   // token leaves whatever unguarded screens were under it: go where the app should be instead.
@@ -66,7 +67,7 @@ function App() {
   }, [at, token, router])
 
   const stack = (
-    <Stack key={active?.id ?? 'none'} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}>
+    <Stack key={active?.id ?? 'none'} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.canvas } }}>
       <Stack.Protected guard={!!token}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="debug" />

@@ -583,13 +583,6 @@ export type ForYouQueryVariables = Exact<{
 
 export type ForYouQuery = { forYou: { library: string, shelves: Array<{ key: string, name: string, results: Array<{ category: MediaCategory, provider: Provider, id: string, name: string, romaji: string | null, year: number | null, poster: string | null, overview: string | null, library: string, titleId: number | null, seriesId: number | null, monitor: Monitor | null, requestState: RequestState | null, because: string | null }> }> } };
 
-export type TitleQueryVariables = Exact<{
-  id: number;
-}>;
-
-
-export type TitleQuery = { title: { posterTint: string | null, backdropTint: string | null, customPoster: boolean, customBackdrop: boolean, overview: string | null, genres: Array<string>, rating: number | null, path: string | null, matchState: MatchState, provider: Provider | null, providerId: string | null, libraryProvider: Provider | null, id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number, seasons: Array<{ number: number, name: string, title: string | null, overview: string | null, poster: string | null, episodes: Array<{ id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null }> }>, movie: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } | null, nextUp: { resuming: boolean, video: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } } | null } | null };
-
 export type SimilarQueryVariables = Exact<{
   id: number;
 }>;
@@ -882,6 +875,13 @@ export type SettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type SettingsQuery = { settings: { raw: string, error: string | null, network: { host: string, port: number, cors: Array<string> }, log: { level: string }, scan: { watch: boolean, interval: string | null }, metadata: { tmdbApiKey: string | null, language: string }, transcode: { hardware: Hardware, vaapiDevice: string }, clips: { enabled: boolean, path: string | null, publicLinks: boolean, concurrency: number, maxStorage: number, fontsDir: string | null, defaultFont: string | null }, music: { onlineLyrics: boolean, lyricsUrl: string, analyzeLoudness: boolean }, downloads: { path: string | null, import: ImportMode, port: number, upnp: boolean, dht: boolean, maxActive: number, downloadLimit: number, uploadLimit: number, slowDownloadLimit: number, slowUploadLimit: number, slowFrom: string | null, slowTo: string | null, bindInterface: string | null, proxy: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } }, automation: { defaultMonitor: Monitor, rssInterval: string, renameSuggestions: boolean, retry: Array<{ every: string, until: string }> }, requests: { monitor: Monitor }, signIn: { style: SignInStyle }, sources: Array<{ name: string, kind: SourceKind, url: string, feed: string | null, apiKey: string | null, categories: Array<number>, enabled: boolean, downloadPath: string | null, seeding: { ratio: number | null, time: string | null, idle: string | null, then: SeedAction } | null }>, profiles: Array<{ name: string, resolutions: Array<string>, groups: Array<string>, require: Array<string>, reject: Array<string>, minSize: number | null, maxSize: number | null, codecs: Array<string>, preferDualAudio: boolean, batches: boolean, minSeeders: number }>, libraries: Array<{ name: string, path: string, kind: LibraryKind, metadataProvider: Provider | null, managed: boolean, profile: string | null, downloadPath: string | null, resolvedPath: string | null, exists: boolean, error: string | null, titleCount: number, skippedCount: number }>, paths: { config: string, data: string, log: string } }, server: { transcoding: { vaapi: string | null, vaapiError: string | null, softwareH264: boolean } } };
+
+export type TitleQueryVariables = Exact<{
+  id: number;
+}>;
+
+
+export type TitleQuery = { title: { posterTint: string | null, backdropTint: string | null, customPoster: boolean, customBackdrop: boolean, overview: string | null, genres: Array<string>, rating: number | null, path: string | null, matchState: MatchState, provider: Provider | null, providerId: string | null, libraryProvider: Provider | null, id: number, kind: TitleKind, library: string, name: string, year: number | null, poster: string | null, backdrop: string | null, watchedCount: number, videoCount: number, progress: number | null, freshCount: number, seasons: Array<{ number: number, name: string, title: string | null, overview: string | null, poster: string | null, episodes: Array<{ id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null }> }>, movie: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } | null, nextUp: { resuming: boolean, video: { id: number, season: number | null, episode: number | null, episodeEnd: number | null, label: string | null, name: string | null, overview: string | null, still: string, customStill: boolean, airDate: string | null, duration: number | null, position: number | null, finished: boolean | null } } | null } | null };
 
 export type PeopleQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2465,74 +2465,6 @@ export const ForYouDocument = new TypedDocumentString(`
   requestState
   because
 }`) as unknown as TypedDocumentString<ForYouQuery, ForYouQueryVariables>;
-export const TitleDocument = new TypedDocumentString(`
-    query Title($id: Int!) {
-  title(id: $id) {
-    ...TitleDetail
-  }
-}
-    fragment Card on Title {
-  id
-  kind
-  library
-  name
-  year
-  poster
-  backdrop
-  watchedCount
-  videoCount
-  progress
-  freshCount
-}
-fragment VideoRow on Video {
-  id
-  season
-  episode
-  episodeEnd
-  label
-  name
-  overview
-  still
-  customStill
-  airDate
-  duration
-  position
-  finished
-}
-fragment TitleDetail on Title {
-  ...Card
-  posterTint
-  backdropTint
-  customPoster
-  customBackdrop
-  overview
-  genres
-  rating
-  path
-  matchState
-  provider
-  providerId
-  libraryProvider
-  seasons {
-    number
-    name
-    title
-    overview
-    poster
-    episodes {
-      ...VideoRow
-    }
-  }
-  movie {
-    ...VideoRow
-  }
-  nextUp {
-    resuming
-    video {
-      ...VideoRow
-    }
-  }
-}`) as unknown as TypedDocumentString<TitleQuery, TitleQueryVariables>;
 export const SimilarDocument = new TypedDocumentString(`
     query Similar($id: Int!) {
   title(id: $id) {
@@ -3455,6 +3387,74 @@ fragment SettingsFields on Settings {
     log
   }
 }`) as unknown as TypedDocumentString<SettingsQuery, SettingsQueryVariables>;
+export const TitleDocument = new TypedDocumentString(`
+    query Title($id: Int!) {
+  title(id: $id) {
+    ...TitleDetail
+  }
+}
+    fragment Card on Title {
+  id
+  kind
+  library
+  name
+  year
+  poster
+  backdrop
+  watchedCount
+  videoCount
+  progress
+  freshCount
+}
+fragment VideoRow on Video {
+  id
+  season
+  episode
+  episodeEnd
+  label
+  name
+  overview
+  still
+  customStill
+  airDate
+  duration
+  position
+  finished
+}
+fragment TitleDetail on Title {
+  ...Card
+  posterTint
+  backdropTint
+  customPoster
+  customBackdrop
+  overview
+  genres
+  rating
+  path
+  matchState
+  provider
+  providerId
+  libraryProvider
+  seasons {
+    number
+    name
+    title
+    overview
+    poster
+    episodes {
+      ...VideoRow
+    }
+  }
+  movie {
+    ...VideoRow
+  }
+  nextUp {
+    resuming
+    video {
+      ...VideoRow
+    }
+  }
+}`) as unknown as TypedDocumentString<TitleQuery, TitleQueryVariables>;
 export const PeopleDocument = new TypedDocumentString(`
     query People {
   users {

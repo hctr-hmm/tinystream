@@ -6,7 +6,7 @@
 // tapped again. Content is a scroll view, or a list for long ones.
 
 import { useScrollToTop } from 'expo-router/react-navigation'
-import { useIsFocused, useNavigation, useRouter } from 'expo-router'
+import { useNavigation, useRouter } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { type ReactNode, createContext, useCallback, useContext, useRef, useState } from 'react'
 import { type FlatListProps, type LayoutChangeEvent, Pressable, Text, View, type ViewStyle } from 'react-native'
@@ -23,8 +23,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../../modules/haptics'
-import { BlurArea, Glass } from '../effects/Glass'
-import { useMotion } from '../effects/motion'
+import { Glass, ScreenBlurArea } from '../effects/Glass'
 import { withAlpha } from '../theme/materials'
 import { useTheme } from '../theme/ThemeProvider'
 import { useTabBarSpace } from './TabBar'
@@ -77,7 +76,6 @@ export function Page<T>(props: ScrollPage | ListPage<T>) {
   const { title, large = true, hero, right, header, onRefresh, inset = 20, pinned, pinnedHeight = 0, footer } = props
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
-  const motion = useMotion()
   const bottom = useTabBarSpace()
   const y = useSharedValue(0)
   const [collapse, setCollapse] = useState(hero ? 240 : 48)
@@ -135,11 +133,9 @@ export function Page<T>(props: ScrollPage | ListPage<T>) {
 
   return (
     <ScrollContext.Provider value={y}>
-      <BlurArea active={useIsFocused()} style={{ flex: 1 }}>
-        <Animated.View style={[{ flex: 1 }, motion.pageIn]}>
-          <GestureDetector gesture={pull.gesture}>{content}</GestureDetector>
-        </Animated.View>
-      </BlurArea>
+      <ScreenBlurArea style={{ flex: 1 }}>
+        <GestureDetector gesture={pull.gesture}>{content}</GestureDetector>
+      </ScreenBlurArea>
       {footer && (
         <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: bottom + 10 }}>
           {footer}

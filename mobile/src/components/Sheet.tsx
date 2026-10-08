@@ -18,8 +18,16 @@ import { lift, withAlpha } from '../theme/materials'
 const DISMISS = 110
 const FLING = 900
 
-export function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
-  const [mounted, setMounted] = useState(open)
+type Props = { open: boolean; onClose: () => void; children: ReactNode }
+
+/** Nothing at all while it's closed: a list can have one on every row. */
+export function Sheet(props: Props) {
+  const [mounted, setMounted] = useState(props.open)
+  if (props.open && !mounted) setMounted(true)
+  return mounted ? <Body {...props} onClosed={() => setMounted(false)} /> : null
+}
+
+function Body({ open, onClose, onClosed, children }: Props & { onClosed: () => void }) {
   const { height } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const { tokens, style, material } = useTheme()
@@ -30,13 +38,15 @@ export function Sheet({ open, onClose, children }: { open: boolean; onClose: () 
   const shown = useRef(open)
   shown.current = open
 
+  const closed = useRef(onClosed)
+  closed.current = onClosed
+
   useEffect(() => {
     if (open) {
-      setMounted(true)
       y.value = reduced ? 0 : withTiming(0, { duration: 280, easing: Easing.bezier(0.2, 0.8, 0.2, 1) })
     } else {
       // Unless it was opened again while closing.
-      const unmount = () => shown.current || setMounted(false)
+      const unmount = () => shown.current || closed.current()
       if (reduced) unmount()
       else y.value = withTiming(height, { duration: 200 }, (done) => done && scheduleOnRN(unmount))
     }
@@ -63,7 +73,7 @@ export function Sheet({ open, onClose, children }: { open: boolean; onClose: () 
   const radius = Math.round(28 * material.corners.scale)
 
   return (
-    <Modal visible={mounted} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+    <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(tokens.shade, 0.5) }, backdrop]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />

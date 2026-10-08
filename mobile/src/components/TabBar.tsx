@@ -10,14 +10,12 @@ import { type ReactNode, useCallback, useMemo, useRef } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
-  Easing,
   clamp,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
-  withDelay,
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
@@ -25,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
 import { haptic } from '../../modules/haptics'
 import { Glass } from '../effects/Glass'
-import { useMotion } from '../effects/motion'
+import { lead, trail, useMotion } from '../effects/motion'
 import { useTheme } from '../theme/ThemeProvider'
 import { withAlpha } from '../theme/materials'
 import type { Pager, TabEvents, TabOptions } from './Tabs'
@@ -43,14 +41,6 @@ export function useTabBarSpace() {
   return useSafeAreaInsets().bottom + GAP + HEIGHT
 }
 
-const lead = (to: number) => {
-  'worklet'
-  return withTiming(to, { duration: 340, easing: Easing.bezier(0.3, 1.35, 0.5, 1) })
-}
-const trail = (to: number) => {
-  'worklet'
-  return withDelay(50, withTiming(to, { duration: 420, easing: Easing.bezier(0.65, 0, 0.25, 1) }))
-}
 /** Stiff enough to keep up with a finger, soft enough to smooth its jitter (a tab's width is a page's). */
 const FOLLOW = { stiffness: 420, damping: 42, mass: 1 }
 
@@ -66,16 +56,22 @@ export function TabBar({ state, descriptors, navigation, pager }: Props) {
   const { tokens, material } = useTheme()
   const reduced = useReducedMotion()
   const count = state.routes.length
-  const { pos, to, drag, grab, land, load } = pager
+  const { pos, to, drag, grab, land, load, glide } = pager
 
   const latest = useRef({ state, descriptors, navigation })
   latest.current = { state, descriptors, navigation }
-  const press = useCallback((i: number) => {
-    const { state, navigation } = latest.current
-    const route = state.routes[i]
-    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
-    if (i !== state.index && !event.defaultPrevented) navigation.navigate(route.name, route.params)
-  }, [])
+  const press = useCallback(
+    (i: number) => {
+      const { state, navigation } = latest.current
+      const route = state.routes[i]
+      const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
+      if (i === to.value || event.defaultPrevented) return
+      glide(i)
+      load(i)
+      navigation.navigate(route.name, route.params)
+    },
+    [to, glide, load],
+  )
   const longPress = useCallback((i: number) => {
     const { state, descriptors } = latest.current
     descriptors[state.routes[i].key].options.tabBarOnLongPress?.()

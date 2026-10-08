@@ -5,7 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { Page } from '../../../src/components/Page'
 import { Poster } from '../../../src/components/Poster'
@@ -72,11 +72,15 @@ export default function Library() {
   })
   useArrived(!!data)
 
+  // The chips change straight away; the grid follows, after.
+  const shownFilter = useDeferredValue(filter)
+  const shownSort = useDeferredValue(sort)
   const cards = useMemo(() => {
-    const list = (data ?? []).filter((c) => matches(c, filter))
-    if (sort === 'year') list.sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+    const list = (data ?? []).filter((c) => matches(c, shownFilter))
+    if (shownSort === 'year') list.sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
     return list
-  }, [data, filter, sort])
+  }, [data, shownFilter, shownSort])
+  const renderItem = useCallback(({ item }: { item: Card }) => <Poster card={item} width={width} />, [width])
 
   const choose = (n: string) => {
     setPicked(n)
@@ -120,7 +124,7 @@ export default function Library() {
         data: cards,
         numColumns: 3,
         keyExtractor: (c) => String(c.id),
-        renderItem: ({ item }) => <Poster card={item} width={width} />,
+        renderItem,
         columnWrapperStyle: { gap: GAP, paddingHorizontal: 20 },
         contentContainerStyle: { rowGap: 20 },
         initialNumToRender: 12,

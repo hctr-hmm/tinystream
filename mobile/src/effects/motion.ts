@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react'
 import type { ViewStyle } from 'react-native'
-import { type CSSAnimationKeyframes, type CSSAnimationProperties, cubicBezier, useReducedMotion } from 'react-native-reanimated'
+import { type CSSAnimationKeyframes, type CSSAnimationProperties, Easing, cubicBezier, useReducedMotion, withDelay, withTiming } from 'react-native-reanimated'
 import { useTheme } from '../theme/ThemeProvider'
 import { type Material, withAlpha } from '../theme/materials'
 
@@ -15,6 +15,17 @@ export const settle = cubicBezier(0.16, 1, 0.3, 1)
 export const glide = cubicBezier(0.2, 0.8, 0.2, 1)
 /** cubic-bezier(.65, 0, .35, 1): wipes and folds. */
 export const wipe = cubicBezier(0.65, 0, 0.35, 1)
+
+/** web's `Segmented` thumb moving over: its leading edge springs ahead… */
+export const lead = (to: number) => {
+  'worklet'
+  return withTiming(to, { duration: 340, easing: Easing.bezier(0.3, 1.35, 0.5, 1) })
+}
+/** …and the trailing one catches up. */
+export const trail = (to: number) => {
+  'worklet'
+  return withDelay(50, withTiming(to, { duration: 420, easing: Easing.bezier(0.65, 0, 0.25, 1) }))
+}
 
 type Motion = CSSAnimationProperties<ViewStyle>
 

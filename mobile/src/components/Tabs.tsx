@@ -60,6 +60,8 @@ export type Pager = {
   land: (i: number, velocity?: number, feel?: boolean) => void
   /** Renders page `i`, before it's been gone to: it's being dragged into view. */
   load: (i: number) => void
+  /** Glides the strip to page `i` (a tab press) straight away, rather than once the page has rendered. */
+  glide: (i: number) => void
 }
 
 const glide = Easing.bezier(0.16, 1, 0.3, 1)
@@ -96,6 +98,15 @@ function TabsNavigator({ id, initialRouteName, backBehavior, children, layout, s
     const key = latest.current.state.routes[i]?.key
     if (key) setLoaded((l) => (l.has(key) ? l : new Set(l).add(key)))
   }, [])
+  // Once the first page has settled, the others are rendered too, one at a time: going to one then only glides.
+  const first = loaded.size === 1
+  useEffect(() => {
+    const next = state.routes.findIndex((r) => !loaded.has(r.key))
+    if (next < 0) return
+    const t = setTimeout(() => load(next), first ? 1500 : 500)
+    return () => clearTimeout(t)
+  }, [loaded, first, state.routes, load])
+
   const arrive = useCallback((i: number, feel: boolean) => {
     const { state, navigation } = latest.current
     const route = state.routes[i]
@@ -116,27 +127,30 @@ function TabsNavigator({ id, initialRouteName, backBehavior, children, layout, s
     [to, drag, pos, reduced, arrive],
   )
 
-  // Gone to some other way than by a finger: a tab press, or Back.
-  const shown = useRef(state.index)
-  useEffect(() => {
-    const old = shown.current
-    shown.current = state.index
-    if (to.value === state.index) return
-    to.value = state.index
-    if (reduced) {
-      stand.value = null
-      pos.value = state.index
-      return
-    }
-    const dir = Math.sign(state.index - old)
-    const slot = stand.value?.page === old ? stand.value.slot : old
-    const from = state.index - dir + (pos.value - slot)
-    stand.value = { page: old, slot: state.index - dir }
-    pos.value = from
-    pos.value = withTiming(state.index, { duration: 420, easing: glide }, (done) => {
-      if (done) stand.value = null
-    })
-  }, [state.index, to, pos, stand, reduced])
+  const glideTo = useCallback(
+    (i: number) => {
+      const old = to.value
+      if (old === i) return
+      to.value = i
+      if (reduced) {
+        stand.value = null
+        pos.value = i
+        return
+      }
+      const dir = Math.sign(i - old)
+      const slot = stand.value?.page === old ? stand.value.slot : old
+      const from = i - dir + (pos.value - slot)
+      stand.value = { page: old, slot: i - dir }
+      pos.value = from
+      pos.value = withTiming(i, { duration: 420, easing: glide }, (done) => {
+        if (done) stand.value = null
+      })
+    },
+    [to, pos, stand, reduced],
+  )
+
+  // Gone to some other way than by a finger or a tab press: Back, or a link.
+  useEffect(() => glideTo(state.index), [state.index, glideTo])
 
   const grab = useCallback(() => {
     'worklet'
@@ -146,7 +160,7 @@ function TabsNavigator({ id, initialRouteName, backBehavior, children, layout, s
     return pos.value
   }, [pos, stand, drag])
 
-  const pager: Pager = { pos, to, drag, grab, land, load }
+  const pager: Pager = { pos, to, drag, grab, land, load, glide: glideTo }
 
   // Past a tab's first screen, a sideways swipe is the page's own (or going back), not the tabs'.
   const deep = (state.routes[state.index].state?.index ?? 0) > 0

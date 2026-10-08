@@ -11,7 +11,7 @@ import { ReleaseSheet, StateBadge, deleteItems, useDeleteDownloaded } from '../.
 import { Menu } from '../../../src/components/Menu'
 import { Page } from '../../../src/components/Page'
 import { ListSkeleton, useArrived } from '../../../src/components/Skeleton'
-import { Badge, Button, Empty, IconButton, Segmented } from '../../../src/components/ui'
+import { Badge, Button, Empty, IconButton, Segmented, Swap } from '../../../src/components/ui'
 import { Squircle } from '../../../src/effects/Squircle'
 import { useMotion } from '../../../src/effects/motion'
 import { graphql } from '../../../src/gql'
@@ -80,13 +80,13 @@ export default function Wanted() {
     >
       {!data && <ListSkeleton rows={3} height={140} />}
       {data && groups.length === 0 && <Empty title={filter === 'all' ? 'Nothing is missing' : 'Nothing here'} />}
-      <Animated.View key={filter} style={[motion.fade, { gap: 12 }]}>
+      <Swap value={filter} order={FILTERS} style={{ gap: 12 }}>
         {groups.map((list, i) => (
           <Animated.View key={`${list[0].seriesId}:${list[0].season}`} style={arrived ? motion.developIn(i) : undefined}>
             <Group list={list} now={now} onSearch={setSearching} />
           </Animated.View>
         ))}
-      </Animated.View>
+      </Swap>
       {searching && (
         <ReleaseSheet open seriesId={searching.seriesId} season={searching.season} episodes={searching.episodes} title={searching.show} onClose={() => setSearching(null)} />
       )}

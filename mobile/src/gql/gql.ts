@@ -40,7 +40,6 @@ type Documents = {
     "\n  mutation ResumeDownloads($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": typeof types.ResumeDownloadsDocument,
     "\n  query Discover($library: String, $query: String) {\n    discover(library: $library, query: $query) {\n      library\n      results {\n        ...DiscoverResultFields\n      }\n    }\n  }\n": typeof types.DiscoverDocument,
     "\n  query ForYou($library: String) {\n    forYou(library: $library) {\n      library\n      shelves {\n        key\n        name\n        results {\n          ...DiscoverResultFields\n        }\n      }\n    }\n  }\n": typeof types.ForYouDocument,
-    "\n  query Title($id: Int!) {\n    title(id: $id) {\n      ...TitleDetail\n    }\n  }\n": typeof types.TitleDocument,
     "\n  query Similar($id: Int!) {\n    title(id: $id) {\n      similar {\n        recommendations {\n          ...DiscoverResultFields\n        }\n        alsoWatched {\n          ...Card\n        }\n      }\n    }\n  }\n": typeof types.SimilarDocument,
     "\n  query MatchCandidates($id: Int!, $query: String, $provider: Provider) {\n    title(id: $id) {\n      matchCandidates(query: $query, provider: $provider) {\n        query\n        results {\n          provider\n          id\n          name\n          year\n          poster\n          overview\n        }\n      }\n    }\n  }\n": typeof types.MatchCandidatesDocument,
     "\n  query TitleDownloads {\n    downloads {\n      ...DownloadFields\n    }\n  }\n": typeof types.TitleDownloadsDocument,
@@ -81,6 +80,7 @@ type Documents = {
     "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": typeof types.AppearanceDocument,
     "\n  query Libraries {\n    libraries {\n      name\n      kind\n      showCount\n      movieCount\n      albumCount\n      trackCount\n    }\n  }\n": typeof types.LibrariesDocument,
     "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": typeof types.SettingsDocument,
+    "\n  query Title($id: Int!) {\n    title(id: $id) {\n      ...TitleDetail\n    }\n  }\n": typeof types.TitleDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": typeof types.PeopleDocument,
     "\n  mutation SignOut {\n    signOut\n  }\n": typeof types.SignOutDocument,
     "\n  query Passkeys {\n    viewer {\n      passkeys {\n        id\n        name\n        createdAt\n        lastUsed\n      }\n    }\n  }\n": typeof types.PasskeysDocument,
@@ -157,7 +157,6 @@ const documents: Documents = {
     "\n  mutation ResumeDownloads($ids: [Int!]!) {\n    resumeDownloads(ids: $ids) {\n      id\n    }\n  }\n": types.ResumeDownloadsDocument,
     "\n  query Discover($library: String, $query: String) {\n    discover(library: $library, query: $query) {\n      library\n      results {\n        ...DiscoverResultFields\n      }\n    }\n  }\n": types.DiscoverDocument,
     "\n  query ForYou($library: String) {\n    forYou(library: $library) {\n      library\n      shelves {\n        key\n        name\n        results {\n          ...DiscoverResultFields\n        }\n      }\n    }\n  }\n": types.ForYouDocument,
-    "\n  query Title($id: Int!) {\n    title(id: $id) {\n      ...TitleDetail\n    }\n  }\n": types.TitleDocument,
     "\n  query Similar($id: Int!) {\n    title(id: $id) {\n      similar {\n        recommendations {\n          ...DiscoverResultFields\n        }\n        alsoWatched {\n          ...Card\n        }\n      }\n    }\n  }\n": types.SimilarDocument,
     "\n  query MatchCandidates($id: Int!, $query: String, $provider: Provider) {\n    title(id: $id) {\n      matchCandidates(query: $query, provider: $provider) {\n        query\n        results {\n          provider\n          id\n          name\n          year\n          poster\n          overview\n        }\n      }\n    }\n  }\n": types.MatchCandidatesDocument,
     "\n  query TitleDownloads {\n    downloads {\n      ...DownloadFields\n    }\n  }\n": types.TitleDownloadsDocument,
@@ -198,6 +197,7 @@ const documents: Documents = {
     "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": types.AppearanceDocument,
     "\n  query Libraries {\n    libraries {\n      name\n      kind\n      showCount\n      movieCount\n      albumCount\n      trackCount\n    }\n  }\n": types.LibrariesDocument,
     "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": types.SettingsDocument,
+    "\n  query Title($id: Int!) {\n    title(id: $id) {\n      ...TitleDetail\n    }\n  }\n": types.TitleDocument,
     "\n  query People {\n    users {\n      ...Person\n    }\n  }\n": types.PeopleDocument,
     "\n  mutation SignOut {\n    signOut\n  }\n": types.SignOutDocument,
     "\n  query Passkeys {\n    viewer {\n      passkeys {\n        id\n        name\n        createdAt\n        lastUsed\n      }\n    }\n  }\n": types.PasskeysDocument,
@@ -349,10 +349,6 @@ export function graphql(source: "\n  query Discover($library: String, $query: St
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query ForYou($library: String) {\n    forYou(library: $library) {\n      library\n      shelves {\n        key\n        name\n        results {\n          ...DiscoverResultFields\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').ForYouDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query Title($id: Int!) {\n    title(id: $id) {\n      ...TitleDetail\n    }\n  }\n"): typeof import('./graphql').TitleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -513,6 +509,10 @@ export function graphql(source: "\n  query Libraries {\n    libraries {\n      n
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Settings {\n    settings {\n      ...SettingsFields\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n"): typeof import('./graphql').SettingsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Title($id: Int!) {\n    title(id: $id) {\n      ...TitleDetail\n    }\n  }\n"): typeof import('./graphql').TitleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

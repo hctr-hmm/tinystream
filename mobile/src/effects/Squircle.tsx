@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Canvas, DashPathEffect, LinearGradient, Path, Skia, vec } from '@shopify/react-native-skia'
-import { squirclePath } from '@tinystream/shared/squircle'
 import { cssInterop } from 'nativewind'
-import { type ReactNode, useMemo, useState } from 'react'
-import { type LayoutChangeEvent, StyleSheet, type ViewProps } from 'react-native'
+import { type ReactNode, useMemo } from 'react'
+import type { ViewProps } from 'react-native'
 import { SquircleView } from '../../modules/squircle'
 import { useTheme } from '../theme/ThemeProvider'
 import { withAlpha } from '../theme/materials'
@@ -25,43 +23,20 @@ export type SquircleProps = ViewProps & {
 
 /**
  * A box with continuous-curvature corners, clipped (children and all) to a
- * squircle, like web's Squircle. Measures itself to build the path.
+ * squircle, like web's Squircle. The view builds the path at its own size.
  */
-export function Squircle({ radius: baseRadius = 12, smoothing, edge = false, dashed = false, onLayout, children, ...rest }: SquircleProps) {
+export function Squircle({ radius = 12, smoothing, edge = false, dashed = false, children, ...rest }: SquircleProps) {
   const { material, tokens } = useTheme()
-  const [size, setSize] = useState<[number, number] | null>(null)
-  const radius = Math.round(baseRadius * material.corners.scale)
-  const d = size ? squirclePath(size[0], size[1], radius, smoothing ?? material.corners.smoothing) : null
-  const path = useMemo(() => (d ? Skia.Path.MakeFromSVGString(d) : null), [d])
-
-  const measure = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout
-    setSize((s) => (s && s[0] === width && s[1] === height ? s : [width, height]))
-    onLayout?.(e)
-  }
-
+  const glow = useMemo(() => material.edge.map((a) => withAlpha(tokens.glow, a)), [material.edge, tokens.glow])
   return (
-    <SquircleView path={d} radius={radius} onLayout={measure} {...rest}>
+    <SquircleView
+      radius={Math.round(radius * material.corners.scale)}
+      smoothing={smoothing ?? material.corners.smoothing}
+      edge={edge && !dashed ? glow : null}
+      dashed={dashed ? tokens['line-strong'] : null}
+      {...rest}
+    >
       {children}
-      {(edge || dashed) && size && path && (
-        <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* Twice the width, half of it clipped away: a crisp 1dp inner edge. */}
-          {dashed ? (
-            <Path path={path} style="stroke" strokeWidth={2} color={tokens['line-strong']}>
-              <DashPathEffect intervals={[4, 4]} />
-            </Path>
-          ) : (
-            <Path path={path} style="stroke" strokeWidth={2}>
-              <LinearGradient
-                start={vec(0, 0)}
-                end={vec(0, size[1])}
-                positions={[0, 0.35, 1]}
-                colors={material.edge.map((a) => withAlpha(tokens.glow, a))}
-              />
-            </Path>
-          )}
-        </Canvas>
-      )}
     </SquircleView>
   )
 }

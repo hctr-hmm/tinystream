@@ -43,6 +43,8 @@ export type TiltProps = {
   /** Also lean with the phone (hero artwork only), while the screen is in focus. */
   gyro?: boolean
   onPress?: () => void
+  /** A finger touching the card, before it's known whether it'll be a press: to get ready for one. */
+  onPressIn?: () => void
   onLongPress?: () => void
   /** The card's squircle corners. */
   radius?: number
@@ -51,7 +53,7 @@ export type TiltProps = {
   children: ReactNode
 }
 
-export function Tilt({ max = 7, gyro = false, onPress, onLongPress, radius = 14, edge = true, style, children }: TiltProps) {
+export function Tilt({ max = 7, gyro = false, onPress, onPressIn, onLongPress, radius = 14, edge = true, style, children }: TiltProps) {
   const reduced = useReducedMotion()
   const [size, setSize] = useState({ width: 0, height: 0 })
   const width = useSharedValue(0)
@@ -78,7 +80,10 @@ export function Tilt({ max = 7, gyro = false, onPress, onLongPress, radius = 14,
 
   const tap = Gesture.Tap()
     .maxDistance(12)
-    .onBegin((e) => press(e.x, e.y))
+    .onBegin((e) => {
+      press(e.x, e.y)
+      if (onPressIn) scheduleOnRN(onPressIn)
+    })
     .onEnd((_, success) => {
       if (success && onPress) scheduleOnRN(onPress)
     })
@@ -110,13 +115,14 @@ export function Tilt({ max = 7, gyro = false, onPress, onLongPress, radius = 14,
       release()
     })
 
-  // The sensor only runs while the screen is in focus.
+  // The sensor only runs while the screen is in focus. Other cards don't follow it: there are lots of them.
   const [focused, setFocused] = useState(false)
   useFocusEffect(
     useCallback(() => {
+      if (!gyro) return
       setFocused(true)
       return () => setFocused(false)
-    }, []),
+    }, [gyro]),
   )
   const leaning = gyro && focused && !reduced
   useEffect(() => {
@@ -142,7 +148,7 @@ export function Tilt({ max = 7, gyro = false, onPress, onLongPress, radius = 14,
     const { width: w, height: h } = e.nativeEvent.layout
     width.value = w
     height.value = h
-    setSize({ width: w, height: h })
+    if (gyro) setSize({ width: w, height: h })
   }
 
   return (

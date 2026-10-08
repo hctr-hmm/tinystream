@@ -2,13 +2,13 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, ExternalLink, RefreshCw, Undo2 } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Text, View } from 'react-native'
 import { Squircle } from '../effects/Squircle'
 import { Tilt } from '../effects/Tilt'
 import { graphql } from '../gql'
 import { useGo } from '../nav'
-import { type Card, useMe } from '../queries'
+import { type Card, titleQuery, useMe } from '../queries'
 import { useApi } from '../session'
 import { toast, toastError } from './Feedback'
 import { Img } from './Img'
@@ -42,8 +42,10 @@ function Fallback({ title }: { title: string }) {
 }
 
 /** A title's poster (web's Poster): `caption` replaces the watched count under it. */
-export function Poster({ card, width, caption }: { card: Card; width: number; caption?: string }) {
+export const Poster = memo(function Poster({ card, width, caption }: { card: Card; width: number; caption?: string }) {
   const go = useGo()
+  const api = useApi()
+  const qc = useQueryClient()
   const [broken, setBroken] = useState(false)
   const [menu, setMenu] = useState(false)
   useEffect(() => setBroken(false), [card.poster])
@@ -53,7 +55,13 @@ export function Poster({ card, width, caption }: { card: Card; width: number; ca
   const badge = fresh ? (card.kind === 'SHOW' && card.freshCount > 1 ? `${card.freshCount} new` : 'New') : card.kind === 'SHOW' && card.watchedCount > 0 && unwatched > 0 ? String(unwatched) : null
   return (
     <View style={{ width }}>
-      <Tilt radius={14} style={{ width, aspectRatio: 2 / 3 }} onPress={() => go(`title/${card.id}`)} onLongPress={() => setMenu(true)}>
+      <Tilt
+        radius={14}
+        style={{ width, aspectRatio: 2 / 3 }}
+        onPressIn={() => void qc.prefetchQuery(titleQuery(api, card.id))}
+        onPress={() => go(`title/${card.id}`)}
+        onLongPress={() => setMenu(true)}
+      >
         <View className="flex-1 bg-raised">
           {card.poster && !broken ? <Img src={card.poster} style={{ flex: 1 }} onError={() => setBroken(true)} /> : <Fallback title={card.name} />}
         </View>
@@ -85,7 +93,7 @@ export function Poster({ card, width, caption }: { card: Card; width: number; ca
       <PosterMenu card={card} done={done} open={menu} onClose={() => setMenu(false)} />
     </View>
   )
-}
+})
 
 /** A poster's long-press menu: what the title page does that makes sense from a card. */
 function PosterMenu({ card, done, open, onClose }: { card: Card; done: boolean; open: boolean; onClose: () => void }) {

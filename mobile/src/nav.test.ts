@@ -2,7 +2,8 @@
 
 import { expect, mock, test } from 'bun:test'
 
-mock.module('expo-router', () => ({ useRouter: () => null, useSegments: () => [] }))
+mock.module('expo-router', () => ({ useRouter: () => null }))
+mock.module('expo-router/react-navigation', () => ({ NavigationContext: null }))
 const { place, tabOf } = await import('./nav')
 
 test('web links land on the app’s screens', () => {

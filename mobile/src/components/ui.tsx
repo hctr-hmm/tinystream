@@ -2,12 +2,12 @@
 // web's form pieces (web/src/components/ui.tsx), sized for fingers.
 
 import { Check, ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react-native'
-import { type ReactNode, forwardRef, useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, type PressableProps, ScrollView, Switch, Text, TextInput, type TextInputProps, View } from 'react-native'
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
+import { type ReactNode, forwardRef, startTransition, useEffect, useOptimistic, useRef, useState } from 'react'
+import { ActivityIndicator, Pressable, type PressableProps, ScrollView, Switch, Text, TextInput, type TextInputProps, View, type ViewStyle } from 'react-native'
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated'
 import { haptic } from '../../modules/haptics'
 import { Squircle } from '../effects/Squircle'
-import { useMotion } from '../effects/motion'
+import { lead, trail, useMotion } from '../effects/motion'
 import { useTheme } from '../theme/ThemeProvider'
 import { lift } from '../theme/materials'
 import { Sheet } from './Sheet'
@@ -158,45 +158,158 @@ export function IconButton({
 
 export type Option<T> = { value: T; label: string }
 
-/** web's Segmented: a row of choices with the picked one raised. */
+/**
+ * A choice that shows the moment it's made, while what it changes renders
+ * after (a transition): until `value` catches up, or back to it if `onChange`
+ * (which can be async) doesn't change it.
+ */
+export function usePick<T>(value: T, onChange: (v: T) => unknown) {
+  const [shown, show] = useOptimistic(value)
+  const pick = (v: T) =>
+    startTransition(async () => {
+      show(v)
+      await onChange(v)
+    })
+  return [shown, pick] as const
+}
+
+/**
+ * web's Segmented: a row of choices with the picked one raised, on a thumb
+ * that slides over as soon as one is pressed (its leading edge springs
+ * ahead, the trailing one catches up). What the choice changes renders after.
+ */
 export function Segmented<T extends string>({ value, options, onChange, size = 'md' }: { value: T; options: Option<T>[]; onChange: (v: T) => void; size?: 'sm' | 'md' }) {
+  const reduced = useReducedMotion()
   const scroll = options.length > 3
-  const row = (
-    <Squircle radius={12} className="flex-row bg-raised p-1" style={scroll ? undefined : { alignSelf: 'stretch' }}>
-      {options.map((o) => {
-        const on = o.value === value
-        return (
-          <Pressable
-            key={o.value}
-            style={scroll ? undefined : { flexGrow: 1 }}
-            onPress={() => {
-              if (on) return
-              haptic('tick')
-              onChange(o.value)
-            }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-          >
-            <Squircle
-              radius={9}
-              edge={on}
-              className={on ? 'bg-float' : ''}
-              style={{ paddingVertical: size === 'sm' ? 6 : 8, paddingHorizontal: 12, alignItems: 'center' }}
-            >
-              <Text className={`font-sans ${size === 'sm' ? 'text-[13px]' : 'text-sm'} font-medium ${on ? 'text-ink' : 'text-ink-2'}`} numberOfLines={1}>
-                {o.label}
-              </Text>
-            </Squircle>
-          </Pressable>
-        )
-      })}
+  const [picked, pick] = usePick(value, onChange)
+  const index = options.findIndex((o) => o.value === picked)
+
+  // The thumb's edges, in dp from the row's left and right.
+  const [boxes, setBoxes] = useState<{ x: number; width: number }[]>([])
+  const [row, setRow] = useState(0)
+  const left = useSharedValue(0)
+  const right = useSharedValue(0)
+  const at = useRef(-1)
+  const placed = boxes.length === options.length && boxes.every(Boolean) && row > 0
+
+  const move = (i: number, glide = true) => {
+    const box = boxes[i]
+    if (!placed || !box) return
+    const [l, r] = [box.x, row - box.x - box.width]
+    const dir = Math.sign(i - at.current)
+    at.current = i
+    if (reduced || !glide || !dir) {
+      left.value = l
+      right.value = r
+    } else {
+      left.value = dir > 0 ? trail(l) : lead(l)
+      right.value = dir > 0 ? lead(r) : trail(r)
+    }
+  }
+  // Put in place when (re)measured; moved over when the value changes from outside, not by a press.
+  const laid = useRef<unknown[]>([])
+  useEffect(() => {
+    const remeasured = laid.current[0] !== boxes || laid.current[1] !== row
+    laid.current = [boxes, row]
+    if (remeasured) move(index, false)
+    else if (at.current !== index) move(index)
+  })
+
+  const thumb = useAnimatedStyle(() => ({ left: Math.max(0, left.value), right: Math.max(0, right.value) }))
+
+  const content = (
+    <Squircle radius={12} className="bg-raised p-1" style={scroll ? undefined : { alignSelf: 'stretch' }}>
+      <View className="flex-row" onLayout={(e) => setRow(e.nativeEvent.layout.width)}>
+        {placed && index >= 0 && (
+          <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, bottom: 0 }, thumb]}>
+            <Squircle radius={9} edge className="flex-1 bg-float" />
+          </Animated.View>
+        )}
+        {options.map((o, i) => {
+          const on = o.value === picked
+          return (
+            <SegmentedOption
+              key={o.value}
+              label={o.label}
+              on={on}
+              raised={on && !placed}
+              size={size}
+              grow={!scroll}
+              onLayout={(box) => setBoxes((b) => (b[i]?.x === box.x && b[i]?.width === box.width ? b : Object.assign([...b], { [i]: box })))}
+              onPress={() => {
+                if (on) return
+                haptic('tick')
+                move(i)
+                pick(o.value)
+              }}
+            />
+          )
+        })}
+      </View>
     </Squircle>
   )
-  if (!scroll) return row
+  if (!scroll) return content
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-      {row}
+      {content}
     </ScrollView>
+  )
+}
+
+function SegmentedOption({
+  label,
+  on,
+  raised,
+  size,
+  grow,
+  onLayout,
+  onPress,
+}: {
+  label: string
+  on: boolean
+  raised: boolean
+  size: 'sm' | 'md'
+  grow: boolean
+  onLayout: (box: { x: number; width: number }) => void
+  onPress: () => void
+}) {
+  const scale = useSharedValue(1)
+  const pressed = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  return (
+    <Pressable
+      style={grow ? { flexGrow: 1 } : undefined}
+      onLayout={(e) => onLayout({ x: e.nativeEvent.layout.x, width: e.nativeEvent.layout.width })}
+      onPress={onPress}
+      onPressIn={() => (scale.value = withTiming(0.96, { duration: 200 }))}
+      onPressOut={() => (scale.value = withTiming(1, { duration: 200 }))}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+    >
+      <Animated.View style={pressed}>
+        <Squircle
+          radius={9}
+          edge={raised}
+          className={raised ? 'bg-float' : ''}
+          style={{ paddingVertical: size === 'sm' ? 6 : 8, paddingHorizontal: 12, alignItems: 'center' }}
+        >
+          <Text className={`font-sans ${size === 'sm' ? 'text-[13px]' : 'text-sm'} font-medium ${on ? 'text-ink' : 'text-ink-2'}`} numberOfLines={1}>
+            {label}
+          </Text>
+        </Squircle>
+      </Animated.View>
+    </Pressable>
+  )
+}
+
+/** What a `Segmented` switches between: a new choice slides in from the side it was picked toward. */
+export function Swap<T extends string>({ value, order, style, children }: { value: T; order: readonly T[]; style?: ViewStyle; children: ReactNode }) {
+  const motion = useMotion()
+  const [seen, setSeen] = useState({ value, dir: 0 })
+  if (value !== seen.value) setSeen({ value, dir: Math.sign(order.indexOf(value) - order.indexOf(seen.value)) })
+  return (
+    <Animated.View key={value} style={[style, seen.dir ? motion.swapIn(seen.dir * 32) : undefined]}>
+      {children}
+    </Animated.View>
   )
 }
 

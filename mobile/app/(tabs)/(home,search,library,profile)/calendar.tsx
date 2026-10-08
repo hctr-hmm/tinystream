@@ -5,7 +5,6 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { airs, clockTime, countdown, duration, episodeCode, speed, startOfDay } from '@tinystream/shared/downloads'
-import { type Href, useRouter } from 'expo-router'
 import { ArrowDown, ChevronLeft, ChevronRight, Play, Radio } from 'lucide-react-native'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, View, type ViewToken } from 'react-native'
@@ -23,7 +22,7 @@ import { Ticker } from '../../../src/effects/Ticker'
 import { Tilt } from '../../../src/effects/Tilt'
 import { useMotion } from '../../../src/effects/motion'
 import { graphql } from '../../../src/gql'
-import { useGo } from '../../../src/nav'
+import { useGo, useWatch } from '../../../src/nav'
 import { type CalendarEntry, useNow } from '../../../src/queries'
 import { useApi } from '../../../src/session'
 import { useTheme } from '../../../src/theme/ThemeProvider'
@@ -192,9 +191,9 @@ function LineView({ line, now, today }: { line: Line; now: number; today: number
 }
 
 function useOpen() {
-  const router = useRouter()
+  const watch = useWatch()
   const go = useGo()
-  return (e: CalendarEntry) => (e.video ? () => router.push(`/watch/${e.video!.id}` as Href) : e.title ? () => go(`title/${e.title!.id}`) : undefined)
+  return (e: CalendarEntry) => (e.video ? () => watch(e.video!.id) : e.title ? () => go(`title/${e.title!.id}`) : undefined)
 }
 
 function DayCard({ e, now }: { e: CalendarEntry; now: number }) {

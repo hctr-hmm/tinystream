@@ -172,6 +172,20 @@ export const settingsQuery = (api: Api) => ({
   },
 })
 
+const TitleQuery = graphql(`
+  query Title($id: Int!) {
+    title(id: $id) {
+      ...TitleDetail
+    }
+  }
+`)
+
+/** A title's page; fetched as soon as a finger touches its poster. */
+export const titleQuery = (api: Api, id: number) => ({
+  queryKey: ['item', id],
+  queryFn: async (): Promise<Item | null> => (await api.request(TitleQuery, { id })).title,
+})
+
 /** config.toml and what came of it (admins only), and what transcoding can use. */
 export function useSettings() {
   const api = useApi()

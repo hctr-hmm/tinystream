@@ -7,7 +7,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { airs, duration, shortDate, speed } from '@tinystream/shared/downloads'
 import { remaining, runtime } from '@tinystream/shared/format'
-import { type Href, useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { Check, CheckCheck, CircleCheck, EllipsisVertical, ImageUp, Play, RefreshCw, RotateCcw, Search, Undo2, Wand2 } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
@@ -26,7 +26,7 @@ import { Row } from '../../../../src/components/Row'
 import { NextEpisode, SeriesPanel, useItemSeries } from '../../../../src/components/SeriesPanel'
 import { Sheet } from '../../../../src/components/Sheet'
 import { useArrived } from '../../../../src/components/Skeleton'
-import { Button, Chip, Empty, ErrorText, IconButton, Input, Progress, Spinner } from '../../../../src/components/ui'
+import { Button, Chip, Empty, ErrorText, IconButton, Input, Progress, Spinner, usePick } from '../../../../src/components/ui'
 import { Bone } from '../../../../src/effects/Shimmer'
 import { Squircle } from '../../../../src/effects/Squircle'
 import { Tilt } from '../../../../src/effects/Tilt'
@@ -34,18 +34,11 @@ import { useMotion } from '../../../../src/effects/motion'
 import { graphql } from '../../../../src/gql'
 import type { Provider } from '../../../../src/gql/graphql'
 import { awaitTint, tintPending, titleTint } from '../../../../src/lib/tint'
-import { type Download, type Episode, type Item, type SeriesEpisode, useFeatures, useMe } from '../../../../src/queries'
+import { useWatch } from '../../../../src/nav'
+import { type Download, type Episode, type Item, type SeriesEpisode, titleQuery, useFeatures, useMe } from '../../../../src/queries'
 import { remember } from '../../../../src/recents'
 import { useApi, useSession } from '../../../../src/session'
 import { useTheme } from '../../../../src/theme/ThemeProvider'
-
-const TitleQuery = graphql(`
-  query Title($id: Int!) {
-    title(id: $id) {
-      ...TitleDetail
-    }
-  }
-`)
 
 const SimilarQuery = graphql(`
   query Similar($id: Int!) {
@@ -129,13 +122,12 @@ export default function Title() {
   const { server } = useSession()
   const me = useMe()
   const qc = useQueryClient()
-  const router = useRouter()
   const motion = useMotion()
   const { tokens } = useTheme()
+  const watch = useWatch()
   const key = ['item', id]
   const { data: item, error, refetch } = useQuery({
-    queryKey: key,
-    queryFn: async (): Promise<Item | null> => (await api.request(TitleQuery, { id })).title,
+    ...titleQuery(api, id),
     refetchInterval: awaitTint<Item | null>(tintPending),
   })
   const [season, setSeason] = useState<number | null>(null)
@@ -252,7 +244,6 @@ export default function Title() {
     })),
   ].sort((a, b) => (a.number === 0 ? 1 : b.number === 0 ? -1 : a.number - b.number))
   const next = item.nextUp
-  const watch = (videoId: number) => router.push(`/watch/${videoId}` as Href)
   const markAll = () => {
     // Remember exactly what was watched, so undo can put it back.
     const was = all.filter((e) => e.finished).map((e) => e.id)
@@ -349,17 +340,7 @@ export default function Title() {
 
         {item.kind === 'SHOW' && (
           <Animated.View style={order(3)} className="gap-3">
-            {seasonTabs.length > 1 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}>
-                {seasonTabs.map((s) => (
-                  <Chip key={s.number} on={season === s.number} onPress={() => setSeason(s.number)}>
-                    <Text className={`font-sans text-[13px] font-medium ${season === s.number ? 'text-canvas' : 'text-ink-2'}`}>{s.name}</Text>
-                    {s.done && !s.upcoming && <Check size={13} color={season === s.number ? tokens.canvas : tokens['ink-3']} />}
-                    {s.upcoming > 0 && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tokens.warn }} />}
-                  </Chip>
-                ))}
-              </ScrollView>
-            )}
+            {seasonTabs.length > 1 && season !== null && <Seasons seasons={seasonTabs} value={season} onChange={setSeason} />}
             {season === 0 && seasonTabs.length === 1 && <Text className="font-sans text-[17px] font-semibold text-ink">{current?.name ?? 'Specials'}</Text>}
             {current?.title && current.title !== item.name && <Text className="font-sans text-sm text-ink-3">{current.title}</Text>}
             <View style={{ marginHorizontal: -12 }}>
@@ -499,6 +480,31 @@ function Hero({ item }: { item: Item }) {
         </View>
       </Animated.View>
     </View>
+  )
+}
+
+/** The seasons' chips: the one pressed lights up straight away, its episodes come after. */
+function Seasons({
+  seasons,
+  value,
+  onChange,
+}: {
+  seasons: { number: number; name: string; done: boolean; upcoming: number }[]
+  value: number
+  onChange: (n: number) => void
+}) {
+  const { tokens } = useTheme()
+  const [season, pick] = usePick(value, onChange)
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}>
+      {seasons.map((s) => (
+        <Chip key={s.number} on={season === s.number} onPress={() => pick(s.number)}>
+          <Text className={`font-sans text-[13px] font-medium ${season === s.number ? 'text-canvas' : 'text-ink-2'}`}>{s.name}</Text>
+          {s.done && !s.upcoming && <Check size={13} color={season === s.number ? tokens.canvas : tokens['ink-3']} />}
+          {s.upcoming > 0 && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tokens.warn }} />}
+        </Chip>
+      ))}
+    </ScrollView>
   )
 }
 
