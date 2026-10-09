@@ -23,6 +23,8 @@ export type Load = {
   /** What the system's media controls show. */
   title: string | null
   subtitle: string | null
+  /** A picture for them (the episode's still), fetched with `headers`. */
+  artwork: string | null
   hasPrevious: boolean
   hasNext: boolean
 }

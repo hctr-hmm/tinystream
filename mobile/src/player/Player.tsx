@@ -197,6 +197,7 @@ export function Player({ mediaId, startAt, rotation, onRotation }: { mediaId: nu
       paused,
       title: show ? [pb.label, pb.name].filter(Boolean).join(' · ') || pb.title.name : pb.title.name,
       subtitle: show ? pb.title.name : null,
+      artwork: pb.still ? resolve(origin, pb.still) : null,
       hasPrevious: !!pb.previous,
       hasNext: !!pb.next,
     })

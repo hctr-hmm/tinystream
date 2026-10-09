@@ -13,6 +13,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Rect
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -36,6 +37,8 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSourceBitmapLoader
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
@@ -86,6 +89,7 @@ class Load(
   val paused: Boolean,
   val title: String?,
   val subtitle: String?,
+  val artwork: String?,
   val hasPrevious: Boolean,
   val hasNext: Boolean,
 )
@@ -132,6 +136,7 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
   private var load: Load? = null
   private var source: StreamSource? = null
   private var session: MediaSession? = null
+  private var sessions = 0
   private var attempt = 0
   private var retrying: Runnable? = null
   private var failed = false
@@ -200,8 +205,14 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
     source = StreamSource(client, next.url, next.headers, next.plan, next.duration)
     start((next.startAt * 1000).toLong())
     player.playWhenReady = !next.paused
-    session?.release()
-    session = MediaSession.Builder(context, RemotePlayer(player, next.hasPrevious, next.hasNext)).setId("tinystream.video.${System.identityHashCode(this)}").build()
+    val previous = session
+    session = MediaSession.Builder(context, RemotePlayer(player, next.hasPrevious, next.hasNext))
+      .setId("tinystream.video.${System.identityHashCode(this)}.${++sessions}")
+      .setBitmapLoader(DataSourceBitmapLoader.Builder(context).setDataSourceFactory(DefaultHttpDataSource.Factory().setDefaultRequestProperties(next.headers)).build())
+      .apply { openApp()?.let(::setSessionActivity) }
+      .build()
+      .also { VideoSessionService.show(context, it) }
+    previous?.release()
     status()
     progress()
   }
@@ -252,6 +263,12 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
     return runCatching { activity.enterPictureInPictureMode(pipParams()) }.getOrDefault(false)
   }
 
+  /** Where the media notification takes you: back to the app, and the video in it. */
+  private fun openApp(): PendingIntent? {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
+    return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+  }
+
   private fun endedEarly(): Boolean {
     val duration = load?.duration ?: return false
     return duration > 0 && player.currentPosition / 1000.0 < duration - 2
@@ -280,7 +297,12 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
     val s = source ?: return
     val next = load ?: return
     s.startUs = positionMs * 1000
-    val metadata = MediaMetadata.Builder().setTitle(next.title).setArtist(next.subtitle).setDisplayTitle(next.title).build()
+    val metadata = MediaMetadata.Builder()
+      .setTitle(next.title)
+      .setArtist(next.subtitle)
+      .setDisplayTitle(next.title)
+      .setArtworkUri(next.artwork?.let(Uri::parse))
+      .build()
     player.setMediaSource(s.mediaSource(MediaItem.Builder().setMediaMetadata(metadata)), positionMs)
     player.prepare()
   }
@@ -468,7 +490,10 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
     handler.removeCallbacksAndMessages(null)
     fillAnimation?.cancel()
     subtitles.release()
-    session?.release()
+    session?.let {
+      VideoSessionService.hide(context, it)
+      it.release()
+    }
     session = null
     player.release()
     source?.release()

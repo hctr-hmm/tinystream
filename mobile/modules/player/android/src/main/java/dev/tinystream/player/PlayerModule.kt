@@ -44,6 +44,7 @@ class LoadRecord : Record {
   @Field val paused: Boolean = false
   @Field val title: String? = null
   @Field val subtitle: String? = null
+  @Field val artwork: String? = null
   @Field val hasPrevious: Boolean = false
   @Field val hasNext: Boolean = false
 }
@@ -132,7 +133,7 @@ class PlayerModule : Module() {
       AsyncFunction("load") { view: VideoView, load: LoadRecord ->
         val plan = StreamPlan(load.plan.video, load.plan.height, load.plan.audio, load.plan.audioMode)
         view.load(
-          Load(load.url, load.headers, plan, load.startAt, load.duration, load.paused, load.title, load.subtitle, load.hasPrevious, load.hasNext),
+          Load(load.url, load.headers, plan, load.startAt, load.duration, load.paused, load.title, load.subtitle, load.artwork, load.hasPrevious, load.hasNext),
         )
       }.runOnQueue(Queues.MAIN)
 
