@@ -174,10 +174,18 @@ fn run(req: &StreamRequest, hw: Option<&BufferRef>, sink: &mut Sink) -> Result<(
         VideoMode::Transcode { .. } => "250000",
     };
 
-    let opts = Dict::new(&[
-        ("movflags", "empty_moov+default_base_moof+frag_keyframe+negative_cts_offsets+frag_discont"),
-        ("frag_duration", frag_duration),
-    ]);
+    let copies_ac3 = req.audio == AudioMode::Copy
+        && a_idx.and_then(|i| input.stream(i)).is_some_and(|st| {
+            matches!(unsafe { (*st.codecpar).codec_id }, ffi::AV_CODEC_ID_AC3 | ffi::AV_CODEC_ID_EAC3)
+        });
+
+    let movflags = if copies_ac3 {
+        "empty_moov+delay_moov+default_base_moof+frag_keyframe+negative_cts_offsets+frag_discont"
+    } else {
+        "empty_moov+default_base_moof+frag_keyframe+negative_cts_offsets+frag_discont"
+    };
+
+    let opts = Dict::new(&[("movflags", movflags), ("frag_duration", frag_duration)]);
 
     let vst = input.stream(v_idx).unwrap();
     let v_tb = vst.time_base;
