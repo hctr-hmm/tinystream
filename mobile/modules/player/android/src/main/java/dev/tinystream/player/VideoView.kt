@@ -42,6 +42,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
+import com.facebook.react.ReactApplication
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
@@ -454,12 +455,40 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
   private val pipListener = Consumer<PictureInPictureModeChangedInfo> { info ->
     pipActive = info.isInPictureInPictureMode
     onPip(mapOf("active" to pipActive))
+    keepReactDrawing()
   }
 
   /** Leaving the app (or closing the PiP window) pauses: there's no video playing out of sight. */
   private val lifecycle = LifecycleEventObserver { _, event ->
-    if (event == Lifecycle.Event.ON_STOP) player.pause()
+    when (event) {
+      // After the activity's own onPause, which this comes before.
+      Lifecycle.Event.ON_PAUSE -> handler.post { keepReactDrawing() }
+      Lifecycle.Event.ON_STOP -> {
+        player.pause()
+        if (reactKeptDrawing) reactHost()?.onHostPause(activity)
+        reactKeptDrawing = false
+      }
+      else -> {}
+    }
   }
+
+  /**
+   * The activity is paused in PiP, and a paused React Native stops putting
+   * what JS renders on screen: the controls would stay up, at full-screen
+   * size, in the small window. So it's kept going until the window closes.
+   */
+  private fun keepReactDrawing() {
+    val a = activity ?: return
+    if (!a.isInPictureInPictureMode || a.lifecycle()?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true) return
+    reactHost()?.onHostResume(a)
+    reactKeptDrawing = true
+  }
+
+  private var reactKeptDrawing = false
+
+  private fun reactHost() = (activity?.application as? ReactApplication)?.reactHost
+
+  private fun Activity.lifecycle() = (this as? LifecycleOwner)?.lifecycle
 
   private var activity: Activity? = null
 
