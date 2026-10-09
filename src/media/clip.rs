@@ -9,6 +9,7 @@ use anyhow::{Context, anyhow, bail};
 
 use super::burn::{self, Overlay};
 use super::ff::{self, BufferRef, Codec, Dict, FilterGraph, Frame, Input, Packet, ffi};
+use super::hw;
 
 #[derive(Clone)]
 pub struct Recipe {
@@ -96,7 +97,10 @@ pub fn render(
         && hw.is_some()
         && !cancel.load(Ordering::Relaxed)
     {
-        tracing::warn!("VA-API couldn't render a clip of {}: {e:#}; retrying in software", video.display());
+        tracing::warn!(
+            "hardware transcoding couldn't render a clip of {}: {e:#}; retrying in software",
+            video.display()
+        );
         result = run(video, recipe, &tmp, None, fonts, progress, cancel);
     }
 
@@ -346,7 +350,7 @@ impl Picture {
         let mut decoder = unsafe { ffi::avcodec_find_decoder(par.codec_id) };
 
         if par.codec_id == ffi::AV_CODEC_ID_AV1 {
-            let name = if hw.is_some() { c"av1" } else { c"libdav1d" };
+            let name = if hw.is_some() && hw::GPU_FRAMES { c"av1" } else { c"libdav1d" };
             let d = unsafe { ffi::avcodec_find_decoder_by_name(name.as_ptr()) };
 
             if !d.is_null() {
@@ -363,7 +367,7 @@ impl Picture {
             d.pkt_timebase = st.time_base;
             d.thread_count = 0;
 
-            if let Some(dev) = hw {
+            if let Some(dev) = hw.filter(|_| hw::GPU_FRAMES) {
                 d.hw_device_ctx = dev.new_ref();
                 d.get_format = Some(super::stream::prefer_vaapi);
                 d.extra_hw_frames = 8;
@@ -524,7 +528,7 @@ impl Picture {
 
             let on_gpu = self.filtered.get().format == ffi::AV_PIX_FMT_VAAPI;
 
-            match self.hw.clone().filter(|_| !on_gpu) {
+            match self.hw.clone().filter(|_| hw::GPU_FRAMES && !on_gpu) {
                 Some(dev) => {
                     if self.upload.is_none() {
                         self.upload =
@@ -586,7 +590,21 @@ impl Picture {
             e.flags |= ffi::AV_CODEC_FLAG_GLOBAL_HEADER as c_int;
         };
 
-        let enc = if hw_frames.is_null() {
+        let enc = if !hw::GPU_FRAMES && self.hw.is_some() {
+            let codec = unsafe { ffi::avcodec_find_encoder_by_name(hw::h264_encoder(true).as_ptr()) };
+            anyhow::ensure!(!codec.is_null(), "no h264_videotoolbox encoder in this build");
+            let mut enc = Codec::alloc(codec)?;
+            setup(&mut enc);
+
+            let e = enc.get_mut();
+            e.max_b_frames = 0;
+            e.level = level;
+            e.bit_rate = cap * 6 / 10;
+
+            enc.open(&mut Dict::new(&[])).context("opening h264_videotoolbox")?;
+
+            enc
+        } else if hw_frames.is_null() {
             let codec = unsafe { ffi::avcodec_find_encoder_by_name(c"libx264".as_ptr()) };
             anyhow::ensure!(!codec.is_null(), "no libx264 encoder in this build");
             let mut enc = Codec::alloc(codec)?;

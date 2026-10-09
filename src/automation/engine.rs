@@ -105,6 +105,35 @@ fn settings(config: &Config) -> lt::Settings {
     }
 }
 
+#[cfg(target_vendor = "apple")]
+fn interface_up(name: &str) -> bool {
+    let mut list = std::ptr::null_mut();
+
+    if unsafe { libc::getifaddrs(&mut list) } != 0 {
+        return false;
+    }
+
+    let mut up = false;
+    let mut cur = list;
+
+    while !cur.is_null() {
+        let i = unsafe { &*cur };
+
+        if unsafe { std::ffi::CStr::from_ptr(i.ifa_name) }.to_bytes() == name.as_bytes()
+            && i.ifa_flags & libc::IFF_UP as u32 != 0
+        {
+            up = true;
+            break;
+        }
+
+        cur = i.ifa_next;
+    }
+
+    unsafe { libc::freeifaddrs(list) };
+    up
+}
+
+#[cfg(not(target_vendor = "apple"))]
 fn interface_up(name: &str) -> bool {
     std::fs::read_to_string(format!("/sys/class/net/{name}/flags"))
         .ok()

@@ -8,6 +8,7 @@ use bytes::Bytes;
 use tokio::sync::mpsc;
 
 use super::ff::{self, BufferRef, Codec, Dict, FilterGraph, Frame, Input, MemOutput, Packet, ffi};
+use super::hw;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum VideoMode {
@@ -74,7 +75,10 @@ pub fn spawn(req: StreamRequest, hw: Option<BufferRef>) -> mpsc::Receiver<Chunk>
             let mut result = run(&req, hw.as_ref(), &mut sink);
 
             if let Err(Stop::Hardware(e)) = &result {
-                tracing::warn!("VA-API couldn't handle {}: {e:#}; retrying in software", req.path.display());
+                tracing::warn!(
+                    "hardware transcoding couldn't handle {}: {e:#}; retrying in software",
+                    req.path.display()
+                );
                 result = run(&req, None, &mut sink);
             }
 
@@ -385,7 +389,7 @@ impl VideoTranscode {
         let mut decoder = unsafe { ffi::avcodec_find_decoder(par.codec_id) };
 
         if par.codec_id == ffi::AV_CODEC_ID_AV1 {
-            let name = if hw.is_some() { c"av1" } else { c"libdav1d" };
+            let name = if hw.is_some() && hw::GPU_FRAMES { c"av1" } else { c"libdav1d" };
             let d = unsafe { ffi::avcodec_find_decoder_by_name(name.as_ptr()) };
 
             if !d.is_null() {
@@ -405,7 +409,7 @@ impl VideoTranscode {
             d.pkt_timebase = st.time_base;
             d.thread_count = 0;
 
-            if let Some(dev) = hw {
+            if let Some(dev) = hw.filter(|_| hw::GPU_FRAMES) {
                 d.hw_device_ctx = dev.new_ref();
                 d.get_format = Some(prefer_vaapi);
                 d.extra_hw_frames = 8;
@@ -484,7 +488,8 @@ impl VideoTranscode {
 
         let (desc, device) = match (&self.hw, f.format == ffi::AV_PIX_FMT_VAAPI) {
             (Some(_), true) => (format!("scale_vaapi=w={width}:h={height}:format=nv12"), None),
-            (Some(dev), false) => (format!("scale={width}:{height},format=nv12,hwupload"), Some(dev)),
+            (Some(dev), false) if hw::GPU_FRAMES => (format!("scale={width}:{height},format=nv12,hwupload"), Some(dev)),
+            (Some(_), false) => (format!("scale={width}:{height}:flags=bicubic,format=nv12"), None),
             (None, _) => (format!("scale={width}:{height}:flags=bicubic,format=yuv420p"), None),
         };
 
@@ -522,7 +527,8 @@ impl VideoTranscode {
     fn open_encoder(&mut self, mux: &mut Mux, sink: &mut Sink) -> Result<(), Stop> {
         let g = self.graph.as_ref().unwrap();
         let hw_frames = unsafe { ffi::av_buffersink_get_hw_frames_ctx(g.sink) };
-        let name = if hw_frames.is_null() { c"libx264" } else { c"h264_vaapi" };
+        let hardware = if hw::GPU_FRAMES { !hw_frames.is_null() } else { self.hw.is_some() };
+        let name = hw::h264_encoder(hardware);
         let codec = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
 
         if codec.is_null() {
@@ -551,14 +557,16 @@ impl VideoTranscode {
 
             if !hw_frames.is_null() {
                 e.hw_frames_ctx = ffi::av_buffer_ref(hw_frames);
+            }
+
+            if hardware {
                 e.max_b_frames = 0;
             } else {
                 e.thread_count = 0;
             }
         }
 
-        let mut opts =
-            if hw_frames.is_null() { Dict::new(&[("preset", "veryfast"), ("crf", "21")]) } else { Dict::new(&[]) };
+        let mut opts = if hardware { Dict::new(&[]) } else { Dict::new(&[("preset", "veryfast"), ("crf", "21")]) };
 
         if let Err(e) = enc.open(&mut opts) {
             let e = e.context(format!("opening {name:?}"));

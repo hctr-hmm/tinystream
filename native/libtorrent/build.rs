@@ -19,6 +19,7 @@ const PUBLIC_DEFINES: &[(&str, Option<&str>)] = &[
 fn main() {
     let b = Build::new("libtorrent", VERSION, &["boost"]);
     let boost = PathBuf::from(env::var_os("DEP_BOOST_INCLUDE").unwrap());
+    let openssl = openssl();
 
     let defines: Vec<String> =
         PUBLIC_DEFINES.iter().map(|(k, v)| v.map_or_else(|| k.to_string(), |v| format!("{k}={v}"))).collect();
@@ -31,7 +32,7 @@ fn main() {
 
     b.once(&defines, |b| {
         b.fetch(&url, &[]);
-        compile(&b.src, &boost, &b.prefix.join("lib"));
+        compile(&b.src, &boost, &openssl.0, &b.prefix.join("lib"));
     });
 
     b.licenses(&url, &["COPYING"]);
@@ -39,6 +40,24 @@ fn main() {
     b.export("boost", &boost);
     b.export("lib", b.prefix.join("lib"));
     b.export("defines", &defines);
+    b.export("openssl-include", env::join_paths(&openssl.0).unwrap());
+    b.export("openssl-lib", env::join_paths(&openssl.1).unwrap());
+}
+
+/// Where OpenSSL's headers and libraries are, when they aren't on the compiler's default paths;
+/// that's macOS, whose Homebrew OpenSSL is keg-only.
+fn openssl() -> (Vec<PathBuf>, Vec<PathBuf>) {
+    println!("cargo::rerun-if-env-changed=PKG_CONFIG_PATH");
+
+    if env::var("CARGO_CFG_TARGET_VENDOR").is_ok_and(|v| v == "apple") {
+        let found = pkg_config::Config::new().cargo_metadata(false).probe("openssl").unwrap_or_else(|e| {
+            panic!("libtorrent needs OpenSSL; install it (brew install openssl@3 pkg-config): {e}")
+        });
+
+        return (found.include_paths, found.link_paths);
+    }
+
+    (Vec::new(), Vec::new())
 }
 
 fn cmake_list(cmake: &str, name: &str) -> Vec<String> {
@@ -51,7 +70,7 @@ fn cmake_list(cmake: &str, name: &str) -> Vec<String> {
     body.lines().map(|l| l.split('#').next().unwrap().trim()).filter(|l| !l.is_empty()).map(str::to_string).collect()
 }
 
-fn compile(lt: &Path, boost: &Path, out: &Path) {
+fn compile(lt: &Path, boost: &Path, openssl: &[PathBuf], out: &Path) {
     let cmake = fs::read_to_string(lt.join("CMakeLists.txt")).expect("libtorrent's CMakeLists.txt");
     let mut files: Vec<PathBuf> = Vec::new();
 
@@ -89,6 +108,10 @@ fn compile(lt: &Path, boost: &Path, out: &Path) {
         .warnings(false)
         .cargo_metadata(false)
         .out_dir(out);
+
+    for dir in openssl {
+        build.include(dir);
+    }
 
     for (k, v) in PUBLIC_DEFINES {
         build.define(k, *v);

@@ -16,4 +16,5 @@ boost-src = { path = "../boost" }
 
 [build-dependencies]
 cc = { version = "1", features = ["parallel"] }
+pkg-config = "0.3"
 native-support = { path = "../support" }

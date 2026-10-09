@@ -2010,6 +2010,7 @@ dependencies = [
  "boost-src",
  "cc",
  "native-support",
+ "pkg-config",
 ]
 
 [[package]]
@@ -3860,6 +3861,7 @@ dependencies = [
  "humantime",
  "humantime-serde",
  "image",
+ "libc",
  "libtorrent-sys",
  "lofty",
  "md-5 0.10.6",
