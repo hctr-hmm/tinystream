@@ -21,3 +21,6 @@ dependencies {
   implementation 'com.squareup.okhttp3:okhttp:4.9.2'
   testImplementation 'junit:junit:4.13.2'
 }
+
+apply from: '../../../gradle/rust.gradle'
+rust.jni('tinystream-subtitles')

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // The video player: ExoPlayer on tinystream's stream (see Stream.kt), seeking
-// with `?start=` where it hasn't buffered, plus what a full-screen player
-// needs of the window: brightness, volume, system bars and orientation.
+// with `?start=` where it hasn't buffered, libass subtitles over it, plus what
+// a full-screen player needs of the window: brightness, volume, system bars
+// and orientation.
 
 import { requireNativeModule, requireNativeView } from 'expo'
 import type { Ref } from 'react'
@@ -26,6 +27,9 @@ export type Load = {
   hasNext: boolean
 }
 
+/** A subtitle track: where its ASS file is, and the video's fonts (`/subtitles/{track}` and `/fonts/{index}`). */
+export type Subtitles = { url: string; fonts: string[]; headers: Record<string, string> }
+
 export type PlaybackState = 'idle' | 'buffering' | 'ready' | 'ended' | 'error'
 export type Status = { state: PlaybackState; playing: boolean; paused: boolean }
 /** Where playback is, at least 4 times a second, and the stretch around it that's buffered. */
@@ -43,6 +47,8 @@ export type VideoViewHandle = {
   setMuted(muted: boolean): Promise<void>
   /** False when the system won't (PiP turned off for the app). */
   enterPip(): Promise<boolean>
+  /** Draws `track` over the picture with libass, or no subtitles; resolves once they show. */
+  selectSubtitles(track: Subtitles | null): Promise<void>
 }
 
 type Event<T> = (e: NativeSyntheticEvent<T>) => void

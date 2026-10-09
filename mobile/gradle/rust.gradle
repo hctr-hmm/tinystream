@@ -7,6 +7,9 @@
 //
 //   apply from: '../../../gradle/rust.gradle'
 //   rust.crate('tinystream-about')
+//
+// or `rust.jni('tinystream-subtitles')` for a crate with JNI functions of its
+// own, without bindings.
 
 def workspace = buildscript.sourceFile.parentFile.parentFile
 def targetDir = new File(workspace, 'target')
@@ -16,9 +19,7 @@ def abis = (findProperty('reactNativeArchitectures') ?: 'arm64-v8a').split(',').
 
 android.ndkVersion = rootProject.ext.ndkVersion
 
-ext.rust = [crate: { String crate ->
-    def lib = "lib${crate.replace('-', '_')}.so"
-
+def cargoNdk = { String crate ->
     def build = tasks.register('cargoNdk', Exec) {
         description = "Builds $crate for ${abis.join(', ')}."
         workingDir workspace
@@ -33,6 +34,14 @@ ext.rust = [crate: { String crate ->
         outputs.upToDateWhen { false }
     }
 
+    android.sourceSets.main.jniLibs.srcDirs += jniLibs.get().asFile
+    build
+}
+
+ext.rust = [crate: { String crate ->
+    def lib = "lib${crate.replace('-', '_')}.so"
+    def build = cargoNdk(crate)
+
     def bindgen = tasks.register('uniffiBindgen', Exec) {
         description = "Generates the Kotlin bindings of $crate."
         dependsOn build
@@ -45,10 +54,12 @@ ext.rust = [crate: { String crate ->
         outputs.upToDateWhen { false }
     }
 
-    android.sourceSets.main.jniLibs.srcDirs += jniLibs.get().asFile
     android.sourceSets.main.java.srcDirs += kotlin.get().asFile
     tasks.named('preBuild') { dependsOn bindgen }
     dependencies {
         implementation 'net.java.dev.jna:jna:5.17.0@aar'
     }
+}, jni: { String crate ->
+    def build = cargoNdk(crate)
+    tasks.named('preBuild') { dependsOn build }
 }]

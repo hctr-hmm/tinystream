@@ -11,6 +11,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.util.UnstableApi
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
@@ -44,6 +46,12 @@ class LoadRecord : Record {
   @Field val subtitle: String? = null
   @Field val hasPrevious: Boolean = false
   @Field val hasNext: Boolean = false
+}
+
+class SubtitlesRecord : Record {
+  @Field val url: String = ""
+  @Field val fonts: List<String> = emptyList()
+  @Field val headers: Map<String, String> = emptyMap()
 }
 
 /** The orientations the player asks for; `default` gives the app's own back. */
@@ -134,6 +142,12 @@ class PlayerModule : Module() {
       AsyncFunction("setRate") { view: VideoView, rate: Double -> view.setRate(rate) }.runOnQueue(Queues.MAIN)
       AsyncFunction("setMuted") { view: VideoView, muted: Boolean -> view.setMuted(muted) }.runOnQueue(Queues.MAIN)
       AsyncFunction("enterPip") { view: VideoView -> view.enterPip() }.runOnQueue(Queues.MAIN)
+
+      AsyncFunction("selectSubtitles") { view: VideoView, source: SubtitlesRecord?, promise: Promise ->
+        view.selectSubtitles(source?.let { SubtitleSource(it.url, it.fonts, it.headers) }) { error ->
+          if (error == null) promise.resolve(null) else promise.reject(CodedException("ERR_SUBTITLES", error, null))
+        }
+      }.runOnQueue(Queues.MAIN)
 
       OnViewDestroys { view: VideoView -> view.release() }
     }

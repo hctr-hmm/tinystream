@@ -127,6 +127,7 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
     .setSeekBackIncrementMs(10_000)
     .setSeekForwardIncrementMs(10_000)
     .build()
+  private val subtitles = SubtitleView(context, client) { player.currentPosition }
 
   private var load: Load? = null
   private var source: StreamSource? = null
@@ -149,6 +150,7 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
   init {
     clipChildren = true
     addView(surface)
+    addView(subtitles)
     player.setVideoSurfaceView(surface)
     player.addListener(object : Player.Listener {
       override fun onPlaybackStateChanged(state: Int) {
@@ -220,6 +222,9 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
   }
 
   fun setRate(rate: Double) = player.setPlaybackSpeed(rate.toFloat())
+
+  /** Shows `source`'s subtitles over the picture, or none; `done` gets what went wrong, if anything did. */
+  fun selectSubtitles(source: SubtitleSource?, done: (String?) -> Unit) = subtitles.select(source, done)
 
   fun setMuted(muted: Boolean) {
     player.volume = if (muted) 0f else 1f
@@ -350,11 +355,12 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
 
   private fun relayout() {
     val rect = pictureRect()
-    for (i in 0 until childCount) {
-      val child = getChildAt(i)
-      child.measure(MeasureSpec.makeMeasureSpec(rect.width(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(rect.height(), MeasureSpec.EXACTLY))
-      child.layout(rect.left, rect.top, rect.right, rect.bottom)
-    }
+    surface.measure(MeasureSpec.makeMeasureSpec(rect.width(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(rect.height(), MeasureSpec.EXACTLY))
+    surface.layout(rect.left, rect.top, rect.right, rect.bottom)
+    // Subtitles cover the whole view, so the dialogue of a cropped picture stays in sight.
+    subtitles.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
+    subtitles.layout(0, 0, width, height)
+    subtitles.place(width, height, rect, (videoWidth * pixelRatio).roundToInt(), videoHeight)
     if (rect != laidOut) {
       laidOut = rect
       handler.removeCallbacks(pipUpdate)
@@ -461,6 +467,7 @@ class VideoView(context: Context, appContext: AppContext) : ExpoView(context, ap
     cancelRetry()
     handler.removeCallbacksAndMessages(null)
     fillAnimation?.cancel()
+    subtitles.release()
     session?.release()
     session = null
     player.release()

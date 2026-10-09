@@ -208,6 +208,13 @@ export function Player({ mediaId, startAt, rotation, onRotation }: { mediaId: nu
     }
   }, [pb, streamPlan, origin, token, attempt])
 
+  useEffect(() => {
+    if (!pb || !origin) return
+    const base = resolve(origin, `/api/media/${pb.id}`)
+    const track = subtitle ? { url: `${base}/subtitles/${subtitle}`, fonts: pb.media.fonts.map((f) => `${base}/fonts/${f.index}`), headers: authHeaders(token) } : null
+    video.current?.selectSubtitles(track).catch((e) => console.warn('subtitles:', e))
+  }, [subtitle, pb, origin, token])
+
   useEffect(() => void video.current?.setRate(rate), [rate, streamPlan])
   useEffect(() => void video.current?.setMuted(muted), [muted, streamPlan])
 

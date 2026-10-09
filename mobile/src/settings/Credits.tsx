@@ -19,7 +19,7 @@ const libraries = [
   { name: 'Opus', license: 'BSD-3-Clause', href: 'https://opus-codec.org', does: 'Opus audio' },
   { name: 'zimg', license: 'WTFPL', href: 'https://github.com/sekrit-twc/zimg', does: 'Scaling and color conversion' },
   { name: 'libva', license: 'MIT', href: 'https://github.com/intel/libva', does: 'Hardware transcoding' },
-  { name: 'libass', license: 'ISC', href: 'https://github.com/libass/libass', does: 'Burned-in subtitles' },
+  { name: 'libass', license: 'ISC', href: 'https://github.com/libass/libass', does: 'Subtitles' },
   { name: 'FreeType', license: 'FTL', href: 'https://freetype.org', does: 'Font rendering' },
   { name: 'HarfBuzz', license: 'MIT', href: 'https://harfbuzz.github.io', does: 'Text shaping' },
   { name: 'FriBidi', license: 'LGPL-2.1-or-later', href: 'https://github.com/fribidi/fribidi', does: 'Right-to-left text' },
