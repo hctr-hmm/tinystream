@@ -76,6 +76,11 @@ type Documents = {
     "\n  query Inbox {\n    notifications {\n      ...InboxFields\n    }\n  }\n": typeof types.InboxDocument,
     "\n  mutation MarkNotificationsRead($ids: [Int!]) {\n    markNotificationsRead(ids: $ids) {\n      ...InboxFields\n    }\n  }\n": typeof types.MarkNotificationsReadDocument,
     "\n  mutation DeleteNotifications($id: Int) {\n    deleteNotifications(id: $id) {\n      ...InboxFields\n    }\n  }\n": typeof types.DeleteNotificationsDocument,
+    "\n  query Playback($id: Int!) {\n    video(id: $id) {\n      ...Playback\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": typeof types.PlaybackDocument,
+    "\n  mutation SaveProgress($videoId: Int!, $position: Float!, $duration: Float!) {\n    saveProgress(videoId: $videoId, position: $position, duration: $duration) {\n      id\n    }\n  }\n": typeof types.SaveProgressDocument,
+    "\n  mutation TakeScreenshot($input: NewScreenshot!) {\n    takeScreenshot(input: $input) {\n      ...ClipFields\n    }\n  }\n": typeof types.TakeScreenshotDocument,
+    "\n  query PlayerSchedule($id: Int!) {\n    title(id: $id) {\n      series {\n        id\n        monitor\n        status\n        next {\n          ...SeriesEpisodeFields\n        }\n      }\n    }\n  }\n": typeof types.PlayerScheduleDocument,
+    "\n  query PlayerOverview($id: Int!, $videoId: Int!) {\n    title(id: $id) {\n      overview\n    }\n    video(id: $videoId) {\n      overview\n    }\n  }\n": typeof types.PlayerOverviewDocument,
     "\n  query Status {\n    server {\n      version\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": typeof types.StatusDocument,
     "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": typeof types.AppearanceDocument,
     "\n  query Libraries {\n    libraries {\n      name\n      kind\n      showCount\n      movieCount\n      albumCount\n      trackCount\n    }\n  }\n": typeof types.LibrariesDocument,
@@ -193,6 +198,11 @@ const documents: Documents = {
     "\n  query Inbox {\n    notifications {\n      ...InboxFields\n    }\n  }\n": types.InboxDocument,
     "\n  mutation MarkNotificationsRead($ids: [Int!]) {\n    markNotificationsRead(ids: $ids) {\n      ...InboxFields\n    }\n  }\n": types.MarkNotificationsReadDocument,
     "\n  mutation DeleteNotifications($id: Int) {\n    deleteNotifications(id: $id) {\n      ...InboxFields\n    }\n  }\n": types.DeleteNotificationsDocument,
+    "\n  query Playback($id: Int!) {\n    video(id: $id) {\n      ...Playback\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n": types.PlaybackDocument,
+    "\n  mutation SaveProgress($videoId: Int!, $position: Float!, $duration: Float!) {\n    saveProgress(videoId: $videoId, position: $position, duration: $duration) {\n      id\n    }\n  }\n": types.SaveProgressDocument,
+    "\n  mutation TakeScreenshot($input: NewScreenshot!) {\n    takeScreenshot(input: $input) {\n      ...ClipFields\n    }\n  }\n": types.TakeScreenshotDocument,
+    "\n  query PlayerSchedule($id: Int!) {\n    title(id: $id) {\n      series {\n        id\n        monitor\n        status\n        next {\n          ...SeriesEpisodeFields\n        }\n      }\n    }\n  }\n": types.PlayerScheduleDocument,
+    "\n  query PlayerOverview($id: Int!, $videoId: Int!) {\n    title(id: $id) {\n      overview\n    }\n    video(id: $videoId) {\n      overview\n    }\n  }\n": types.PlayerOverviewDocument,
     "\n  query Status {\n    server {\n      version\n      setupRequired\n      clips\n      downloads\n      sources\n    }\n    viewer {\n      ...Viewer\n    }\n  }\n": types.StatusDocument,
     "\n  query Appearance {\n    appearance {\n      mode\n      style\n      mediaTint\n      light {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n      dark {\n        id\n        palette {\n          tokens {\n            name\n            value\n          }\n        }\n      }\n    }\n  }\n": types.AppearanceDocument,
     "\n  query Libraries {\n    libraries {\n      name\n      kind\n      showCount\n      movieCount\n      albumCount\n      trackCount\n    }\n  }\n": types.LibrariesDocument,
@@ -493,6 +503,26 @@ export function graphql(source: "\n  mutation MarkNotificationsRead($ids: [Int!]
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation DeleteNotifications($id: Int) {\n    deleteNotifications(id: $id) {\n      ...InboxFields\n    }\n  }\n"): typeof import('./graphql').DeleteNotificationsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Playback($id: Int!) {\n    video(id: $id) {\n      ...Playback\n    }\n    server {\n      transcoding {\n        ...TranscodingFields\n      }\n    }\n  }\n"): typeof import('./graphql').PlaybackDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SaveProgress($videoId: Int!, $position: Float!, $duration: Float!) {\n    saveProgress(videoId: $videoId, position: $position, duration: $duration) {\n      id\n    }\n  }\n"): typeof import('./graphql').SaveProgressDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation TakeScreenshot($input: NewScreenshot!) {\n    takeScreenshot(input: $input) {\n      ...ClipFields\n    }\n  }\n"): typeof import('./graphql').TakeScreenshotDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query PlayerSchedule($id: Int!) {\n    title(id: $id) {\n      series {\n        id\n        monitor\n        status\n        next {\n          ...SeriesEpisodeFields\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').PlayerScheduleDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query PlayerOverview($id: Int!, $videoId: Int!) {\n    title(id: $id) {\n      overview\n    }\n    video(id: $videoId) {\n      overview\n    }\n  }\n"): typeof import('./graphql').PlayerOverviewDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

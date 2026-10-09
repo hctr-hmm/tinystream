@@ -60,6 +60,9 @@ export const keyframes = {
     '100%': { opacity: 0, transform: [{ scale: 1.12 }] },
   },
   shutter: { '0%': { opacity: 0.55 }, '100%': { opacity: 0 } },
+  nudgeRight: (m: Material) => ({ from: { opacity: 0, transform: [{ translateX: -6 }, { scale: m.pop.scale }] } }),
+  nudgeLeft: (m: Material) => ({ from: { opacity: 0, transform: [{ translateX: 6 }, { scale: m.pop.scale }] } }),
+  sweep: { from: { transform: [{ scaleX: 0 }] }, to: { transform: [{ scaleX: 1 }] } },
   hush: {
     '0%': { transform: [{ rotate: '0deg' }] },
     '20%': { transform: [{ rotate: '-16deg' }] },
@@ -94,6 +97,10 @@ export function motions(material: Material, tokens: { ok: string; info: string }
     pulseDot: once(keyframes.pulseDot, 1600, 'ease-in-out', { animationIterationCount: 'infinite' }),
     flash: once(keyframes.flash, 600, 'ease-out', { animationFillMode: 'forwards' }),
     shutter: once(keyframes.shutter, 420, 'ease-out', { animationFillMode: 'forwards' }),
+    nudgeRight: once(keyframes.nudgeRight(material), 160, 'ease-out'),
+    nudgeLeft: once(keyframes.nudgeLeft(material), 160, 'ease-out'),
+    /** Fills from the left over `ms` (web's countdown to the next episode); give it transformOrigin 'left'. */
+    sweep: (ms: number) => once(keyframes.sweep, ms, 'linear', { animationFillMode: 'forwards' }),
     hush: once(keyframes.hush, 700, 'ease-out', { animationFillMode: 'both', animationDelay: 120 }),
   }
 }

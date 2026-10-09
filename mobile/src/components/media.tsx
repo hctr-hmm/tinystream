@@ -20,7 +20,7 @@ export function Ambient({ tint, alpha = 0.38, at = '0% 100%', size = '120% 90%' 
 }
 
 /** A gradient from the canvas (or the media shade) over artwork, toward `to`. */
-export function Shade({ to = 'right', stops, media = false }: { to?: 'right' | 'top'; stops: [number, number, number]; media?: boolean }) {
+export function Shade({ to = 'right', stops, media = false }: { to?: 'right' | 'top' | 'bottom'; stops: [number, number, number]; media?: boolean }) {
   const { tokens } = useTheme()
   const c = media ? tokens['media-shade'] : tokens.canvas
   return (

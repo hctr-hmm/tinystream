@@ -191,6 +191,13 @@ export type NewRequest = {
   year?: number | null | undefined;
 };
 
+export type NewScreenshot = {
+  at: number;
+  room?: string | null | undefined;
+  subtitles?: string | null | undefined;
+  videoId: number;
+};
+
 export type NewSeries = {
   library: string;
   monitor?: Monitor | null | undefined;
@@ -855,6 +862,44 @@ export type DeleteNotificationsMutationVariables = Exact<{
 
 
 export type DeleteNotificationsMutation = { deleteNotifications: { unread: number, items: Array<{ id: number, kind: NotificationKind, priority: boolean, title: string, body: string | null, image: string | null, link: string | null, createdAt: number, expiresAt: number | null, readAt: number | null, actor: { id: number, username: string, avatar: string | null } | null }> } };
+
+export type PlaybackQueryVariables = Exact<{
+  id: number;
+}>;
+
+
+export type PlaybackQuery = { video: { id: number, still: string, label: string | null, name: string | null, position: number | null, finished: boolean | null, title: { id: number, kind: TitleKind, name: string, backdrop: string | null }, previous: { id: number, label: string | null, name: string | null } | null, next: { id: number, still: string, label: string | null, name: string | null } | null, media: { duration: number | null, video: { index: number, codec: string, codecString: string | null, width: number, height: number, fps: number, bitDepth: number, hdr: boolean } | null, audio: Array<{ index: number, codec: string, codecString: string | null, channels: number, language: string | null, title: string | null, default: boolean }>, subtitles: Array<{ id: string, codec: string, language: string | null, title: string | null, default: boolean, forced: boolean, supported: boolean }>, fonts: Array<{ index: number, filename: string }>, chapters: Array<{ start: number, end: number, title: string | null }> } } | null, server: { transcoding: { vaapi: string | null, vaapiError: string | null, softwareH264: boolean } } };
+
+export type SaveProgressMutationVariables = Exact<{
+  videoId: number;
+  position: number;
+  duration: number;
+}>;
+
+
+export type SaveProgressMutation = { saveProgress: { id: number } };
+
+export type TakeScreenshotMutationVariables = Exact<{
+  input: NewScreenshot;
+}>;
+
+
+export type TakeScreenshotMutation = { takeScreenshot: { id: number, screenshot: boolean, name: string, mine: boolean, canManage: boolean, start: number, end: number, audio: number | null, subtitles: string | null, state: ClipState, progress: number | null, error: string | null, bytes: number | null, width: number | null, height: number | null, fps: number | null, renderedAt: number | null, createdAt: number, sharedAt: number | null, public: boolean, link: string | null, linkLive: boolean, file: string, poster: string | null, owner: { id: number, username: string, avatar: string | null }, source: { name: string, kind: TitleKind, label: string | null, year: number | null, status: SourceStatus, video: { id: number } | null, title: { id: number } | null }, quality: { height: number, halfRate: boolean }, recipients: Array<{ sharedAt: number, hidden: boolean, user: { id: number, username: string, avatar: string | null } }> } };
+
+export type PlayerScheduleQueryVariables = Exact<{
+  id: number;
+}>;
+
+
+export type PlayerScheduleQuery = { title: { series: { id: number, monitor: Monitor, status: string | null, next: { season: number, episode: number, absolute: number | null, name: string | null, airAt: number | null, aired: boolean, state: EpisodeState, attempts: number, searchedAt: number | null, nextSearch: number | null, downloadId: number | null, video: { id: number } | null } | null } | null } | null };
+
+export type PlayerOverviewQueryVariables = Exact<{
+  id: number;
+  videoId: number;
+}>;
+
+
+export type PlayerOverviewQuery = { title: { overview: string | null } | null, video: { overview: string | null } | null };
 
 export type StatusQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3166,6 +3211,197 @@ fragment NotificationFields on Notification {
   expiresAt
   readAt
 }`) as unknown as TypedDocumentString<DeleteNotificationsMutation, DeleteNotificationsMutationVariables>;
+export const PlaybackDocument = new TypedDocumentString(`
+    query Playback($id: Int!) {
+  video(id: $id) {
+    ...Playback
+  }
+  server {
+    transcoding {
+      ...TranscodingFields
+    }
+  }
+}
+    fragment Playback on Video {
+  id
+  still
+  label
+  name
+  position
+  finished
+  title {
+    id
+    kind
+    name
+    backdrop
+  }
+  previous {
+    id
+    label
+    name
+  }
+  next {
+    id
+    still
+    label
+    name
+  }
+  media {
+    duration
+    video {
+      index
+      codec
+      codecString
+      width
+      height
+      fps
+      bitDepth
+      hdr
+    }
+    audio {
+      index
+      codec
+      codecString
+      channels
+      language
+      title
+      default
+    }
+    subtitles {
+      id
+      codec
+      language
+      title
+      default
+      forced
+      supported
+    }
+    fonts {
+      index
+      filename
+    }
+    chapters {
+      start
+      end
+      title
+    }
+  }
+}
+fragment TranscodingFields on Transcoding {
+  vaapi
+  vaapiError
+  softwareH264
+}`) as unknown as TypedDocumentString<PlaybackQuery, PlaybackQueryVariables>;
+export const SaveProgressDocument = new TypedDocumentString(`
+    mutation SaveProgress($videoId: Int!, $position: Float!, $duration: Float!) {
+  saveProgress(videoId: $videoId, position: $position, duration: $duration) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<SaveProgressMutation, SaveProgressMutationVariables>;
+export const TakeScreenshotDocument = new TypedDocumentString(`
+    mutation TakeScreenshot($input: NewScreenshot!) {
+  takeScreenshot(input: $input) {
+    ...ClipFields
+  }
+}
+    fragment Person on User {
+  id
+  username
+  avatar
+}
+fragment ClipFields on Clip {
+  id
+  screenshot
+  name
+  mine
+  canManage
+  owner {
+    ...Person
+  }
+  source {
+    video {
+      id
+    }
+    title {
+      id
+    }
+    name
+    kind
+    label
+    year
+    status
+  }
+  start
+  end
+  audio
+  subtitles
+  quality {
+    height
+    halfRate
+  }
+  state
+  progress
+  error
+  bytes
+  width
+  height
+  fps
+  renderedAt
+  createdAt
+  sharedAt
+  public
+  link
+  linkLive
+  recipients {
+    user {
+      ...Person
+    }
+    sharedAt
+    hidden
+  }
+  file
+  poster
+}`) as unknown as TypedDocumentString<TakeScreenshotMutation, TakeScreenshotMutationVariables>;
+export const PlayerScheduleDocument = new TypedDocumentString(`
+    query PlayerSchedule($id: Int!) {
+  title(id: $id) {
+    series {
+      id
+      monitor
+      status
+      next {
+        ...SeriesEpisodeFields
+      }
+    }
+  }
+}
+    fragment SeriesEpisodeFields on SeriesEpisode {
+  season
+  episode
+  absolute
+  name
+  airAt
+  aired
+  state
+  attempts
+  searchedAt
+  nextSearch
+  downloadId
+  video {
+    id
+  }
+}`) as unknown as TypedDocumentString<PlayerScheduleQuery, PlayerScheduleQueryVariables>;
+export const PlayerOverviewDocument = new TypedDocumentString(`
+    query PlayerOverview($id: Int!, $videoId: Int!) {
+  title(id: $id) {
+    overview
+  }
+  video(id: $videoId) {
+    overview
+  }
+}
+    `) as unknown as TypedDocumentString<PlayerOverviewQuery, PlayerOverviewQueryVariables>;
 export const StatusDocument = new TypedDocumentString(`
     query Status {
   server {

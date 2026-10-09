@@ -67,6 +67,7 @@ const config: ExpoConfig = {
     './plugins/signing',
     './plugins/scrollbars',
     './plugins/network',
+    './plugins/pip',
   ],
   experiments: {
     typedRoutes: true,
