@@ -646,6 +646,11 @@ enum ImportState {
 	SKIPPED
 }
 
+type Inbox {
+	items: [Notification!]!
+	unread: Int!
+}
+
 type Invite {
 	id: Int!
 	label: String!
@@ -656,20 +661,15 @@ type Invite {
 	revoked: Boolean!
 }
 
-type Inbox {
-	items: [Notification!]!
-	unread: Int!
+type InvitePreview {
+	expiresAt: Int!
+	remainingUses: Int!
 }
 
 """
 A scalar that can represent any JSON value.
 """
 scalar JSON
-
-type InvitePreview {
-	expiresAt: Int!
-	remainingUses: Int!
-}
 
 type Library {
 	name: String!
