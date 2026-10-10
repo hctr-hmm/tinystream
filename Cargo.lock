@@ -3101,6 +3101,7 @@ name = "rustyass"
 version = "0.28.3"
 dependencies = [
  "harfrust",
+ "rustc-hash",
  "skrifa",
  "unicode-bidi",
 ]
