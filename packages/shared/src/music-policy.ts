@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { Entry, Settings } from './music-player'
-/** How loud to play an entry: ReplayGain by the mode chosen, held back from clipping. */
 export function gainOf(i: number, queue: Entry[], settings: Settings, shuffled: boolean): number {
   const e = queue[i]
   if (!e) return 1
   const g = e.track.gains
   let mode = settings.gain
   if (mode === 'auto') {
-    // Album gain when an album plays in order, so its quiet songs stay quiet.
     const same = (o?: Entry) => !!o && o.track.albumId != null && o.track.albumId === e.track.albumId && !shuffled
     mode = same(queue[i - 1]) || same(queue[i + 1]) ? 'album' : 'track'
   }
@@ -19,7 +17,6 @@ export function gainOf(i: number, queue: Entry[], settings: Settings, shuffled: 
   return gain
 }
 
-/** One track after the other on the same album never crossfades; that's gapless. */
 export function fadeAfter(i: number, queue: Entry[], settings: Settings): number {
   const a = queue[i]?.track
   const b = queue[i + 1]?.track

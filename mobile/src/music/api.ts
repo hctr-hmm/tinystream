@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// The music side of the API: what tracks, albums and artists look like to
-// the UI, and the queries the player itself needs.
 
 import { graphql } from '../gql'
 import type { AlbumCardFragment, ArtistCardFragment, MusicTrackFragment, PlaylistCardFragment, Repeat } from '../gql/graphql'
@@ -191,14 +189,12 @@ export const AlbumTracks = graphql(`
   }
 `)
 
-/** Cover art at a size, so lists don't load full-size pictures. */
 export function cover(url: string | null | undefined, size: number): string | undefined {
   if (!url) return undefined
   const px = Math.round(size * 2)
   return `${url}${url.includes('?') ? '&' : '?'}size=${px}`
 }
 
-/** "FLAC 24/96", "MP3 320", "ALAC 16/44.1": what a file is, the short way. */
 export function quality(t: Pick<MusicTrack, 'codec' | 'lossless' | 'bitDepth' | 'sampleRate' | 'bitrate'>): string {
   const name = t.codec === 'pcm' ? 'PCM' : t.codec === 'wavpack' ? 'WavPack' : t.codec === 'musepack' ? 'Musepack' : t.codec.toUpperCase()
   if (t.lossless && t.sampleRate) {
@@ -208,7 +204,6 @@ export function quality(t: Pick<MusicTrack, 'codec' | 'lossless' | 'bitDepth' | 
   return t.bitrate ? `${name} ${t.bitrate}` : name
 }
 
-/** Hi-res: more than CD's 16 bits or 48 kHz. */
 export const hiRes = (t: Pick<MusicTrack, 'lossless' | 'bitDepth' | 'sampleRate'>) => t.lossless && ((t.bitDepth ?? 16) > 16 || (t.sampleRate ?? 44100) > 48000)
 
 export function duration(secs: number): string {
@@ -219,7 +214,6 @@ export function duration(secs: number): string {
   return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`
 }
 
-/** "1 hr 12 min", for whole albums. */
 export function length(secs: number): string {
   if (secs < 60) return `${Math.round(secs)} sec`
   const m = Math.round(secs / 60)

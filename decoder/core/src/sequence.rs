@@ -118,7 +118,6 @@ impl Sequencer {
         }
     }
 
-    /// Replaces successors, rewinding only PCM the frontend has not played yet.
     pub fn upcoming(&mut self, after: &str, items: Vec<Item>, heard: u64) -> Option<u64> {
         let at = self
             .started

@@ -9,7 +9,6 @@ import okhttp3.Request
 import uniffi.tinystream_decoder_android.AudioException
 import uniffi.tinystream_decoder_android.RangeSource
 
-/** I/O stays on Android, using its network security configuration and app authentication. */
 class Source(private val url: String, private val size: Long, private val headers: Map<String, String>) : RangeSource {
   override fun len(): ULong = io {
     if (size > 0) size.toULong()
@@ -36,7 +35,6 @@ class Source(private val url: String, private val size: Long, private val header
 
   private fun request(): Request.Builder = Request.Builder().url(url).apply { headers.forEach { (k,v) -> header(k,v) } }
   private fun <T> io(read: () -> T): T = try { read() } catch (e: Exception) {
-    // Do not expose URLs or authentication to JS logs.
     throw AudioException.Read(e.message?.takeIf { !it.contains("://") } ?: "can't read the audio source")
   }
   companion object { val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build() }

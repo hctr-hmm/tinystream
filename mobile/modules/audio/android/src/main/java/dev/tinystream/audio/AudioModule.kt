@@ -56,7 +56,6 @@ class AudioModule : Module() {
     Function("volume") { volume: Double -> AudioService.existing()?.volume(volume.toFloat()) }
     Function("metadata") { data: AudioMetadata -> AudioService.existing()?.metadata(data) }
     Function("rate") { AudioService.engine(requireNotNull(appContext.reactContext)).rate }
-    // The service owns the engine, so removing an activity does not stop playback.
     OnDestroy { AudioService.existing()?.emit = { _, _ -> } }
   }
 }
