@@ -101,9 +101,9 @@ Released under the [AGPL-3.0-or-later](./LICENSE) open-source license.
 
 ### Invite links
 
-Admins can create reusable invite links in **Settings → Users → Invite links**. Each link has a name, a maximum number of accounts (1–1000), and a lifetime (1 hour–365 days). A link stops working when either limit is reached, and admins can revoke it sooner. The default is 5 uses and 7 days.
+Admins make invite links in **Settings → Users → Invite links**. Each has a name, a number of accounts it can make (1–1000), and a lifetime (a day, a week, 30 days, or a year). It stops working when either runs out, or when an admin revokes it.
 
-Recipients choose their own username and password, then sign in automatically. New accounts are members and follow the server's default permissions. A failed sign-up does not consume a use. Copy the link when it is created: the database stores only its hash, so it cannot be shown again after leaving the page.
+Whoever opens it picks a username and password and is signed in. New accounts are members with the server's default permissions; a failed sign-up doesn't use the link up. The link is shown once, when it's made: only its hash is stored.
 
 ### Custom artwork
 

@@ -74,7 +74,7 @@ impl InviteMutation {
         let state = ctx.state();
         auth::validate_credentials(&username, &password)?;
         if invites::available(&state.db, &token).await?.is_none() {
-            return Err(ApiError::bad_request("this invite has expired, been revoked, or reached its use limit"));
+            return Err(ApiError::bad_request("this invite doesn't work anymore"));
         }
         let hash = auth::hash_password(password).await?;
         let id = invites::redeem(&state.db, &token, &username, &hash, &Uuid::new_v4().to_string()).await?;

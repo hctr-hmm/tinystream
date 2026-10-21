@@ -784,7 +784,7 @@ export type UndoFileChangesMutation = { undoFileChanges: { undone: number, probl
 export type InvitesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type InvitesQuery = { invites: Array<{ id: number, label: string, createdAt: number, expiresAt: number, maxUses: number, uses: number, revoked: boolean }> };
+export type InvitesQuery = { invites: Array<{ id: number, label: string, expiresAt: number, maxUses: number, uses: number, revoked: boolean }> };
 
 export type CreateInviteMutationVariables = Exact<{
   label: string;
@@ -1543,7 +1543,7 @@ export type InviteQueryVariables = Exact<{
 }>;
 
 
-export type InviteQuery = { invite: { expiresAt: number, remainingUses: number } | null };
+export type InviteQuery = { invite: { expiresAt: number } | null };
 
 export type AcceptInviteMutationVariables = Exact<{
   token: string;
@@ -3141,7 +3141,6 @@ export const InvitesDocument = new TypedDocumentString(`
   invites {
     id
     label
-    createdAt
     expiresAt
     maxUses
     uses
@@ -6080,7 +6079,6 @@ export const InviteDocument = new TypedDocumentString(`
     query Invite($token: String!) {
   invite(token: $token) {
     expiresAt
-    remainingUses
   }
 }
     `) as unknown as TypedDocumentString<InviteQuery, InviteQueryVariables>;

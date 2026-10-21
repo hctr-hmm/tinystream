@@ -89,7 +89,7 @@ pub async fn redeem(db: &SqlitePool, token: &str, username: &str, hash: &str, ha
     .execute(&mut *tx)
     .await?;
     if claimed.rows_affected() == 0 {
-        return Err(ApiError::bad_request("this invite has expired, been revoked, or reached its use limit"));
+        return Err(ApiError::bad_request("this invite doesn't work anymore"));
     }
     let id = sqlx::query_scalar(
         "INSERT INTO users (handle, username, password_hash, is_admin, permissions, created_at) VALUES (?, ?, ?, 0, '{}', ?)

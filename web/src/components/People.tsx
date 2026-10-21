@@ -103,9 +103,9 @@ type ManagedUser = User & { createdAt: number; lastSeen: number | null; override
 const setOnly = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null)) as Overrides
 import { relative } from '../lib/downloads'
 import { useMe, useStatus } from '../lib/hooks'
-import { Invites } from './Invites'
 import { Avatar, AvatarPicker } from './Avatar'
 import { ask, toast, toastError } from './feedback'
+import { Invites } from './Invites'
 import { Card, useSettings } from './SettingsKit'
 import { Squircle } from './Squircle'
 import { Badge, Button, Dialog, Field, Input, Segmented, Tip, Toggle } from './ui'
